@@ -1,0 +1,16 @@
+{
+  "name": "Bhagad Billa",
+  "short_name": "Bhagad Billa",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f6ece2",
+  "theme_color": "#f6ece2",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

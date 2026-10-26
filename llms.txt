@@ -1,0 +1,16 @@
+# Bhagad Billa
+
+> Bhagad Billa is a web trading terminal for Indian markets. It scans Nifty 50, Bank Nifty and large F&O stocks during NSE hours and lists intraday option calls with the contract, live bid and ask, trigger, stop-loss and targets. It supports paper trading with real prices and costs. It is for education and is not investment advice. Options can lose their entire premium.
+
+Region: India (en-IN). Terminal: https://bhagadbilla.tech
+
+## Pages
+- [Home](https://bhagadbilla.com/): overview, how a call is built, FAQ
+- [Free intraday option calls](https://bhagadbilla.com/free-intraday-option-calls/): what a call contains and how to use it safely
+- [Nifty and Bank Nifty option signals](https://bhagadbilla.com/nifty-bank-nifty-option-signals/): what the scanner reads and how a contract is chosen
+- [Paper trading in India](https://bhagadbilla.com/paper-trading-india/): honest paper trading with bid/ask fills and costs
+- [Glossary](https://bhagadbilla.com/intraday-trading-glossary/): CE, PE, ATM, delta, theta, spread and more
+
+## Facts
+- Signals are experimental. A signal is treated as proven only after at least 60 closed paper trades with positive results after costs.
+- No call is guaranteed to make money.

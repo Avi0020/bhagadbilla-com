@@ -1,0 +1,54 @@
+/* Ivory (default) + deep-emerald dark. Loaded after site.css; only tokens and the few places that need theme-specific values. */
+:root{
+  --paper:#f6ece2;--paper-2:#fffaf4;--paper-3:#ead7c7;
+  --ink:#08291f;--ink-2:#14503c;--muted:#44564d;
+  --up:#0f8a52;--down:#c2262e;
+  --rule:rgba(8,41,31,.28);
+  --shadow:#08291f;
+  --fade:246,236,226;
+}
+:root[data-theme="dark"]{
+  --paper:#07211b;--paper-2:#0d2d24;--paper-3:#0a261e;
+  --ink:#e9f2ea;--ink-2:#b9d3c3;--muted:#a8bdb0;
+  --up:#46d98f;--down:#ff7b75;
+  --rule:rgba(233,242,234,.2);
+  --shadow:#02100c;
+  --fade:7,33,27;
+  color-scheme:dark;
+}
+.top{background:linear-gradient(var(--paper) 40%,rgba(var(--fade),0))}
+.top.solid{background:var(--paper)}
+.hero::after{background:linear-gradient(90deg,var(--paper) 0%,rgba(var(--fade),.9) 36%,rgba(var(--fade),0) 62%)}
+.mkt{background:rgba(var(--fade),.9)}
+.slip,.ledger,.callout{box-shadow:8px 8px 0 var(--shadow)}
+.callout{box-shadow:5px 5px 0 var(--down)}
+@media (max-width:980px){.hero::after{background:linear-gradient(0deg,var(--paper) 14%,rgba(var(--fade),.8) 55%,rgba(var(--fade),.2) 100%)}}
+
+/* logos swap with the theme */
+.brand .l-dark{display:none}
+:root[data-theme="dark"] .brand .l-light{display:none}
+:root[data-theme="dark"] .brand .l-dark{display:block}
+
+/* dark-only fixes where "ink" is used as a surface */
+:root[data-theme="dark"] .ticker{background:#031510;border-block:1px solid var(--rule)}
+:root[data-theme="dark"] .ticker .track b{color:var(--ink)}
+:root[data-theme="dark"] .ledger h3{background:var(--paper-3);color:var(--ink);border-bottom-color:var(--rule)}
+:root[data-theme="dark"] .closing{background:#0f3a2e;color:var(--ink)}
+:root[data-theme="dark"] .closing .sub{color:var(--muted)}
+:root[data-theme="dark"] .closing .btn{background:var(--ink);color:#07211b;border-color:var(--ink)}
+:root[data-theme="dark"] footer{background:#05160f}
+:root[data-theme="dark"] .skip{color:#07211b}
+:root[data-theme="dark"] #tip{background:var(--ink);color:#07211b}
+:root[data-theme="dark"] .btn{color:#07211b}
+:root[data-theme="dark"] .top nav a.btn,:root[data-theme="dark"] .top nav a.btn:hover{color:#07211b}
+:root[data-theme="dark"] .btn.ghost{color:var(--ink);background:transparent}
+:root[data-theme="dark"] .btn.ghost:hover{background:var(--paper-2)}
+:root[data-theme="dark"] .slip .stamp{color:#07211b}
+
+/* toggle */
+.theme-toggle{display:inline-grid;place-items:center;width:42px;height:42px;border:2px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;cursor:pointer}
+.theme-toggle:hover{background:var(--paper-2)}
+.theme-toggle svg{width:20px;height:20px}
+.theme-toggle .sun{display:none}
+:root[data-theme="dark"] .theme-toggle .sun{display:block}
+:root[data-theme="dark"] .theme-toggle .moon{display:none}
