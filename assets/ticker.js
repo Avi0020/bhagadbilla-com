@@ -2,7 +2,10 @@
    its static symbol strip and shows no prices: it never invents numbers. */
 (function () {
   var meta = document.querySelector('meta[name="ticker-url"]');
-  var URL_ = (meta && meta.content) || "/api/ticker";
+  var metaUrl = meta && meta.content && meta.content.trim();
+  var URL_ = (metaUrl && metaUrl.startsWith("http"))
+    ? metaUrl
+    : (window.location.hostname.indexOf("bhagadbilla.com") !== -1 ? "https://bhagadbilla.tech/api/ticker" : (metaUrl || "/api/ticker"));
   var panel = document.getElementById("mkt-panel"), track = document.querySelector(".ticker .track");
   var prev = {};
   var fmt = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -34,7 +37,21 @@
   }
 
   function poll() {
-    fetch(URL_, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(render).catch(function () {});
+    fetch(URL_, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok && URL_ !== "https://bhagadbilla.tech/api/ticker") {
+          URL_ = "https://bhagadbilla.tech/api/ticker";
+          return fetch(URL_, { cache: "no-store" }).then(function (r2) { return r2.ok ? r2.json() : null; });
+        }
+        return r.ok ? r.json() : null;
+      })
+      .then(render)
+      .catch(function () {
+        if (URL_ !== "https://bhagadbilla.tech/api/ticker") {
+          URL_ = "https://bhagadbilla.tech/api/ticker";
+          fetch(URL_, { cache: "no-store" }).then(function (r2) { return r2.ok ? r2.json() : null; }).then(render).catch(function () {});
+        }
+      });
   }
   poll();
   setInterval(function () { if (!document.hidden) poll(); }, 5000);
