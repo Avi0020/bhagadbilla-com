@@ -188,7 +188,7 @@ body.wide .foot{max-width:820px}
       <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:var(--up)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
       <div><div class="bname">Index Signals</div><div class="bsub"><span class="dot" id="mDot"></span><span id="mLabel">—</span><span id="mLive"></span></div></div>
     </div>
-    <div class="hb"><button class="icon" id="btnAccount" aria-label="Account" title="Account" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button><button class="icon" id="btnTheme" aria-label="Switch theme" title="Switch between light and dark"></button><button class="icon" id="btnLayout" aria-label="Switch layout" title="Switch layout: auto / desktop / mobile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button><button class="icon" id="btnSettings" aria-label="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
+    <div class="hb"><span id="trialBadge" class="pill" style="display:none;cursor:pointer;margin-right:6px"></span><button class="icon" id="btnAccount" aria-label="Account" title="Account" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button><button class="icon" id="btnTheme" aria-label="Switch theme" title="Switch between light and dark"></button><button class="icon" id="btnLayout" aria-label="Switch layout" title="Switch layout: auto / desktop / mobile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button><button class="icon" id="btnSettings" aria-label="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
   </header>
   <div class="banner" id="banner" hidden></div>
   <section class="tiles" id="tiles"></section>
@@ -1142,11 +1142,24 @@ function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.bro
 /* ============================== ACCOUNTS: sign up, log in, account menu, owner admin ==============================
    With accounts on (AUTH.mode 'users') everyone logs in first. The account id is decided by the login session on the server; this page never sends or chooses one.
    Browser-side copies (paper account, settings) are stored per account (LS.ns), so two people on one device never see each other's data. */
-const authPost=async(action,body)=>{const r=await fetch('api.php?auth='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{}),cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){const e=new Error(j.message||('HTTP '+r.status));e.code=r.status;throw e}return j};
-const authGet=async a=>{const r=await fetch('api.php?auth='+a,{cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error')throw new Error(j.message||('HTTP '+r.status));return j};
+const authPost=async(action,body)=>{const r=await fetch('api.php?auth='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{}),cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){if(j.auth==='trial_expired')toast(j.message||'Trial expired');const e=new Error(j.message||('HTTP '+r.status));e.code=r.status;throw e}return j};
+const authGet=async a=>{const r=await fetch('api.php?auth='+a,{cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){if(j.auth==='trial_expired')toast(j.message||'Trial expired');throw new Error(j.message||('HTTP '+r.status))}return j};
 function authExpired(){if(RUN||S.authShown)return;S.authShown=true;showAuth('Your session ended. Please log in again.')}
 const canTrade=()=>AUTH.mode!=='users'||(AUTH.user&&(AUTH.user.role==='admin'||AUTH.user.role==='runner'));
-function applyAuthUI(){const b=$('#btnAccount');if(b){b.hidden=!(AUTH.mode==='users'&&AUTH.user&&AUTH.user.role!=='runner');if(AUTH.user)b.title='Account: '+AUTH.user.username}
+function applyAuthUI(){
+  const b=$('#btnAccount');if(b){b.hidden=!(AUTH.mode==='users'&&AUTH.user&&AUTH.user.role!=='runner');if(AUTH.user)b.title='Account: '+AUTH.user.username}
+  const tb=$('#trialBadge');
+  if(tb){
+    const u=AUTH.user;
+    if(u&&AUTH.mode==='users'&&u.role!=='runner'){
+      tb.style.display='inline-flex';
+      if(u.role==='admin'){tb.className='pill p-up';tb.textContent='Owner';tb.title='Owner account (Unlimited)'}
+      else if(u.plan==='unlimited'){tb.className='pill p-up';tb.textContent='⭐ Unlimited';tb.title='Unlimited access'}
+      else if(u.expired){tb.className='pill p-dn';tb.textContent='⚠️ Expired ('+(u.inactiveDays||0)+'d)';tb.title='Trial expired '+u.inactiveDays+' day(s) ago (15-day grace period)'}
+      else{tb.className='pill p-amb';tb.textContent='⏱ Trial: '+u.daysLeft+'d left';tb.title='10-day trial: '+u.daysLeft+' day(s) left'}
+      tb.onclick=accountSheet;
+    }else tb.style.display='none';
+  }
   const f=$('#footNote');if(f)f.textContent=AUTH.mode==='users'&&AUTH.user&&AUTH.user.role==='member'?' This site places no real orders for you: it is for research and paper trading only.':''}
 function showAuth(note,tab){
   const must=AUTH.user&&AUTH.user.mustChange;S.authTab=tab||S.authTab||(AUTH.first?'signup':'login');
@@ -1240,7 +1253,12 @@ function showAuth(note,tab){
   const f=$('#aEmail')||$('#aUser')||$('#aOld');if(f)setTimeout(()=>f.focus(),50)}
 async function authLogout(){try{await authPost('logout',{})}catch(e){}LS.del('paper');location.reload()}
 function accountSheet(){const u=AUTH.user;if(!u)return;
-  openSheet(`<h2>${esc(u.username)}</h2><div class="sub" style="margin:4px 0 0">${u.role==='admin'?'Owner account':'Member account'} · research and paper trading${u.role==='admin'?', plus the owner tools below':' only'}</div>
+  let tPill='';
+  if(u.role==='admin')tPill='<span class="pill p-up">Owner · Unlimited</span>';
+  else if(u.plan==='unlimited')tPill='<span class="pill p-up">⭐ Unlimited Access</span>';
+  else if(u.expired)tPill='<span class="pill p-dn">⚠️ Trial Expired ('+(u.inactiveDays||0)+'d inactive)</span>';
+  else tPill='<span class="pill p-amb">⏱ 10-Day Trial ('+(u.daysLeft||0)+'d left)</span>';
+  openSheet(`<h2>${esc(u.username)}</h2><div style="margin:4px 0 8px">${tPill}</div><div class="sub" style="margin:4px 0 0">${u.role==='admin'?'Owner account':'Member account'} · research and paper trading${u.role==='admin'?', plus the owner tools below':' only'}</div>
   <div class="c-act" style="margin-top:12px"><button class="btn2" id="outGo">Log out</button></div>
   ${u.role==='admin'?'<div id="adm"><div class="sub">Loading…</div></div>':''}
   <h3>Change password</h3>
@@ -1257,19 +1275,65 @@ function accountSheet(){const u=AUTH.user;if(!u)return;
   if(u.role==='admin')admLoad()}
 /* ---- owner: invites and people ---- */
 const admDate=ts=>ts?new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'never';
-async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i]=await Promise.all([authGet('admin_users'),authGet('admin_invites')]);S.adm={users:u.users,invites:i.invites,max:u.max};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i]=await Promise.all([authGet('admin_users'),authGet('admin_invites')]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUTH.user.id;
+  const st=A.stats||{totalOnboarded:A.users.length,activeTrials:0,expiredTrials:0,inactiveOver15Days:0,unlimitedCount:0};
   el.innerHTML=`<h3>Invite a friend</h3><div class="sub">Make a code, send it to your friend. They open the site, choose Create account and type it. A code works once.</div>
   <div class="c-act"><select id="admDays"><option value="7">ends in 7 days</option><option value="14" selected>ends in 14 days</option><option value="30">ends in 30 days</option></select><button class="btn2 on" id="admNew">Make invite code</button></div><div id="admCode"></div>
-  <h3>People (${A.users.length} of ${A.max})</h3><div class="list out">${A.users.map(x=>`<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(x.username)}${x.email?' <span class="mu" style="font-size:12px;font-weight:normal">('+esc(x.email)+')</span>':''} <span class="tag">${x.role==='admin'?'Owner':'Member'}</span>${x.disabled?' <span class="tag" style="color:var(--dn)">Off</span>':''}</div><div class="s num">last visit ${admDate(x.last)} · ${x.trades} closed paper trade${x.trades===1?'':'s'}${x.open?', '+x.open+' open':''}</div>
-    ${x.id===me?'':`<div class="c-act" style="margin-top:6px;flex-wrap:wrap"><button class="sbtn" data-adm="${x.disabled?'enable':'disable'}|${x.id}">${x.disabled?'Switch on':'Switch off'}</button><button class="sbtn" data-adm="reset|${x.id}">Reset password</button><button class="sbtn" data-adm="delete|${x.id}" style="color:var(--dn)">Delete</button></div>`}</div></div>`).join('')||'<div class="empty" style="padding:14px">Nobody yet.</div>'}</div>
+  <h3>Onboarding &amp; Trial Overview</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0 16px">
+    <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--tx)">${st.totalOnboarded}</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:2px">Total Onboarded</div>
+    </div>
+    <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--up)">${st.activeTrials}</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:2px">Active (10d Trial)</div>
+    </div>
+    <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--amb)">${st.expiredTrials}</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:2px">Trial Expired</div>
+    </div>
+    <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--dn)">${st.inactiveOver15Days}</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:2px">Inactive &gt; 15 Days</div>
+    </div>
+  </div>
+  <h3>People (${A.users.length} of ${A.max})</h3><div class="list out">${A.users.map(x=>{
+    const isAdm=x.role==='admin';
+    let tTag='';
+    if(isAdm)tTag='<span class="tag">Owner</span>';
+    else if(x.plan==='unlimited')tTag='<span class="tag" style="color:var(--up)">⭐ Unlimited</span>';
+    else if(x.expired)tTag='<span class="tag" style="color:var(--dn)">⚠️ Expired (inactive '+x.inactiveDays+'d'+(x.inactiveDays>=15?' · &gt;15d':'')+')</span>';
+    else tTag='<span class="tag" style="color:var(--amb)">⏱ Trial: '+x.daysLeft+'d left</span>';
+    return `<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(x.username)}${x.email?' <span class="mu" style="font-size:12px;font-weight:normal">('+esc(x.email)+')</span>':''} ${tTag}${x.disabled?' <span class="tag" style="color:var(--dn)">Off</span>':''}</div><div class="s num">last visit ${admDate(x.last)} · ${x.trades} closed paper trade${x.trades===1?'':'s'}${x.open?', '+x.open+' open':''}</div>
+    ${x.id===me?'':`<div class="c-act" style="margin-top:6px;flex-wrap:wrap">
+      <button class="sbtn" data-adm="extend_trial|${x.id}">+10d Trial</button>
+      <button class="sbtn" data-adm="plan|${x.id}">${x.plan==='unlimited'?'Switch to Trial':'Make Unlimited'}</button>
+      <button class="sbtn" data-adm="${x.disabled?'enable':'disable'}|${x.id}">${x.disabled?'Switch on':'Switch off'}</button>
+      <button class="sbtn" data-adm="reset|${x.id}">Reset password</button>
+      <button class="sbtn" data-adm="delete|${x.id}" style="color:var(--dn)">Delete</button>
+    </div>`}</div></div>`;
+  }).join('')||'<div class="empty" style="padding:14px">Nobody yet.</div>'}</div>
   <div id="admMsg"></div>
   <h3>Invite codes</h3>${A.invites.length?`<div class="list out">${A.invites.map(i=>`<div class="row"><div><div class="n num">…${esc(i.hint)}${i.note?' · '+esc(i.note):''}</div><div class="s">${i.used?'used by '+esc(i.usedBy):i.expired?'expired':'open until '+admDate(i.exp)}</div></div><span class="pill ${i.used?'p-up':i.expired?'p-mu':'p-amb'}">${i.used?'Used':i.expired?'Expired':'Open'}</span></div>`).join('')}</div>`:'<div class="sub">No codes made yet.</div>'}`;
   $('#admNew').onclick=async()=>{try{const j=await authPost('admin_invite',{count:1,days:+$('#admDays').value});$('#admCode').innerHTML=`<div class="codebox">${esc(j.codes[0])}</div><div class="sub" style="margin-top:8px">Shown only now: copy it and send it. It works once and ends in ${j.days} days.</div><div class="c-act"><button class="btn2" id="admCopy">Copy code</button></div>`;
     $('#admCopy').onclick=()=>{try{navigator.clipboard.writeText(j.codes[0]);toast('Code copied')}catch(e){toast('Select the code and copy it')}};const i=await authGet('admin_invites');S.adm.invites=i.invites}catch(e){$('#admCode').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
   el.onclick=async e=>{const b=e.target.closest('button[data-adm]');if(!b)return;const [act,id]=b.dataset.adm.split('|'),key=b.dataset.adm,m=$('#admMsg');
-    if(S.admArm!==key){S.admArm=key;b.textContent='Sure? Press again';setTimeout(()=>{if(S.admArm===key){S.admArm='';admDraw()}},4000);return}
-    S.admArm='';try{const j=await authPost('admin_'+act,{id});await admLoad();const mm=$('#admMsg');if(mm)mm.innerHTML=act==='reset'?`<div class="verdict amb"><b>Temporary password for ${esc(j.username)}</b><span>Send it to them. It is shown only now. They must choose their own at the next login.</span><div class="codebox" style="margin-top:8px">${esc(j.temp)}</div></div>`:`<div class="sub">${act==='delete'?'Deleted '+esc(j.deleted)+' and their data.':'Done.'}</div>`}catch(x){m.innerHTML='<div class="err">'+esc(x.message)+'</div>'}}}
+    if(act==='delete'||act==='disable'||act==='reset'){
+      if(S.admArm!==key){S.admArm=key;b.textContent='Sure? Press again';setTimeout(()=>{if(S.admArm===key){S.admArm='';admDraw()}},4000);return}
+    }
+    S.admArm='';try{
+      const body={id};
+      if(act==='extend_trial')body.days=10;
+      const j=await authPost('admin_'+act,body);
+      await admLoad();
+      const mm=$('#admMsg');
+      if(mm)mm.innerHTML=act==='reset'?`<div class="verdict amb"><b>Temporary password for ${esc(j.username)}</b><span>Send it to them. It is shown only now. They must choose their own at the next login.</span><div class="codebox" style="margin-top:8px">${esc(j.temp)}</div></div>`:
+        act==='extend_trial'?`<div class="sub">Added 10 days to trial for <b>${esc(j.username)}</b>.</div>`:
+        act==='plan'?`<div class="sub">Changed plan to <b>${esc(j.plan)}</b> for <b>${esc(j.username)}</b>.</div>`:
+        `<div class="sub">${act==='delete'?'Deleted '+esc(j.deleted)+' and their data.':'Done.'}</div>`;
+    }catch(x){if(m)m.innerHTML='<div class="err">'+esc(x.message)+'</div>'}}}
 
 /* ============================== RESULTS: your accuracy, the engine's live record, the tested history ==============================
    Everything here is computed from CLOSED paper trades. Your numbers come only from your own account. */
@@ -1371,7 +1435,7 @@ if(RUN){S.auto=true;svcApi('lease',{id:CID,runner:true}).catch(()=>{});setInterv
     if(j.now>0){const off=j.now-Date.now();if(Math.abs(off)>1500){const n0=Date.now;Date.now=()=>n0.call(Date)+off;S.clockOff=off}}   /* run on exchange time, not the PC clock */
     S.conn=j;
     AUTH.mode=(j.auth&&j.auth.mode)||'pin';AUTH.user=(j.auth&&j.auth.user)||null;AUTH.first=!!(j.auth&&j.auth.firstRun);AUTH.setupReady=!!(j.auth&&j.auth.setupReady);AUTH.pinDefault=!!(j.auth&&j.auth.pinDefault);
-    if(AUTH.mode==='users'){if(!AUTH.user||AUTH.user.mustChange){showAuth();return}LS.ns=AUTH.user.id+'_';applyAuthUI()}
+    if(AUTH.mode==='users'){if(!AUTH.user||AUTH.user.mustChange){showAuth();return}LS.ns=AUTH.user.id+'_';applyAuthUI();if(AUTH.user.expired)ban('Your 10-day trial has ended. Account is inactive (day '+(AUTH.user.inactiveDays||0)+' of 15-day grace period). Contact admin to activate full access.')}
     else if(AUTH.pinDefault)ban('This server still uses the default PIN, so it refuses all requests. Set APP_PIN in auth-local.php (or switch on accounts).');
     if(!j.configured){S.yahoo=true;ban('Free mode: index prices from Yahoo (can lag a few minutes); option premiums are estimates from India VIX. Add the Upstox token in api.php for real premiums and OI.')}}
   catch(e){S.demo=true;ban('Demo mode: simulated prices and option chain. Upload to your Hostinger site for live data.')}

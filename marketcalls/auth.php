@@ -139,7 +139,30 @@ function a_log($ev, $name = '', $extra = '') {
 }
 
 /* ---------------- who is calling ---------------- */
-function a_pub($u) { return ['id' => $u['id'], 'username' => $u['username'], 'email' => $u['email'] ?? '', 'role' => $u['role'], 'mustChange' => !empty($u['mustChange'])]; }
+function a_pub($u) {
+    $now = time();
+    $role = $u['role'] ?? 'member';
+    $isAdmin = $role === 'admin' || $role === 'runner';
+    $plan = $u['plan'] ?? ($isAdmin ? 'unlimited' : 'trial');
+    $created = (int)($u['created'] ?? $now);
+    $trialExp = (int)($u['trial_exp'] ?? ($created + 10 * 86400));
+    $daysLeft = $isAdmin || $plan === 'unlimited' ? null : max(0, (int)ceil(($trialExp - $now) / 86400));
+    $expired = !$isAdmin && $plan === 'trial' && ($trialExp < $now);
+    $inactiveDays = $expired ? (int)floor(($now - $trialExp) / 86400) : 0;
+
+    return [
+        'id' => $u['id'],
+        'username' => $u['username'],
+        'email' => $u['email'] ?? '',
+        'role' => $role,
+        'plan' => $plan,
+        'trialExp' => $isAdmin || $plan === 'unlimited' ? null : $trialExp,
+        'daysLeft' => $daysLeft,
+        'expired' => $expired,
+        'inactiveDays' => $inactiveDays,
+        'mustChange' => !empty($u['mustChange'])
+    ];
+}
 function a_pin_ok() { return !(APP_PIN === '2468' && !a_is_local()); }   // the default PIN is never accepted on a public host
 function auth_user() {
     static $u = false; if ($u !== false) return $u;
@@ -168,7 +191,18 @@ function a_csrf() {
 function auth_gate($roles = null) {
     $u = auth_user();
     if (!$u) out(401, ['status' => 'error', 'auth' => 'login', 'message' => AUTH_MODE === 'pin' ? (a_pin_ok() ? 'Wrong PIN' : 'This server still uses the default PIN. Set APP_PIN in auth-local.php (or switch on accounts).') : 'Please log in.']);
-    if (($u['via'] ?? '') === 'session') { if ($_SERVER['REQUEST_METHOD'] !== 'GET') a_csrf(); if (!empty($u['mustChange'])) out(403, ['status' => 'error', 'auth' => 'change', 'message' => 'Change your password first.']); }
+    if (($u['via'] ?? '') === 'session') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') a_csrf();
+        if (!empty($u['mustChange'])) out(403, ['status' => 'error', 'auth' => 'change', 'message' => 'Change your password first.']);
+        if (!empty($u['expired'])) {
+            out(403, [
+                'status' => 'error',
+                'auth' => 'trial_expired',
+                'message' => 'Your 10-day trial has ended. Contact admin to extend your access.',
+                'inactiveDays' => $u['inactiveDays'] ?? 0
+            ]);
+        }
+    }
     if ($roles && !in_array($u['role'], $roles, true)) out(403, ['status' => 'error', 'message' => 'This is not available on your account.']);
     return $u;
 }
@@ -352,7 +386,9 @@ function auth_handle($action) {
                 }
             }
             $id = bin2hex(random_bytes(8));
-            $rec = ['id' => $id, 'username' => $name, 'email' => $email, 'hash' => a_hash($pw), 'role' => $role, 'created' => time(), 'last' => time(), 'pwv' => 1, 'accepted' => time()];
+            $plan = $first ? 'unlimited' : 'trial';
+            $trialExp = $first ? null : (time() + 10 * 86400);
+            $rec = ['id' => $id, 'username' => $name, 'email' => $email, 'hash' => a_hash($pw), 'role' => $role, 'plan' => $plan, 'trial_exp' => $trialExp, 'created' => time(), 'last' => time(), 'pwv' => 1, 'accepted' => time()];
             $d['users'][$id] = $rec; a_save_users($d);
             if (!$first && $hit !== null) { $inv['list'][$hit]['used'] = true; $inv['list'][$hit]['usedBy'] = $name; $inv['list'][$hit]['usedAt'] = time(); a_save_invites($inv); }
             return ['rec' => $rec, 'first' => $first];
@@ -424,12 +460,50 @@ function auth_handle($action) {
     /* ---- owner only ---- */
     if ($me['role'] !== 'admin') out(403, ['status' => 'error', 'message' => 'Only the owner can do this.']);
     if ($action === 'admin_users') {
-        $rows = []; foreach (a_users()['users'] as $x) {
+        $rows = [];
+        $stats = [
+            'totalOnboarded' => 0,
+            'activeTrials' => 0,
+            'expiredTrials' => 0,
+            'inactiveOver15Days' => 0,
+            'unlimitedCount' => 0
+        ];
+        foreach (a_users()['users'] as $x) {
             $book = a_read(a_udir($x['id']) . '/paper.php')['book'] ?? [];
-            $rows[] = ['id' => $x['id'], 'username' => $x['username'], 'email' => $x['email'] ?? '', 'role' => $x['role'], 'created' => $x['created'], 'last' => $x['last'] ?? 0, 'disabled' => !empty($x['disabled']), 'trades' => count((array)($book['hist'] ?? [])), 'open' => count((array)($book['pos'] ?? []))];
+            $pub = a_pub($x);
+            $row = [
+                'id' => $x['id'],
+                'username' => $x['username'],
+                'email' => $x['email'] ?? '',
+                'role' => $x['role'],
+                'plan' => $pub['plan'],
+                'trialExp' => $pub['trialExp'],
+                'daysLeft' => $pub['daysLeft'],
+                'expired' => $pub['expired'],
+                'inactiveDays' => $pub['inactiveDays'],
+                'created' => $x['created'],
+                'last' => $x['last'] ?? 0,
+                'disabled' => !empty($x['disabled']),
+                'trades' => count((array)($book['hist'] ?? [])),
+                'open' => count((array)($book['pos'] ?? []))
+            ];
+            $rows[] = $row;
+            $stats['totalOnboarded']++;
+            if ($row['role'] === 'admin' || $row['plan'] === 'unlimited') {
+                $stats['unlimitedCount']++;
+            } elseif ($row['plan'] === 'trial') {
+                if ($row['expired']) {
+                    $stats['expiredTrials']++;
+                    if ($row['inactiveDays'] >= 15) {
+                        $stats['inactiveOver15Days']++;
+                    }
+                } else {
+                    $stats['activeTrials']++;
+                }
+            }
         }
         usort($rows, function ($a, $b) { return $b['created'] <=> $a['created']; });
-        out(200, ['status' => 'success', 'users' => $rows, 'max' => MAX_USERS]);
+        out(200, ['status' => 'success', 'users' => $rows, 'stats' => $stats, 'max' => MAX_USERS]);
     }
     if ($action === 'admin_invites') {
         $rows = []; foreach (a_invites()['list'] as $i) $rows[] = ['hint' => $i['hint'], 'created' => $i['created'], 'exp' => $i['exp'], 'note' => $i['note'] ?? '', 'used' => !empty($i['used']), 'usedBy' => $i['usedBy'] ?? '', 'expired' => $i['exp'] < time()];
@@ -446,14 +520,37 @@ function auth_handle($action) {
         a_log('admin-invite', $me['username'], count($codes) . ' code(s)');
         out(200, ['status' => 'success', 'codes' => $codes, 'days' => $days]);
     }
-    if (in_array($action, ['admin_disable', 'admin_enable', 'admin_reset', 'admin_delete', 'admin_role'], true)) {
+    if (in_array($action, ['admin_disable', 'admin_enable', 'admin_reset', 'admin_delete', 'admin_role', 'admin_extend_trial', 'admin_plan'], true)) {
         $id = (string)($in['id'] ?? ''); if (!preg_match('/^[a-f0-9]{16}$/', $id)) out(400, ['status' => 'error', 'message' => 'Bad user id']);
-        if ($id === $me['id'] && $action !== 'admin_reset') out(422, ['status' => 'error', 'message' => 'Use the account menu for your own account.']);
+        if ($id === $me['id'] && !in_array($action, ['admin_reset'], true)) out(422, ['status' => 'error', 'message' => 'Use the account menu for your own account.']);
         $res = a_with_lock(function () use ($id, $action, $in) {
             $d = a_users(); $rec = $d['users'][$id] ?? null; if (!$rec) return ['err' => 'User not found.']; $extra = [];
             if ($action === 'admin_disable') { $rec['disabled'] = true; $rec['pwv'] = (int)($rec['pwv'] ?? 0) + 1; }
             elseif ($action === 'admin_enable') { unset($rec['disabled']); }
             elseif ($action === 'admin_role') { $r = (string)($in['role'] ?? ''); if (!in_array($r, ['member', 'admin'], true)) return ['err' => 'Bad role.']; $rec['role'] = $r; }
+            elseif ($action === 'admin_plan') {
+                $p = (string)($in['plan'] ?? '');
+                if (!in_array($p, ['trial', 'unlimited'], true)) {
+                    $p = ($rec['plan'] ?? 'trial') === 'unlimited' ? 'trial' : 'unlimited';
+                }
+                $rec['plan'] = $p;
+                if ($p === 'trial') {
+                    $rec['trial_exp'] = time() + (10 * 86400);
+                } else {
+                    $rec['trial_exp'] = null;
+                }
+                $extra['plan'] = $p;
+            }
+            elseif ($action === 'admin_extend_trial') {
+                $days = max(1, min(365, (int)($in['days'] ?? 10)));
+                $now = time();
+                $currExp = isset($rec['trial_exp']) && $rec['trial_exp'] !== null ? (int)$rec['trial_exp'] : ((int)($rec['created'] ?? $now) + 10 * 86400);
+                $base = max($now, $currExp);
+                $rec['trial_exp'] = $base + ($days * 86400);
+                $rec['plan'] = 'trial';
+                $extra['trialExp'] = $rec['trial_exp'];
+                $extra['daysAdded'] = $days;
+            }
             elseif ($action === 'admin_reset') { $al = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'; $tmp = ''; for ($i = 0; $i < 12; $i++) $tmp .= $al[random_int(0, strlen($al) - 1)]; $rec['hash'] = a_hash($tmp); $rec['pwv'] = (int)($rec['pwv'] ?? 0) + 1; $rec['mustChange'] = true; $extra['temp'] = $tmp; }
             elseif ($action === 'admin_delete') { unset($d['users'][$id]); a_save_users($d); return ['deleted' => $rec['username']]; }
             $d['users'][$id] = $rec; a_save_users($d); return ['ok' => true, 'username' => $rec['username']] + $extra;
