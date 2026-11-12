@@ -53,14 +53,24 @@ defined('TEST_NOGAP') || define('TEST_NOGAP', (getenv('SIGNALS_TEST_UPSTOX') && 
 defined('ORDER_GAP_SECONDS') || define('ORDER_GAP_SECONDS', TEST_NOGAP ? 0 : 3);     // minimum seconds between orders
 
 function t_conf() {
+    $mf = ix_data_dir() . '/trade-mode.php';
+    $dynMode = null;
+    if (is_file($mf)) {
+        $dm = t_read($mf);
+        if (isset($dm['mode']) && in_array($dm['mode'], ['off', 'dry', 'live'], true)) {
+            $dynMode = $dm['mode'];
+        }
+    }
     $test = getenv('SIGNALS_TEST_UPSTOX');   // only used by the automated tests, which point everything at a fake Upstox
     if ($test) {
-        return ['mode' => getenv('SIGNALS_TEST_MODE') ?: 'dry', 'api' => $test, 'hft' => $test,
+        $mode = $dynMode ?? (getenv('SIGNALS_TEST_MODE') ?: 'dry');
+        return ['mode' => $mode, 'api' => $test, 'hft' => $test,
                 'data' => ix_data_dir(),
                 'cid' => 'test-id', 'secret' => 'test-secret', 'redirect' => 'http://localhost/api.php?callback=1', 'anytime' => true,
                 'broker' => getenv('SIGNALS_TEST_BROKER') ?: 'upstox', 'ind' => $test];
     }
-    return ['mode' => ORDER_MODE, 'api' => 'https://api.upstox.com', 'hft' => 'https://api-hft.upstox.com', 'data' => ix_data_dir(),
+    $mode = $dynMode ?? ORDER_MODE;
+    return ['mode' => $mode, 'api' => 'https://api.upstox.com', 'hft' => 'https://api-hft.upstox.com', 'data' => ix_data_dir(),
             'cid' => UPSTOX_CLIENT_ID, 'secret' => UPSTOX_CLIENT_SECRET, 'redirect' => UPSTOX_REDIRECT_URI, 'anytime' => false,
             'broker' => ORDER_BROKER, 'ind' => 'https://api.indstocks.com'];
 }

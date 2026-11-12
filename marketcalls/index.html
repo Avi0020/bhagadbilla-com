@@ -919,7 +919,7 @@ const trdInd=()=>S.trd.status&&S.trd.status.broker==='indstocks';
 const trdOn=()=>S.trd.status&&S.trd.status.mode&&S.trd.status.mode!=='off';
 const trdBanner=()=>{const m=S.trd.status.mode;return m==='live'?'<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>Orders go to your '+trdName()+' account. Check the contract, quantity and price every time.</span></div>':'<div class="verdict amb" style="margin:10px 0"><b>DRY RUN — nothing is sent</b><span>Orders are checked and logged exactly as in live mode, but they are not sent to '+trdName()+'.</span></div>'};
 function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="err">${esc(c.err)}</div></div>`:'';
-  if(s.mode==='off')return`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>Switched off</span></div></div><span class="pill p-mu">Off</span></div><div class="sub" style="margin:8px 0 0">This app can send orders to your Upstox or INDstocks account, but it is switched off. To turn it on, set <b style="color:var(--tx)">ORDER_MODE</b> (and <b style="color:var(--tx)">ORDER_BROKER</b>, upstox or indstocks) in <b style="color:var(--tx)">trade-local.php</b> on your server: first <b style="color:var(--tx)">dry</b> (checks and logs, sends nothing), later <b style="color:var(--tx)">live</b>.</div></div>`;
+  if(s.mode==='off')return`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>Switched off</span></div></div><span class="pill p-mu">Off</span></div><div class="sub" style="margin:8px 0 0">Real trading is currently switched off.${canTrade()?' As admin, you can activate real trading with Email OTP in the Account admin panel.':''}</div>${canTrade()?'<div class="c-act" style="margin-top:10px"><button class="btn2 on" onclick="accountSheet()">Open Admin Trading Switch</button></div>':''}</div>`;
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>${s.connected?'Connected'+(s.user?' as '+esc(s.user):''):'Not connected today'}</span><span>· ${s.sentToday}/${s.limits.perDay} orders today</span></div></div><span class="pill ${s.mode==='live'?'p-dn':'p-amb'}">${s.mode==='live'?'Live':'Dry run'}</span></div>${trdBanner()}`;
   if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
@@ -1275,11 +1275,43 @@ function accountSheet(){const u=AUTH.user;if(!u)return;
   if(u.role==='admin')admLoad()}
 /* ---- owner: invites and people ---- */
 const admDate=ts=>ts?new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'never';
-async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i]=await Promise.all([authGet('admin_users'),authGet('admin_invites')]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i,tm]=await Promise.all([authGet('admin_users'),authGet('admin_invites'),authGet('admin_trade_status').catch(()=>null)]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats,trade:tm};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUTH.user.id;
   const st=A.stats||{totalOnboarded:A.users.length,activeTrials:0,expiredTrials:0,inactiveOver15Days:0,unlimitedCount:0};
-  el.innerHTML=`<h3>Invite a friend</h3><div class="sub">Make a code, send it to your friend. They open the site, choose Create account and type it. A code works once.</div>
-  <div class="c-act"><select id="admDays"><option value="7">ends in 7 days</option><option value="14" selected>ends in 14 days</option><option value="30">ends in 30 days</option></select><button class="btn2 on" id="admNew">Make invite code</button></div><div id="admCode"></div>
+  const trd=A.trade||{mode:'off',broker:'upstox',hasEmail:false,emailMasked:''};
+  const isLive=trd.mode==='live',isDry=trd.mode==='dry';
+  el.innerHTML=`<h3>Real Trading Account Mode (Live Orders)</h3>
+  <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:15px;font-weight:600">Trading Mode:
+          <span class="pill ${isLive?'p-dn':isDry?'p-amb':'p-mu'}" style="margin-left:6px;font-weight:bold">${isLive?'🔴 LIVE — Real Orders Active':isDry?'🟡 Dry Run (Simulated)':'⚪ Switched OFF'}</span>
+        </div>
+        <div class="sub" style="margin:4px 0 0">Broker: <b>${esc(trd.broker==='indstocks'?'INDstocks':'Upstox')}</b>${trd.emailMasked?' · Registered email: <b>'+esc(trd.emailMasked)+'</b>':''}</div>
+      </div>
+      <div class="c-act" style="margin:0">
+        ${isLive?`
+          <button class="btn2" id="btnTrdOff" style="background:var(--dn);color:#fff;border-color:var(--dn);font-weight:bold">🛑 Turn OFF Real Trading</button>
+          <button class="btn2" id="btnTrdDry">Switch to Dry Run</button>
+        `:`
+          <button class="btn2 on" id="btnTrdStartLive" style="font-weight:bold">⚡ Start Real Trading</button>
+          ${!isDry?'<button class="btn2" id="btnTrdDry">Switch to Dry Run</button>':''}
+          ${trd.mode!=='off'?'<button class="btn2" id="btnTrdOff">Turn OFF</button>':''}
+        `}
+      </div>
+    </div>
+    <div id="admTrdOtpWrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--brd)">
+      ${!trd.hasEmail?`<div class="fld" style="margin-bottom:8px"><label>Owner email address for verification OTP</label><input id="admTrdEmailInput" type="email" placeholder="you@example.com" style="width:240px"></div>`:''}
+      <div class="sub" id="admTrdOtpNote" style="margin-bottom:8px">A 6-digit verification code will be sent to your registered email to authorize live trading.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="admTrdOtpInput" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit OTP" style="width:130px;letter-spacing:3px;font-weight:bold;text-align:center;display:none">
+        <button class="btn2 on" id="btnTrdVerifyLive" style="display:none">Verify &amp; Activate Live Trading</button>
+        <button class="btn2" id="btnTrdSendOtp">Send OTP to Email</button>
+        <button class="btn2" id="btnTrdCancelLive">Cancel</button>
+      </div>
+    </div>
+    <div id="admTrdMsg" style="margin-top:8px"></div>
+  </div>
   <h3>Onboarding &amp; Trial Overview</h3>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0 16px">
     <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
@@ -1299,6 +1331,8 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
       <div style="font-size:11px;color:var(--mu);margin-top:2px">Inactive &gt; 15 Days</div>
     </div>
   </div>
+  <h3>Invite a friend</h3><div class="sub">Make a code, send it to your friend. They open the site, choose Create account and type it. A code works once.</div>
+  <div class="c-act"><select id="admDays"><option value="7">ends in 7 days</option><option value="14" selected>ends in 14 days</option><option value="30">ends in 30 days</option></select><button class="btn2 on" id="admNew">Make invite code</button></div><div id="admCode"></div>
   <h3>People (${A.users.length} of ${A.max})</h3><div class="list out">${A.users.map(x=>{
     const isAdm=x.role==='admin';
     let tTag='';
@@ -1317,6 +1351,63 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
   }).join('')||'<div class="empty" style="padding:14px">Nobody yet.</div>'}</div>
   <div id="admMsg"></div>
   <h3>Invite codes</h3>${A.invites.length?`<div class="list out">${A.invites.map(i=>`<div class="row"><div><div class="n num">…${esc(i.hint)}${i.note?' · '+esc(i.note):''}</div><div class="s">${i.used?'used by '+esc(i.usedBy):i.expired?'expired':'open until '+admDate(i.exp)}</div></div><span class="pill ${i.used?'p-up':i.expired?'p-mu':'p-amb'}">${i.used?'Used':i.expired?'Expired':'Open'}</span></div>`).join('')}</div>`:'<div class="sub">No codes made yet.</div>'}`;
+  const bStart=$('#btnTrdStartLive'),bOff=$('#btnTrdOff'),bDry=$('#btnTrdDry');
+  const otpWrap=$('#admTrdOtpWrap'),otpNote=$('#admTrdOtpNote'),otpInput=$('#admTrdOtpInput');
+  const bSend=$('#btnTrdSendOtp'),bVerify=$('#btnTrdVerifyLive'),bCancel=$('#btnTrdCancelLive'),trdMsg=$('#admTrdMsg');
+  if(bStart)bStart.onclick=()=>{otpWrap.style.display='block';bStart.style.display='none';if(bSend)bSend.click()};
+  if(bCancel)bCancel.onclick=()=>{otpWrap.style.display='none';if(bStart)bStart.style.display='';if(trdMsg)trdMsg.innerHTML=''};
+  if(bSend)bSend.onclick=async()=>{
+    bSend.disabled=true;bSend.textContent='Sending code…';if(trdMsg)trdMsg.innerHTML='';
+    const em=($('#admTrdEmailInput')?.value||'').trim();
+    try{
+      const res=await authPost('admin_trade_otp',em?{email:em}:{});
+      if(otpNote)otpNote.textContent=res.message||'Verification code sent to your email.';
+      if(otpInput){otpInput.style.display='inline-block';otpInput.value='';otpInput.focus()}
+      if(bVerify)bVerify.style.display='inline-block';
+      bSend.textContent='Resend OTP';bSend.disabled=false;
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bSend.textContent='Send OTP to Email';bSend.disabled=false;
+    }
+  };
+  if(bVerify)bVerify.onclick=async()=>{
+    const code=(otpInput?.value||'').trim();
+    if(!code||code.length<6){if(trdMsg)trdMsg.innerHTML='<div class="err">Please enter the 6-digit verification code.</div>';return}
+    bVerify.disabled=true;bVerify.textContent='Activating…';
+    try{
+      const res=await authPost('admin_switch_trading',{mode:'live',otp:code});
+      toast('Real Trading ACTIVATED (Live)');
+      await admLoad();trdLoad();
+      const m=$('#admTrdMsg');if(m)m.innerHTML='<div class="verdict up" style="margin-top:8px"><b>✓ '+esc(res.message)+'</b></div>';
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bVerify.disabled=false;bVerify.textContent='Verify & Activate Live Trading';
+    }
+  };
+  if(bOff)bOff.onclick=async()=>{
+    bOff.disabled=true;
+    try{
+      const res=await authPost('admin_switch_trading',{mode:'off'});
+      toast('Real Trading Switched OFF');
+      await admLoad();trdLoad();
+      const m=$('#admTrdMsg');if(m)m.innerHTML='<div class="sub">Real trading switched OFF safely.</div>';
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bOff.disabled=false;
+    }
+  };
+  if(bDry)bDry.onclick=async()=>{
+    bDry.disabled=true;
+    try{
+      const res=await authPost('admin_switch_trading',{mode:'dry'});
+      toast('Switched to Dry-Run mode');
+      await admLoad();trdLoad();
+      const m=$('#admTrdMsg');if(m)m.innerHTML='<div class="sub">Switched to Dry-Run mode.</div>';
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bDry.disabled=false;
+    }
+  };
   $('#admNew').onclick=async()=>{try{const j=await authPost('admin_invite',{count:1,days:+$('#admDays').value});$('#admCode').innerHTML=`<div class="codebox">${esc(j.codes[0])}</div><div class="sub" style="margin-top:8px">Shown only now: copy it and send it. It works once and ends in ${j.days} days.</div><div class="c-act"><button class="btn2" id="admCopy">Copy code</button></div>`;
     $('#admCopy').onclick=()=>{try{navigator.clipboard.writeText(j.codes[0]);toast('Code copied')}catch(e){toast('Select the code and copy it')}};const i=await authGet('admin_invites');S.adm.invites=i.invites}catch(e){$('#admCode').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
   el.onclick=async e=>{const b=e.target.closest('button[data-adm]');if(!b)return;const [act,id]=b.dataset.adm.split('|'),key=b.dataset.adm,m=$('#admMsg');

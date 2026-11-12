@@ -75,6 +75,13 @@ function a_save_invites($d) { a_write(ix_data_dir() . '/invites.php', $d); }
 function a_otps() { return a_read(ix_data_dir() . '/otps.php', ['otps' => []]); }
 function a_save_otps($d) { a_write(ix_data_dir() . '/otps.php', $d); }
 function a_email_ok($e) { return (bool)filter_var($e, FILTER_VALIDATE_EMAIL) && strlen($e) <= 100; }
+function a_mask_email($email) {
+    if (!$email || strpos($email, '@') === false) return '';
+    [$user, $domain] = explode('@', $email, 2);
+    $len = strlen($user);
+    $masked = $len <= 2 ? $user[0] . '*' : substr($user, 0, 2) . str_repeat('*', max(1, $len - 3)) . substr($user, -1);
+    return $masked . '@' . $domain;
+}
 function a_find_user($query) {
     $q = strtolower(trim((string)$query));
     if ($q === '') return null;
@@ -242,7 +249,7 @@ function auth_handle($action) {
     $m = $_SERVER['REQUEST_METHOD'];
     if ($action === 'me') out(200, ['status' => 'success'] + auth_public());
     if (AUTH_MODE !== 'users') out(400, ['status' => 'error', 'message' => 'Accounts are switched off on this server (single-PIN mode).']);
-    if ($m !== 'POST' && $action !== 'admin_users' && $action !== 'admin_invites') out(405, ['status' => 'error', 'message' => 'POST required']);
+    if ($m !== 'POST' && !in_array($action, ['admin_users', 'admin_invites', 'admin_trade_status'], true)) out(405, ['status' => 'error', 'message' => 'POST required']);
     if ($m === 'POST') a_csrf();
     $in = $m === 'POST' ? (json_decode((string)file_get_contents('php://input'), true) ?: []) : [];
     $ip = a_ip();
@@ -559,6 +566,129 @@ function auth_handle($action) {
         if (isset($res['deleted'])) a_user_dir_remove($id);
         a_log('admin-' . substr($action, 6), $me['username'], isset($res['username']) ? $res['username'] : (isset($res['deleted']) ? $res['deleted'] : $id));
         out(200, ['status' => 'success'] + $res);
+    }
+    if ($action === 'admin_trade_status') {
+        $mf = ix_data_dir() . '/trade-mode.php';
+        $tm = a_read($mf, []);
+        $mode = $tm['mode'] ?? (defined('ORDER_MODE') ? ORDER_MODE : 'off');
+        $broker = defined('ORDER_BROKER') ? ORDER_BROKER : 'upstox';
+        $email = $me['email'] ?? '';
+        out(200, [
+            'status' => 'success',
+            'mode' => $mode,
+            'broker' => $broker,
+            'hasEmail' => $email !== '',
+            'email' => $email,
+            'emailMasked' => a_mask_email($email),
+            'updated' => $tm['updated'] ?? null,
+            'updatedBy' => $tm['by'] ?? null
+        ]);
+    }
+    if ($action === 'admin_trade_otp') {
+        $email = strtolower(trim((string)($in['email'] ?? ($me['email'] ?? ''))));
+        if (!a_email_ok($email)) out(422, ['status' => 'error', 'message' => 'Please provide a valid registered email address.']);
+
+        if (empty($me['email']) || $me['email'] !== $email) {
+            a_with_lock(function () use ($me, $email) {
+                $d = a_users();
+                if (isset($d['users'][$me['id']])) {
+                    $d['users'][$me['id']]['email'] = $email;
+                    a_save_users($d);
+                }
+            });
+            $me['email'] = $email;
+        }
+
+        $otps = a_otps();
+        if (isset($otps['otps'][$email])) {
+            $last = (int)($otps['otps'][$email]['created'] ?? 0);
+            if (time() - $last < 60) {
+                $wait = 60 - (time() - $last);
+                out(429, ['status' => 'error', 'message' => "Please wait {$wait}s before requesting a new code."]);
+            }
+        }
+        if (!a_hit('totp:' . $ip, 6, 3600)) {
+            out(429, ['status' => 'error', 'message' => 'Too many verification code requests. Try again later.']);
+        }
+
+        $otp = sprintf('%06d', random_int(100000, 999999));
+        $otps['otps'][$email] = [
+            'hash' => a_hash($otp),
+            'exp' => time() + 600,
+            'attempts' => 0,
+            'created' => time(),
+            'purpose' => 'real_trading'
+        ];
+        a_save_otps($otps);
+        a_log('real-trading-otp-requested', $me['username'], $email);
+
+        $sent = ix_send_otp_email($email, $otp, 'Activating Real Trading Mode');
+        if (!$sent && a_is_local()) {
+            @file_put_contents(ix_data_dir() . '/otp-trade-last.txt', "Email: {$email}\nOTP: {$otp}\nPurpose: real_trading\nTime: " . date('c'));
+        }
+
+        $resp = [
+            'status' => 'success',
+            'message' => 'Verification code sent to ' . a_mask_email($email) . '. Enter it to activate real trading.',
+            'emailMasked' => a_mask_email($email)
+        ];
+        if ((defined('DEV_SHOW_OTP') && DEV_SHOW_OTP) || getenv('SIGNALS_TEST_OTP')) {
+            $resp['debug_otp'] = $otp;
+        }
+        out(200, $resp);
+    }
+    if ($action === 'admin_switch_trading') {
+        $target = strtolower(trim((string)($in['mode'] ?? 'off')));
+        if (!in_array($target, ['off', 'dry', 'live'], true)) {
+            out(422, ['status' => 'error', 'message' => 'Target mode must be off, dry, or live.']);
+        }
+
+        if ($target === 'off' || $target === 'dry') {
+            $mf = ix_data_dir() . '/trade-mode.php';
+            $data = ['mode' => $target, 'updated' => time(), 'by' => $me['username']];
+            a_write($mf, $data);
+            a_log('trade-mode-switched', $me['username'], $target);
+            out(200, [
+                'status' => 'success',
+                'mode' => $target,
+                'message' => $target === 'off' ? 'Real trading is switched OFF.' : 'Dry-run trading mode active.'
+            ]);
+        }
+
+        // Switching to live requires OTP
+        $email = strtolower(trim((string)($in['email'] ?? ($me['email'] ?? ''))));
+        $otp = trim((string)($in['otp'] ?? ''));
+        if (!a_email_ok($email)) out(422, ['status' => 'error', 'message' => 'Owner registered email is missing. Click Send OTP first.']);
+        if ($otp === '') out(422, ['status' => 'error', 'message' => 'Please enter the 6-digit verification code sent to your email.']);
+
+        $otps = a_otps();
+        $o = $otps['otps'][$email] ?? null;
+        if (!$o || ($o['exp'] ?? 0) < time() || ($o['purpose'] ?? '') !== 'real_trading') {
+            out(422, ['status' => 'error', 'message' => 'Verification code expired or not requested. Click Start Real Trading to receive a code.']);
+        }
+        if (($o['attempts'] ?? 0) >= 5) {
+            unset($otps['otps'][$email]); a_save_otps($otps);
+            out(422, ['status' => 'error', 'message' => 'Too many incorrect attempts. Please request a new code.']);
+        }
+        if (!password_verify($otp, $o['hash'])) {
+            $otps['otps'][$email]['attempts'] = ($o['attempts'] ?? 0) + 1;
+            a_save_otps($otps);
+            out(422, ['status' => 'error', 'message' => 'Incorrect verification code. Please check your email and try again.']);
+        }
+
+        unset($otps['otps'][$email]);
+        a_save_otps($otps);
+
+        $mf = ix_data_dir() . '/trade-mode.php';
+        $data = ['mode' => 'live', 'updated' => time(), 'by' => $me['username']];
+        a_write($mf, $data);
+        a_log('real-trading-live-activated', $me['username'], $email);
+
+        out(200, [
+            'status' => 'success',
+            'mode' => 'live',
+            'message' => 'Real trading mode ACTIVATED! Orders can now be sent to your live broker account.'
+        ]);
     }
     out(400, ['status' => 'error', 'message' => 'Unknown action']);
 }
