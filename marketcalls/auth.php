@@ -571,7 +571,7 @@ function auth_handle($action) {
         $mf = ix_data_dir() . '/trade-mode.php';
         $tm = a_read($mf, []);
         $mode = $tm['mode'] ?? (defined('ORDER_MODE') ? ORDER_MODE : 'off');
-        $broker = defined('ORDER_BROKER') ? ORDER_BROKER : 'upstox';
+        $broker = $tm['broker'] ?? (defined('ORDER_BROKER') ? ORDER_BROKER : 'upstox');
         $email = $me['email'] ?? '';
         out(200, [
             'status' => 'success',
@@ -637,6 +637,24 @@ function auth_handle($action) {
         }
         out(200, $resp);
     }
+    if ($action === 'admin_switch_broker') {
+        $target = strtolower(trim((string)($in['broker'] ?? 'upstox')));
+        if (!in_array($target, ['upstox', 'indstocks'], true)) {
+            out(422, ['status' => 'error', 'message' => 'Broker must be Upstox or INDstocks.']);
+        }
+        $mf = ix_data_dir() . '/trade-mode.php';
+        $tm = a_read($mf, []);
+        $tm['broker'] = $target;
+        $tm['updated'] = time();
+        $tm['by'] = $me['username'];
+        a_write($mf, $tm);
+        a_log('trade-broker-switched', $me['username'], $target);
+        out(200, [
+            'status' => 'success',
+            'broker' => $target,
+            'message' => 'Active broker switched to ' . ($target === 'indstocks' ? 'INDstocks (INDmoney)' : 'Upstox') . '.'
+        ]);
+    }
     if ($action === 'admin_switch_trading') {
         $target = strtolower(trim((string)($in['mode'] ?? 'off')));
         if (!in_array($target, ['off', 'dry', 'live'], true)) {
@@ -645,12 +663,16 @@ function auth_handle($action) {
 
         if ($target === 'off' || $target === 'dry') {
             $mf = ix_data_dir() . '/trade-mode.php';
-            $data = ['mode' => $target, 'updated' => time(), 'by' => $me['username']];
-            a_write($mf, $data);
+            $tm = a_read($mf, []);
+            $tm['mode'] = $target;
+            $tm['updated'] = time();
+            $tm['by'] = $me['username'];
+            a_write($mf, $tm);
             a_log('trade-mode-switched', $me['username'], $target);
             out(200, [
                 'status' => 'success',
                 'mode' => $target,
+                'broker' => $tm['broker'] ?? (defined('ORDER_BROKER') ? ORDER_BROKER : 'upstox'),
                 'message' => $target === 'off' ? 'Real trading is switched OFF.' : 'Dry-run trading mode active.'
             ]);
         }
@@ -680,13 +702,17 @@ function auth_handle($action) {
         a_save_otps($otps);
 
         $mf = ix_data_dir() . '/trade-mode.php';
-        $data = ['mode' => 'live', 'updated' => time(), 'by' => $me['username']];
-        a_write($mf, $data);
+        $tm = a_read($mf, []);
+        $tm['mode'] = 'live';
+        $tm['updated'] = time();
+        $tm['by'] = $me['username'];
+        a_write($mf, $tm);
         a_log('real-trading-live-activated', $me['username'], $email);
 
         out(200, [
             'status' => 'success',
             'mode' => 'live',
+            'broker' => $tm['broker'] ?? (defined('ORDER_BROKER') ? ORDER_BROKER : 'upstox'),
             'message' => 'Real trading mode ACTIVATED! Orders can now be sent to your live broker account.'
         ]);
     }

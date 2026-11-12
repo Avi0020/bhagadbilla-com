@@ -1287,7 +1287,7 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
         <div style="font-size:15px;font-weight:600">Trading Mode:
           <span class="pill ${isLive?'p-dn':isDry?'p-amb':'p-mu'}" style="margin-left:6px;font-weight:bold">${isLive?'🔴 LIVE — Real Orders Active':isDry?'🟡 Dry Run (Simulated)':'⚪ Switched OFF'}</span>
         </div>
-        <div class="sub" style="margin:4px 0 0">Broker: <b>${esc(trd.broker==='indstocks'?'INDstocks':'Upstox')}</b>${trd.emailMasked?' · Registered email: <b>'+esc(trd.emailMasked)+'</b>':''}</div>
+        <div class="sub" style="margin:4px 0 0">Broker: <b>${esc(trd.broker==='indstocks'?'INDstocks (INDmoney)':'Upstox')}</b>${trd.emailMasked?' · Registered email: <b>'+esc(trd.emailMasked)+'</b>':''}</div>
       </div>
       <div class="c-act" style="margin:0">
         ${isLive?`
@@ -1298,6 +1298,16 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
           ${!isDry?'<button class="btn2" id="btnTrdDry">Switch to Dry Run</button>':''}
           ${trd.mode!=='off'?'<button class="btn2" id="btnTrdOff">Turn OFF</button>':''}
         `}
+      </div>
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:600">Switch Trading Broker:</div>
+        <div class="sub" style="margin:2px 0 0">Orders will be routed to the selected broker</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn2 ${trd.broker==='upstox'?'on':''}" id="btnBrokerUpstox" style="${trd.broker==='upstox'?'font-weight:bold;':''}">Upstox</button>
+        <button class="btn2 ${trd.broker==='indstocks'?'on':''}" id="btnBrokerIndstocks" style="${trd.broker==='indstocks'?'font-weight:bold;':''}">INDstocks (INDmoney)</button>
       </div>
     </div>
     <div id="admTrdOtpWrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--brd)">
@@ -1406,6 +1416,31 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
     }catch(err){
       if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
       bDry.disabled=false;
+    }
+  };
+  const bBUpstox=$('#btnBrokerUpstox'),bBInd=$('#btnBrokerIndstocks');
+  if(bBUpstox)bBUpstox.onclick=async()=>{
+    if(trd.broker==='upstox')return;
+    bBUpstox.disabled=true;
+    try{
+      const res=await authPost('admin_switch_broker',{broker:'upstox'});
+      toast(res.message||'Broker switched to Upstox');
+      await admLoad();trdLoad();
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bBUpstox.disabled=false;
+    }
+  };
+  if(bBInd)bBInd.onclick=async()=>{
+    if(trd.broker==='indstocks')return;
+    bBInd.disabled=true;
+    try{
+      const res=await authPost('admin_switch_broker',{broker:'indstocks'});
+      toast(res.message||'Broker switched to INDstocks (INDmoney)');
+      await admLoad();trdLoad();
+    }catch(err){
+      if(trdMsg)trdMsg.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bBInd.disabled=false;
     }
   };
   $('#admNew').onclick=async()=>{try{const j=await authPost('admin_invite',{count:1,days:+$('#admDays').value});$('#admCode').innerHTML=`<div class="codebox">${esc(j.codes[0])}</div><div class="sub" style="margin-top:8px">Shown only now: copy it and send it. It works once and ends in ${j.days} days.</div><div class="c-act"><button class="btn2" id="admCopy">Copy code</button></div>`;
