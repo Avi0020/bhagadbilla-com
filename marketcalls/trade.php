@@ -176,7 +176,7 @@ function t_ind_positions($c, $tk) {
 function t_ind_verify($c, $tk, $inst, $ct, $qty, &$lotOut = 0) {
     if (!is_array($ct)) return 'A buy needs the contract details (underlying, expiry, strike, CE or PE).';
     $u = strtoupper((string)($ct['u'] ?? '')); $e = (string)($ct['e'] ?? ''); $k = (float)($ct['k'] ?? 0); $t = strtoupper((string)($ct['t'] ?? ''));
-    if (!in_array($u, ['NIFTY', 'BANKNIFTY', 'SENSEX'], true)) return 'Orders here are limited to Nifty, Bank Nifty and Sensex options.';
+    if (!preg_match('/^[A-Z0-9_-]{2,20}$/', $u)) return 'The underlying symbol is not valid.';
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $e) || $k <= 0 || !in_array($t, ['CE', 'PE'], true)) return 'The contract details are incomplete.';
     if (strpos($inst, ($u === 'SENSEX' ? 'BSE_FO' : 'NSE_FO') . '|') !== 0) return 'The contract does not belong to ' . $u . '.';
     if (!$tk) return '';   // a dry run before the token is pasted cannot look it up
@@ -345,7 +345,7 @@ function trade_handle($action) {
         if (!$ind) $reject('A buy with an attached stop and target is available for INDstocks only.');
         if ($side !== 'BUY') $reject('Only a buy can carry an attached stop and target.');
         if ($prod !== 'I') $reject('The attached stop and target are intraday only: INDstocks smart orders are valid for one day, so an overnight position would lose them.');
-        if (strpos($inst, 'NSE_FO|') !== 0) $reject('Attached stops work for NSE options (Nifty, Bank Nifty). Sensex smart orders are not documented by INDstocks, so place those without a stop and set it in the INDstocks app.');
+        if (strpos($inst, 'NSE_FO|') !== 0) $reject('Attached stops work for NSE options (Nifty, Bank Nifty, and NSE stocks). Sensex smart orders are not documented by INDstocks, so place those without a stop and set it in the INDstocks app.');
         foreach (['sl_trigger', 'sl_limit', 'tgt_trigger', 'tgt_limit'] as $k) { $att[$k] = round((float)($att[$k] ?? 0), 2); if (!t_tick_ok($att[$k])) $reject($k . ' must be above 0 and a multiple of 0.05.'); }
         if (!($att['sl_limit'] <= $att['sl_trigger'] && $att['sl_trigger'] < $price && $price < $att['tgt_trigger'] && $att['tgt_limit'] <= $att['tgt_trigger'] && $att['tgt_limit'] > $price)) $reject('The stop must sit below the entry price and the target above it (stop limit not above its trigger, target limit above the entry).');
         $dn = ($price - $att['sl_trigger']) / $price; $up = ($att['tgt_trigger'] - $price) / $price;
@@ -356,7 +356,7 @@ function trade_handle($action) {
     else $trig = 0;
     if ($qty * $price > ORDER_MAX_VALUE) $reject('This order is worth Rs ' . number_format($qty * $price) . ', above the limit of Rs ' . number_format(ORDER_MAX_VALUE) . ' set in trade.php.');
     if (strlen($ref) < 8) $reject('Missing order reference.');
-    if (!t_market_open($c)) $reject('Orders are accepted only during market hours (9:15 AM to 3:30 PM, Monday to Friday).');
+    if ($mode === 'live' && !t_market_open($c)) $reject('Live orders are accepted only during market hours (9:15 AM to 3:30 PM, Monday to Friday). Switch to Dry Run to test anytime.');
     $lf = $dir . '/order-log.php'; $lg = t_read($lf); $today = t_ist()->format('Y-m-d');
     if (($lg['day'] ?? '') !== $today) $lg = ['day' => $today, 'count' => 0, 'refs' => $lg['refs'] ?? [], 'last' => 0];
     $lg['refs'] = array_filter((array)($lg['refs'] ?? []), function ($t) { return $t > time() - 86400; });
