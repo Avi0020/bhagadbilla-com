@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#FFFFFF">
+<script>try{var __t=JSON.parse(localStorage.getItem('ix_theme'))==='dark'?'dark':'light';document.documentElement.setAttribute('data-theme',__t);if(__t==='dark')document.querySelector('meta[name=theme-color]').setAttribute('content','#0A0E13')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+<title>Index Signals — Nifty, Bank Nifty, Sensex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#FFFFFF;--s1:#F6F8FB;--s2:#ECF0F5;--sel:#FFFFFF;--line:#E1E7EE;--line2:#CDD5DF;--tx:#0F1720;--mu:#566273;--mu2:#6B7584;--inv:#FFFFFF;--invsoft:rgba(255,255,255,.35);--scrim:rgba(15,23,32,.38);--sh:0 1px 2px rgba(16,24,40,.06);
+--up:#0A7A52;--upbg:rgba(10,122,82,.10);--upbd:rgba(10,122,82,.38);--upfill:rgba(10,122,82,.35);--dn:#C0293A;--dnbg:rgba(192,41,58,.09);--dnbd:rgba(192,41,58,.38);--dnfill:rgba(192,41,58,.35);--amb:#96570A;--ambbg:rgba(150,87,10,.11);--ambbd:rgba(150,87,10,.38);--acc:#2563EB;--r:14px}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0A0E13;--s1:#11161D;--s2:#171E27;--sel:#171E27;--line:#1F2832;--line2:#2A3542;--tx:#E7ECF1;--mu:#8A97A6;--mu2:#5F6B79;--inv:#0A0E13;--invsoft:rgba(10,14,19,.25);--scrim:rgba(0,0,0,.55);--sh:none;
+--up:#1DBF84;--upbg:rgba(29,191,132,.12);--upbd:rgba(29,191,132,.32);--upfill:rgba(29,191,132,.45);--dn:#F0525F;--dnbg:rgba(240,82,95,.12);--dnbd:rgba(240,82,95,.35);--dnfill:rgba(240,82,95,.45);--amb:#E8B04A;--ambbg:rgba(232,176,74,.12);--ambbd:rgba(232,176,74,.3);--acc:#4C8DFF}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--tx);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.4}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea{font:inherit;color:var(--tx)}
+.num{font-variant-numeric:tabular-nums}
+.app{max-width:560px;margin:0 auto;padding:0 16px 40px;min-height:100vh}
+.top{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px}
+.brand{display:flex;align-items:center;gap:11px}
+.mark{width:34px;height:34px;border-radius:10px;background:var(--s2);border:1px solid var(--line2);display:grid;place-items:center}
+.bname{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.bsub{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--mu2)}.dot.on{background:var(--up);box-shadow:0 0 0 3px var(--upbg)}
+.icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line);background:var(--s1);color:var(--mu)}
+.banner{font-size:13px;color:var(--amb);background:var(--ambbg);border:1px solid var(--ambbd);padding:10px 12px;border-radius:10px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.tile{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:10px 10px 9px;text-align:left}
+.tile .n{font-size:11.5px;color:var(--mu);font-weight:500}
+.tile .p{font-size:14.5px;font-weight:600;margin-top:2px}
+.tile .c{font-size:11.5px;margin-top:1px}
+.tile .b{margin-top:7px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tabs{display:flex;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;position:sticky;top:8px;z-index:5}
+.tabs button{flex:1;padding:9px 0;border-radius:9px;font-weight:600;font-size:14px;color:var(--mu)}
+.tabs button.on{background:var(--sel);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line2)}
+.tabs .cnt{font-size:11px;background:var(--line2);border-radius:20px;padding:1px 6px;margin-left:4px;color:var(--tx)}
+.pill{font-size:12px;font-weight:600;padding:4px 9px;border-radius:20px;white-space:nowrap;display:inline-block}
+.p-up{color:var(--up);background:var(--upbg)}.p-dn{color:var(--dn);background:var(--dnbg)}.p-amb{color:var(--amb);background:var(--ambbg)}.p-mu{color:var(--mu);background:var(--s2)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mu{color:var(--mu)}.amb{color:var(--amb)}
+.bar{margin:14px 0;display:flex;gap:10px;align-items:center}
+.btn{background:var(--tx);color:var(--inv);font-weight:600;border-radius:11px;padding:12px 16px;font-size:14.5px;flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn[disabled]{opacity:.55}
+.btn2{border:1px solid var(--line2);background:var(--s1);border-radius:11px;padding:11px 13px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.btn2.on{border-color:var(--up);color:var(--up)}
+.sub{font-size:12px;color:var(--mu);margin:-4px 0 12px}
+h3{font-size:12.5px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:15px;margin-bottom:14px}
+.c-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.iname{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.meta{font-size:12.5px;color:var(--mu);margin-top:3px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--s2);border:1px solid var(--line2);color:var(--tx)}
+.bias{margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:12px;color:var(--mu)}
+.bias .tr{height:6px;border-radius:6px;background:var(--line2);position:relative;overflow:hidden;display:flex}
+.bias .tr i{display:block;height:100%}
+.action{margin-top:14px;border-radius:12px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.action.ce{background:var(--upbg);border:1px solid var(--upbd)}
+.action.pe{background:var(--dnbg);border:1px solid var(--dnbd)}
+.action .big{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.action .sm{font-size:12px;color:var(--mu);margin-top:2px}
+.action .prem{text-align:right}
+.action .prem b{font-size:19px;display:block}
+.wait{margin-top:14px;border-radius:12px;padding:13px 14px;background:var(--s2);border:1px dashed var(--line2);font-size:13px;color:var(--mu)}
+.wait b{color:var(--tx);display:block;font-size:14.5px;margin-bottom:3px}
+.lvh{font-size:10.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin:13px 0 6px;font-weight:600}
+.lv{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.lv div{background:var(--s2);padding:8px 8px}
+.lv span{display:block;font-size:10.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+.lv b{display:block;font-size:14px;font-weight:600;margin-top:2px}
+.lv i{display:block;font-style:normal;font-size:11px;color:var(--mu)}
+.why{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.why span{font-size:12px;color:var(--mu);border:1px solid var(--line2);border-radius:20px;padding:3px 9px}
+.info{font-size:12.5px;color:var(--mu);margin-top:11px;padding-top:11px;border-top:1px solid var(--line);display:flex;gap:6px;align-items:center;flex-wrap:wrap;line-height:1.6}
+.info b{color:var(--tx);font-weight:600}
+.c-act{display:flex;align-items:center;gap:8px;margin-top:12px}
+.c-act .qty{flex:1;font-size:12.5px;color:var(--mu)}
+.sbtn{font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;border:1px solid var(--line2);background:var(--s2)}
+.sbtn.pri{background:var(--upbg);border-color:var(--upbd);color:var(--up)}
+.sbtn.done{color:var(--mu)}
+.list{background:var(--s2);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);gap:10px}
+.row:last-child{border-bottom:0}
+.row .n{font-weight:600;font-size:14px}.row .s{font-size:12px;color:var(--mu);margin-top:2px}
+.list.out{background:var(--s1)}
+.empty{text-align:center;padding:26px 18px;color:var(--mu);font-size:14px;background:var(--s1);border:1px dashed var(--line2);border-radius:var(--r)}
+.empty b{display:block;color:var(--tx);font-size:15px;margin-bottom:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.stat{background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat span{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.stat b{display:block;font-size:18px;margin-top:3px}
+.stat i{display:block;font-style:normal;font-size:11.5px;margin-top:2px}
+.err{font-size:12.5px;color:var(--dn);margin-top:10px}
+.foot{font-size:11.5px;color:var(--mu2);margin-top:28px;line-height:1.55}
+.sheet-bg{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--s1);border-top:1px solid var(--line2);border-radius:18px 18px 0 0;max-height:90vh;overflow:auto;padding:8px 18px 28px;max-width:560px;margin:0 auto}
+.grab{width:38px;height:4px;border-radius:4px;background:var(--line2);margin:4px auto 14px}
+.sheet h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.fld{margin:16px 0}.fld label{display:block;font-size:12px;color:var(--mu);margin-bottom:6px;font-weight:500}
+.fld input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:11px 12px;outline:none}
+.fld input:focus{border-color:var(--acc)}
+.fld .hint{font-size:11.5px;color:var(--mu2);margin-top:5px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line2);border-radius:10px;padding:10px 4px;font-size:13px;font-weight:600;color:var(--mu)}
+.seg button.on{border-color:var(--tx);color:var(--tx);background:var(--s2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+canvas{width:100%;display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--mu);margin:8px 0}
+.legend i{display:inline-block;width:10px;height:2px;margin-right:5px;vertical-align:middle}
+.how{font-size:13px;color:var(--mu);line-height:1.6}.how b{color:var(--tx)}.how p{margin-bottom:10px}
+.verdict{margin-top:10px;border-radius:11px;padding:10px 12px;font-size:12.5px;color:var(--mu);border:1px solid var(--line2);background:var(--s2)}
+.verdict b{display:block;font-size:14px;margin-bottom:2px}
+.verdict.up b{color:var(--up)}.verdict.up{border-color:var(--upbd)}
+.verdict.amb b{color:var(--amb)}.verdict.amb{border-color:var(--ambbd)}
+.verdict.dn b{color:var(--dn)}.verdict.dn{border-color:var(--dnbd);background:var(--dnbg)}
+.pot{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pot div{background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.pot span{display:block;font-size:10px;white-space:nowrap;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+.pot b{display:block;font-size:15px;margin-top:2px}
+.rail{position:relative;height:6px;border-radius:6px;background:var(--line2);margin:16px 4px 6px}
+.rail .seg-r{position:absolute;left:0;top:0;bottom:0;background:var(--dnfill);border-radius:6px 0 0 6px}
+.rail .seg-g{position:absolute;top:0;bottom:0;background:var(--upfill);border-radius:0 6px 6px 0}
+.rail em{position:absolute;top:-3px;width:2px;height:12px;background:var(--tx);opacity:.6}
+.rail u{position:absolute;top:-6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--tx);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--tx)}
+.rail-l{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu);margin:0 0 4px}
+.lnk{color:var(--acc);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px}
+.lad{display:flex;flex-direction:column;gap:6px}
+.leg{text-align:left;background:var(--s2);border:1px solid var(--line);border-radius:11px;padding:10px 11px;width:100%}
+.leg.sel{border-color:var(--tx);box-shadow:inset 0 0 0 1px var(--tx)}
+.leg .l1{display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
+.leg .sp{flex:1}
+.leg .tg{font-size:10.5px;font-weight:600;color:var(--mu);border:1px solid var(--line2);border-radius:5px;padding:1px 5px}
+.leg .tg.bst{color:var(--up);border-color:var(--upbd)}
+.leg .l2{font-size:12px;color:var(--mu);margin-top:4px}
+.leg .l3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin-top:6px}
+.leg .l3 .pill{margin-left:auto;font-size:11px;padding:2px 8px}
+.leg .l3{row-gap:4px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(90px);background:var(--tx);color:var(--inv);font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:10px;transition:transform .25s;z-index:30;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.spin{width:14px;height:14px;border:2px solid var(--invsoft);border-top-color:var(--inv);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hb{display:flex;gap:8px}
+@media(max-width:480px){.tabs button{font-size:13px}}
+select{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;outline:none}
+button.row{width:100%;text-align:left}button.row:hover{background:var(--s2)}
+.why span.up{color:var(--up)}.why span.amb{color:var(--amb)}.why span.dn{color:var(--dn)}
+.tile .cl{display:flex;justify-content:space-between;align-items:baseline;gap:4px;font-size:11px;margin-top:5px}
+.tile .cl span{color:var(--mu)}.tile .cl b{font-weight:600;white-space:nowrap;font-size:11.5px}
+.tile .c{margin-bottom:6px}
+.qty1{font-size:12.5px;margin-top:10px;line-height:1.5}.qty1.mu{color:var(--mu);margin-top:4px}
+.c-act .sp{flex:1}
+.more{margin-top:6px;border-top:1px solid var(--line);padding-top:2px}
+.card .verdict{margin:10px 0}
+.card .lv{margin-top:2px}
+.pw{max-width:760px;margin:0 auto}
+body.wide .app{max-width:1240px;padding:0 32px 56px}
+body.wide .top{padding:22px 0 18px}
+body.wide .tiles{gap:14px;margin-bottom:18px}
+body.wide .tile{padding:14px 16px}
+body.wide .tile .p{font-size:20px}
+body.wide .tile .n{font-size:13px}
+body.wide .tile .cl{font-size:13px}body.wide .tile .cl b{font-size:13.5px}
+body.wide .tabs{position:static;max-width:440px}
+body.wide .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+body.wide .grid .card{margin-bottom:0}
+body.wide .sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:min(760px,92vw);max-width:none;border-radius:18px;border:1px solid var(--line2);max-height:86vh;padding:14px 24px 26px}
+body.wide .grab{display:none}
+body.wide .foot{max-width:820px}
+.card,.tile,.stat{box-shadow:var(--sh)}
+[hidden]{display:none!important}
+#auth{position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;padding:20px}
+.auth-box{max-width:400px;margin:5vh auto 24px}
+.auth-box .card{margin-bottom:12px}
+.auth-note{font-size:12px;color:var(--mu);line-height:1.55;text-align:center}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:14px 0 0;color:var(--mu)}.chk input{margin-top:3px;flex:none}
+.codebox{font-size:20px;font-weight:700;letter-spacing:.06em;text-align:center;padding:14px;border:1px dashed var(--up);background:var(--upbg);border-radius:12px;color:var(--up);margin-top:10px;user-select:all}
+.eq{margin:12px 0 4px}.eq svg{width:100%;height:96px;display:block}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th{text-align:left;color:var(--mu);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 4px}.tbl td{padding:8px 4px;border-top:1px solid var(--line)}.tbl .r{text-align:right}
+@media(max-width:560px){.tile{padding:9px 8px}.tile .cl{flex-wrap:wrap;gap:0 4px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:var(--up)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+      <div><div class="bname">Index Signals</div><div class="bsub"><span class="dot" id="mDot"></span><span id="mLabel">—</span><span id="mLive"></span></div></div>
+    </div>
+    <div class="hb"><button class="icon" id="btnAccount" aria-label="Account" title="Account" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button><button class="icon" id="btnTheme" aria-label="Switch theme" title="Switch between light and dark"></button><button class="icon" id="btnLayout" aria-label="Switch layout" title="Switch layout: auto / desktop / mobile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button><button class="icon" id="btnSettings" aria-label="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+  <section class="tiles" id="tiles"></section>
+  <nav class="tabs" id="tabs">
+    <button data-tab="intra">Intraday</button>
+    <button data-tab="swing">NRML</button>
+    <button data-tab="stk">Stocks</button>
+    <button data-tab="chk">Check</button>
+    <button data-tab="paper">Paper<span class="cnt" id="tCnt" hidden></span></button>
+    <button data-tab="res">Results</button>
+  </nav>
+  <section id="view"></section>
+  <footer class="foot">Signals come from rules applied to index prices and the live option chain. They are for research and paper trading, not investment advice. Options can lose their full premium quickly, and no system is right every time. Backtest figures describe the past only. Always use the stop-loss.<span id="footNote"></span></footer>
+</div>
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<div class="sheet" id="sheet" hidden><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================== basics ============================== */
+const $=s=>document.querySelector(s);
+/* With accounts on, everything saved in this browser is stored per account (LS.ns), so two people on one device never see or inherit each other's paper account. Only these are shared by the device. */
+const LS_GLOBAL=['theme','layout','tab'];
+const LS={ns:'',key(k){return 'ix_'+(LS_GLOBAL.includes(k)?'':LS.ns)+k},get(k,d){try{const v=localStorage.getItem(LS.key(k));return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(LS.key(k),JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(LS.key(k))}catch(e){}}};
+const AUTH={mode:'pin',user:null,first:false,setupReady:false,pinDefault:false};
+/* every request to api.php carries the app's own header (the server's defence against other sites) and the login cookie; a 401 means the session ended */
+(function(){const f0=window.fetch&&window.fetch.bind(window);if(!f0)return;window.fetch=function(u,o){o=o||{};const s=typeof u==='string'?u:(u&&u.url)||'',mine=/^(\.\/)?api\.php/.test(s);
+  if(mine){o.headers=Object.assign({'X-IX':'1'},o.headers||{});o.credentials='same-origin'}
+  const p=f0(u,o);return mine?p.then(r=>{if(r.status===401&&AUTH.mode==='users'&&!/[?&](auth=(login|signup)|ping)/.test(s))authExpired();return r}):p}})();
+const IDX=[
+  {id:'NIFTY',name:'Nifty 50',key:'NSE_INDEX|Nifty 50',demo:25800,step:50,lot:65,yh:'NIFTY',iv:.12},
+  {id:'BANKNIFTY',name:'Bank Nifty',key:'NSE_INDEX|Nifty Bank',demo:58200,step:100,lot:30,yh:'BANKNIFTY',iv:.14},
+  {id:'SENSEX',name:'Sensex',key:'BSE_INDEX|SENSEX',demo:84300,step:100,lot:20,yh:'SENSEX',iv:.12}];
+
+const cfg=()=>({pin:AUTH.mode==='users'?(AUTH.user?'session':''):LS.get('pin',''),mode:LS.get('mode','balanced'),budget:+LS.get('budget',9000)});
+const S={chk:{q:'',b:'',exp:'',out:'',tried:false},more:{},p0:{},pick:{},tab:LS.get('tab','intra'),demo:false,scanning:null,res:{intra:{},swing:{}},at:{},auto:false,timer:null,cache:{}};
+const IST=330*60000,DAY=86400000;
+const dkey=t=>new Date(t+IST).toISOString().slice(0,10);
+const istMin=t=>{const d=new Date(t+IST);return d.getUTCHours()*60+d.getUTCMinutes()};
+const hhmm=t=>{const m=istMin(t);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const nice=k=>new Date(k+'T00:00:00Z').toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'UTC'});
+function market(){const d=new Date(Date.now()+IST),wd=d.getUTCDay(),m=d.getUTCHours()*60+d.getUTCMinutes();
+  if(wd===0||wd===6)return{open:false,m,wd,label:'Market closed · weekend'};
+  if(m<555)return{open:false,m,wd,label:'Opens 9:15 AM'};
+  if(m<930)return{open:true,m,wd,label:'Market open'};
+  return{open:false,m,wd,label:'Market closed'}}
+const f2=x=>isFinite(x)?x.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const f0=x=>isFinite(x)?Math.round(x).toLocaleString('en-IN'):'—';
+const pct=(x,d=2)=>isFinite(x)?(x>=0?'+':'')+(x*100).toFixed(d)+'%':'—';
+const sgn=(x,d=0)=>isFinite(x)?(x>=0?'+':'')+x.toFixed(d):'—';
+const tick=x=>Math.round(x/0.05)*0.05;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ============================== Upstox via api.php ============================== */
+async function api(path,params={}){
+  const qs=new URLSearchParams({path,...params});
+  const r=await fetch('api.php?'+qs.toString(),{headers:{'X-App-Pin':cfg().pin},cache:'no-store'});
+  let j;try{j=await r.json()}catch(e){throw new Error('Bad response ('+r.status+')')}
+  if(!r.ok||j.status!=='success'){const m=(j.errors&&j.errors[0]&&j.errors[0].message)||j.message||('HTTP '+r.status);const e=new Error(m);e.code=r.status;throw e}
+  return j}
+const parseC=a=>(a||[]).map(x=>({t:Date.parse(x[0]),o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]||0})).filter(b=>isFinite(b.t)&&b.c>0).sort((a,b)=>a.t-b.t);
+const enc=encodeURIComponent;
+async function liveDaily(key){const to=dkey(Date.now()),from=dkey(Date.now()-1100*DAY);
+  let b=parseC((await api(`/v3/historical-candle/${enc(key)}/days/1/${to}/${from}`)).data.candles);
+  if(market().open)b=b.filter(x=>dkey(x.t)!==dkey(Date.now()));return b}
+async function live5m(key){const d=n=>dkey(Date.now()-n*DAY),e={data:{candles:[]}},u=`/v3/historical-candle/${enc(key)}/minutes/5/`;   /* about 8 weeks: the bands need 14 full sessions before the first call */
+  const [h,h2,t]=await Promise.all([api(u+d(0)+'/'+d(27)),api(u+d(28)+'/'+d(55)).catch(()=>e),api(`/v3/historical-candle/intraday/${enc(key)}/minutes/5`).catch(()=>e)]);
+  const m=new Map();for(const j of [h2,h,t])for(const b of parseC(j.data.candles))m.set(b.t,b);
+  let out=[...m.values()].sort((a,b)=>a.t-b.t);if(market().open)out=out.filter(b=>b.t+5*60000<=Date.now()+15000);return out}
+async function liveChain(ix,kind){
+  const kws=kind==='intra'?['current_week','next_week','current_month','next_month']:['current_month','next_month'];
+  for(const kw of kws){let j;try{j=await api('/v2/option/chain',{instrument_key:ix.key,expiry_date:kw})}catch(e){if(e.code===401)throw e;continue}
+    const rows=(j.data||[]).filter(r=>r&&r.strike_price);if(!rows.length)continue;const exp=rows[0].expiry;
+    if(kind==='swing'&&kw==='current_month'&&daysTo(exp)<7)continue;
+    if(kind==='intra'&&daysTo(exp)<.5)continue;   // skip same-day expiry: premiums too small, gamma too wild
+    let lot=ix.lot;try{const lk='lot_'+ix.id+'_'+exp,c=LS.get(lk,0);if(c)lot=c;else{const k=await api('/v2/option/contract',{instrument_key:ix.key,expiry_date:exp});const it=(k.data||[])[0];if(it&&it.lot_size){lot=it.lot_size;LS.set(lk,lot)}}}catch(e){}
+    return{exp,lot,rows:rows.sort((a,b)=>a.strike_price-b.strike_price)}}
+  return null}
+async function liveOptLtp(optKey){const j=await api(`/v3/historical-candle/intraday/${enc(optKey)}/minutes/1`);const c=parseC(j.data.candles);return c.length?c[c.length-1].c:NaN}
+const daysTo=exp=>(Date.parse(exp+'T15:30:00+05:30')-Date.now())/DAY;
+
+/* ============================== demo data ============================== */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0};
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function weekdays(n,inc){const d=new Date(Date.now()+IST);d.setUTCHours(0,0,0,0);let t=d.getTime()-IST;if(!inc)t-=DAY;const o=[];
+  while(o.length<n){const wd=new Date(t+IST).getUTCDay();if(wd&&wd!==6)o.push(t);t-=DAY}return o.reverse()}
+const demoIx=key=>IDX.find(x=>x.key===key);
+function demoDaily(key){const ix=demoIx(key),r=rng(hash(key)+11),mk=market();const days=weekdays(760,mk.wd&&mk.wd!==6&&mk.m>=930);
+  let p=1000,mu=0,left=0;const sig=ix.id==='BANKNIFTY'?.0105:.0085,out=[];
+  for(const t of days){if(left--<=0){const k=r();mu=k<.3?.0011:k<.55?.0005:k<.75?0:k<.9?-.0006:-.0012;left=30+Math.floor(r()*60)}
+    const ret=mu+sig*gauss(r),o=p*(1+gauss(r)*sig*.25),c=p*(1+ret),h=Math.max(o,c)*(1+Math.abs(gauss(r))*sig*.45),l=Math.min(o,c)*(1-Math.abs(gauss(r))*sig*.45);
+    out.push({t:t+555*60000,o,h,l,c,v:0});p=c}
+  const f=ix.demo/out[out.length-1].c;return out.map(b=>({t:b.t,o:b.o*f,h:b.h*f,l:b.l*f,c:b.c*f,v:0}))}
+function demo5m(key){const ix=demoIx(key),r=rng(hash(key)+29),mk=market();const days=weekdays(45,mk.wd&&mk.wd!==6&&mk.m>=560);
+  let p=1000;const sig=ix.id==='BANKNIFTY'?.0013:.0011,out=[],today=dkey(Date.now());
+  for(const t0 of days){const isT=dkey(t0)===today,k=r(),trend=k<.3?1:k<.55?-1:0,mu=gauss(r)*.00004;p*=1+gauss(r)*.003;
+    const rev=r()<.3?20+Math.floor(r()*30):99;
+    for(let b=0;b<75;b++){const t=t0+(555+5*b)*60000;if(isT&&t+5*60000>Date.now())break;
+      const tr=trend&&b>=3&&b<50?(b<rev?trend:-trend*.6)*.00032:0,sg=sig*(b<4?1.7:b>68?1.2:1);
+      const ret=mu+tr+sg*gauss(r),o=p,c=p*(1+ret),h=Math.max(o,c)*(1+Math.abs(gauss(r))*sg*.5),l=Math.min(o,c)*(1-Math.abs(gauss(r))*sg*.5);
+      out.push({t,o,h,l,c,v:0});p=c}}
+  const f=ix.demo/out[out.length-1].c*(1+(r()-.5)*.004);return out.map(b=>({t:b.t,o:b.o*f,h:b.h*f,l:b.l*f,c:b.c*f,v:0}))}
+const ncdf=x=>{const t=1/(1+.2316419*Math.abs(x)),d=.3989423*Math.exp(-x*x/2),p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p};
+function bs(S0,K,T,v,call){const r=.065;if(T<=0)return{p:Math.max(0,call?S0-K:K-S0),d:call?(S0>K?1:0):(S0<K?-1:0)};const d1=(Math.log(S0/K)+(r+v*v/2)*T)/(v*Math.sqrt(T)),d2=d1-v*Math.sqrt(T);
+  return call?{p:S0*ncdf(d1)-K*Math.exp(-r*T)*ncdf(d2),d:ncdf(d1)}:{p:K*Math.exp(-r*T)*ncdf(-d2)-S0*ncdf(-d1),d:ncdf(d1)-1}}
+/* Expiry rules: Nifty weekly Tuesday, Sensex weekly Thursday, Bank Nifty monthly (last Tuesday). Monthly = last expiry weekday of the month.
+   Intraday skips an expiry falling today; swing uses a monthly at least 7 days away. Exchange holidays are not adjusted. */
+function expiryFor(ix,kind){const d=new Date(Date.now()+IST);d.setUTCHours(0,0,0,0);const wd=ix.id==='SENSEX'?4:2;
+  const lastWd=(y,m)=>{const x=new Date(Date.UTC(y,m+1,0));while(x.getUTCDay()!==wd)x.setUTCDate(x.getUTCDate()-1);return x};
+  if(kind==='swing'||ix.id==='BANKNIFTY'){const min=kind==='swing'?7:1;let m=lastWd(d.getUTCFullYear(),d.getUTCMonth());if((m-d)/DAY<min)m=lastWd(d.getUTCFullYear(),d.getUTCMonth()+1);return m.toISOString().slice(0,10)}
+  const x=new Date(d);x.setUTCDate(x.getUTCDate()+1);while(x.getUTCDay()!==wd)x.setUTCDate(x.getUTCDate()+1);return x.toISOString().slice(0,10)}
+const demoExpiry=expiryFor;
+function demoChain(ix,kind,spot){const exp=demoExpiry(ix,kind),T=Math.max(.3,daysTo(exp))/365,atm=Math.round(spot/ix.step)*ix.step,r=rng(hash(ix.id+dkey(Date.now()))),rows=[];
+  for(let k=-15;k<=15;k++){const K=atm+k*ix.step,c=bs(spot,K,T,ix.iv,true),p=bs(spot,K,T,ix.iv,false);
+    const coi=Math.round((k>=0?1:.35)*Math.exp(-Math.abs(k-4)/5)*(4e6+r()*3e6)),poi=Math.round((k<=0?1:.35)*Math.exp(-Math.abs(k+4)/5)*(4e6+r()*3e6));
+    rows.push({expiry:exp,strike_price:K,underlying_spot_price:spot,
+      call_options:{instrument_key:'DEMO|'+ix.id+K+'CE',market_data:{ltp:tick(c.p),oi:coi},option_greeks:{delta:c.d}},
+      put_options:{instrument_key:'DEMO|'+ix.id+K+'PE',market_data:{ltp:tick(p.p),oi:poi},option_greeks:{delta:p.d}}})}
+  return{exp,lot:ix.lot,rows}}
+
+
+/* ============================== free fallback: Yahoo Finance via api.php ==============================
+   Index candles from Yahoo. Yahoo has no NSE/BSE option chain, so premiums are estimated with Black-Scholes using India VIX. */
+async function yq(sym,interval,range){const r=await fetch(`api.php?yahoo=${sym}&interval=${interval}&range=${range}`,{headers:{'X-App-Pin':cfg().pin},cache:'no-store'});
+  let j;try{j=await r.json()}catch(e){throw new Error('Yahoo: bad response')}
+  if(!r.ok||j.status==='error'){const e=new Error(j.message||'Yahoo data unavailable');e.code=r.status===401?401:0;throw e}
+  const R=j.chart&&j.chart.result&&j.chart.result[0];if(!R||!R.timestamp)throw new Error('Yahoo returned no data');
+  const q=R.indicators.quote[0],out=[];R.timestamp.forEach((t,i)=>{const o=q.open[i],h=q.high[i],l=q.low[i],c=q.close[i];if([o,h,l,c].every(v=>v!=null&&v>0))out.push({t:t*1000,o,h,l,c,v:0})});return out}
+async function yDaily(ix){let b=await yq(ix.yh,'1d','5y');if(market().open)b=b.filter(x=>dkey(x.t)!==dkey(Date.now()));return b}
+async function y5m(ix){let b=await yq(ix.yh,'5m','60d').catch(()=>yq(ix.yh,'5m','1mo'));b=b.filter(x=>{const m=istMin(x.t);return m>=555&&m<930});if(market().open)b=b.filter(x=>x.t+5*60000<=Date.now()+15000);return b}
+async function yVix(){const b=await cached('vix',300000,()=>yq('VIX','1d','5d'));return b.length?b[b.length-1].c/100:.13}
+async function yChain(ix,kind,spot){const exp=expiryFor(ix,kind),T=Math.max(.15,daysTo(exp))/365,vix=await yVix().catch(()=>.13),iv=Math.min(.6,Math.max(.08,vix*(ix.id==='BANKNIFTY'?1.15:1)));
+  const atm=Math.round(spot/ix.step)*ix.step,rows=[];
+  for(let k=-15;k<=15;k++){const K=atm+k*ix.step,c=bs(spot,K,T,iv,true),p=bs(spot,K,T,iv,false);
+    rows.push({expiry:exp,strike_price:K,underlying_spot_price:spot,call_options:{market_data:{ltp:tick(Math.max(.05,c.p)),oi:0},option_greeks:{delta:c.d}},put_options:{market_data:{ltp:tick(Math.max(.05,p.p)),oi:0},option_greeks:{delta:p.d}}})}
+  return{exp,lot:ix.lot,rows,est:true,iv}}
+
+/* ============================== data access ============================== */
+async function cached(id,ttl,fn){const c=S.cache[id];if(c&&Date.now()-c.t<ttl)return c.v;const v=await fn();S.cache[id]={t:Date.now(),v};return v}
+const Data={
+  daily:ix=>cached('d|'+ix.id,10*60000,()=>S.demo?demoDaily(ix.key):S.yahoo?yDaily(ix):liveDaily(ix.key)),
+  m5:ix=>cached('m|'+ix.id,45000,()=>S.demo?demo5m(ix.key):S.yahoo?y5m(ix):live5m(ix.key)),
+  chain:(ix,kind,spot)=>cached('c|'+ix.id+kind,20000,()=>S.demo?demoChain(ix,kind,spot):S.yahoo?yChain(ix,kind,spot):liveChain(ix,kind))};
+
+/* ============================== indicators ============================== */
+function ema(a,n){const o=new Array(a.length).fill(NaN),k=2/(n+1);let s=0;for(let i=0;i<a.length;i++){if(i<n){s+=a[i];if(i===n-1)o[i]=s/n}else o[i]=a[i]*k+o[i-1]*(1-k)}return o}
+function sma(a,n){const o=new Array(a.length).fill(NaN);let s=0;for(let i=0;i<a.length;i++){s+=a[i];if(i>=n)s-=a[i-n];if(i>=n-1)o[i]=s/n}return o}
+function rsi(c,n=14){const o=new Array(c.length).fill(NaN);let g=0,l=0;for(let i=1;i<c.length;i++){const d=c[i]-c[i-1],u=Math.max(d,0),w=Math.max(-d,0);
+  if(i<=n){g+=u;l+=w;if(i===n){g/=n;l/=n;o[i]=l===0?100:100-100/(1+g/l)}}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+w)/n;o[i]=l===0?100:100-100/(1+g/l)}}return o}
+function atr(h,l,c,n=14){const o=new Array(c.length).fill(NaN);let s=0;for(let i=0;i<c.length;i++){const tr=i?Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])):h[i]-l[i];
+  if(i<n){s+=tr;if(i===n-1)o[i]=s/n}else o[i]=(o[i-1]*(n-1)+tr)/n}return o}
+function macd(c){const a=ema(c,12),b=ema(c,26),line=c.map((_,i)=>a[i]-b[i]),st=25,sig=new Array(c.length).fill(NaN);
+  if(c.length>st+9)ema(line.slice(st),9).forEach((x,i)=>sig[i+st]=x);return line.map((x,i)=>x-sig[i])}
+function adx(h,l,c,n=14){const L=c.length,A=new Array(L).fill(NaN),P=new Array(L).fill(NaN),M=new Array(L).fill(NaN),dx=new Array(L).fill(NaN);if(L<2*n+1)return{A,P,M};let tr=0,p=0,m=0;
+  for(let i=1;i<L;i++){const up=h[i]-h[i-1],dn=l[i-1]-l[i],pp=up>dn&&up>0?up:0,mm=dn>up&&dn>0?dn:0,t=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));
+    if(i<=n){tr+=t;p+=pp;m+=mm}else{tr=tr-tr/n+t;p=p-p/n+pp;m=m-m/n+mm}
+    if(i>=n){const a=tr?100*p/tr:0,b=tr?100*m/tr:0;P[i]=a;M[i]=b;dx[i]=a+b?100*Math.abs(a-b)/(a+b):0}}
+  let s=0;for(let i=n;i<L;i++){if(i<2*n){s+=dx[i];if(i===2*n-1)A[i]=s/n}else A[i]=(A[i-1]*(n-1)+dx[i])/n}return{A,P,M}}
+function supertrend(h,l,c,n=10,m=3){const a=atr(h,l,c,n),L=c.length,line=new Array(L).fill(NaN),dir=new Array(L).fill(0);let ub=NaN,lb=NaN,d=1;
+  for(let i=0;i<L;i++){if(!isFinite(a[i]))continue;const hl=(h[i]+l[i])/2,bu=hl+m*a[i],bl=hl-m*a[i];
+    if(!isFinite(ub)){ub=bu;lb=bl;d=c[i]>=hl?1:-1}else{ub=(bu<ub||c[i-1]>ub)?bu:ub;lb=(bl>lb||c[i-1]<lb)?bl:lb;if(d===1&&c[i]<lb)d=-1;else if(d===-1&&c[i]>ub)d=1}
+    line[i]=d===1?lb:ub;dir[i]=d}return{line,dir}}
+function rollMax(a,n){const o=new Array(a.length).fill(NaN);for(let i=n-1;i<a.length;i++){let m=-Infinity;for(let j=i-n+1;j<=i;j++)if(a[j]>m)m=a[j];o[i]=m}return o}
+function rollMin(a,n){const o=new Array(a.length).fill(NaN);for(let i=n-1;i<a.length;i++){let m=Infinity;for(let j=i-n+1;j<=i;j++)if(a[j]<m)m=a[j];o[i]=m}return o}
+function cols(b){return{bars:b,o:b.map(x=>x.o),h:b.map(x=>x.h),l:b.map(x=>x.l),c:b.map(x=>x.c)}}
+
+/* ============================== MOMENTUM ENGINE (dir: 1 = CE / long, -1 = PE / short) ==============================
+   Rule (tested in research/): at a 30-minute mark between 9:45 and 14:30, the 5-minute close is beyond the usual distance from the open
+   for that time of day (average of the last 14 full sessions), in the direction of the daily trend (previous close vs daily 20 EMA).
+   Intraday: exit on a 30-minute close through the session average price, or at 3:15 PM. At most 2 calls a day, none in a direction that already failed.
+   Swing: the daily Supertrend must agree too. Carry up to 3 sessions; exit on a 30-minute close through the average price since the entry day's open.
+   Target 1 (1.5R) and Target 2 (3R) are reference marks only: the tested plan holds until the trailing exit, because booking early cut results. */
+const MODES={conservative:'Trend + Supertrend',balanced:'Daily trend',aggressive:'Trend or Supertrend'};
+/* Same rules replayed on real expired-option prices, Oct 2024 - Nov 2026 (research/validate*.js). pf = gross profit / gross loss after costs. */
+const RESEARCH={intra:{NIFTY:{n:150,win:36,pf:1.13},BANKNIFTY:{n:135,win:34,pf:1.01},SENSEX:{n:149,win:36,pf:1.16}},swing:{n:277,win:31,pf:1.68}};
+function stats(t){if(!t.length)return{n:0};const w=t.filter(x=>x>.001).length;return{n:t.length,win:w/t.length,avg:t.reduce((a,b)=>a+b,0)/t.length,sum:t.reduce((a,b)=>a+b,0)}}
+const typ=b=>(b.h+b.l+b.c)/3;
+/* 5-minute bars + daily bars -> per-bar session average (tw), upper/lower band (ub/lb) and per-day trend context */
+function prepM(b,daily){const X=cols(b),n=b.length,D=cols(daily),e20=ema(D.c,20),sd=supertrend(D.h,D.l,D.c).dir,dkD=daily.map(x=>dkey(x.t));
+  Object.assign(X,{dk:b.map(x=>dkey(x.t)),mn:b.map(x=>istMin(x.t)),bn:Array(n),tw:Array(n).fill(NaN),sg:Array(n).fill(NaN),ub:Array(n).fill(NaN),lb:Array(n).fill(NaN),days:[]});
+  let cur=null;for(let i=0;i<n;i++){X.bn[i]=Math.round((X.mn[i]-555)/5);if(!cur||cur.k!==X.dk[i]){cur={k:X.dk[i],s:i,e:i,by:{}};X.days.push(cur)}cur.e=i;cur.by[X.bn[i]]=i}
+  const full=[];
+  X.days.forEach((d,q)=>{d.q=q;d.full=d.e-d.s+1>=70;d.use=(d.full||q===X.days.length-1)&&full.length>=14;
+    let j=-1;for(let k=dkD.length-1;k>=0;k--)if(dkD[k]<d.k){j=k;break}          // last daily candle before this session: no look-ahead
+    d.tr=j>50&&isFinite(e20[j])?(D.c[j]>e20[j]?1:-1):0;d.st=j>50?sd[j]:0;
+    if(d.use){const L=full.slice(-14);d.open=X.o[d.s];d.pc=X.c[L[L.length-1].e];const hi=Math.max(d.open,d.pc),lo=Math.min(d.open,d.pc);let sum=0;
+      for(let i=d.s;i<=d.e;i++){sum+=typ(b[i]);X.tw[i]=sum/(i-d.s+1);let s=0,c=0;for(const p of L){const x=p.by[X.bn[i]];if(x!=null){s+=Math.abs(X.c[x]/X.o[p.s]-1);c++}}
+        if(c){X.sg[i]=s/c;X.ub[i]=hi*(1+s/c);X.lb[i]=lo*(1-s/c)}}}
+    if(d.full)full.push(d)});
+  return X}
+const dirOK=(kind,mode,d,dir)=>kind==='swing'?(mode==='aggressive'?d.tr===dir:d.tr===dir&&d.st===dir):mode==='conservative'?(d.tr===dir&&d.st===dir):mode==='aggressive'?(d.tr===dir||d.st===dir):d.tr===dir;
+/* Replays the rule over every prepared session and returns all trades; a trade without .x is still open. */
+function momTrades(X,kind,mode){const out=[],nD=X.days.length,liveDay=nD>0&&market().open&&X.days[nD-1].k===dkey(Date.now());let pos=null;
+  for(let q=0;q<nD;q++){const d=X.days[q],lastD=q===nD-1;if(!d.use){if(kind==='intra')pos=null;continue}
+    let cnt=0,done=false;const stopped={};if(pos)pos.nd++;
+    for(let i=d.s;i<=d.e;i++){const c=X.c[i],m=X.mn[i],chk=X.bn[i]%6===5,endBar=m>=910||(i===d.e&&!(lastD&&liveDay));
+      if(pos){if(kind==='swing'){pos.sum+=typ(X.bars[i]);pos.cnt++}pos.lvl=kind==='swing'?pos.sum/pos.cnt:X.tw[i];
+        if(((pos.dir>0?X.h[i]:X.l[i])-pos.m1)*pos.dir>=0)pos.t1=true;
+        const why=chk&&(c-pos.lvl)*pos.dir<0?'Trail exit':endBar&&(kind==='intra'||pos.nd>=3)?(kind==='intra'?'Closed 3:15':'Time exit (3 days)'):null;
+        if(why){pos.x={i,px:c,t:X.bars[i].t+3e5,why};pos.R=(c-pos.en)*pos.dir/pos.r;out.push(pos);if(why==='Trail exit')stopped[pos.dir]=1;pos=null;done=true}}
+      if(!pos&&!(kind==='swing'&&done)&&X.bn[i]>=3&&chk&&m>=570&&m<=870&&(kind==='swing'||cnt<2)&&isFinite(X.ub[i])){const dir=c>X.ub[i]?1:c<X.lb[i]?-1:0,has=i<d.e;
+        if(dir&&(has||(lastD&&liveDay))&&!(kind==='intra'&&stopped[dir])&&dirOK(kind,mode,d,dir)){const en=has?X.o[i+1]:c;let sum=0;for(let k=d.s;k<=i;k++)sum+=typ(X.bars[k]);
+          const lvl=kind==='swing'?sum/(i-d.s+1):X.tw[i],r=Math.max(Math.abs(en-lvl),X.sg[i]*en,.0005*en);   /* risk unit: distance to the average, never less than the usual move for that time of day */
+          pos={dir,i,t:X.bars[i].t,day:d.k,d,en,r,lvl,nd:1,sum,cnt:i-d.s+1,m1:en+dir*1.5*r,m2:en+dir*3*r,t1:false,ext:Math.abs(c-(dir>0?X.ub[i]:X.lb[i]))/r};cnt++}}}}
+  if(pos)out.push(pos);return out}
+/* trade -> the call object the cards, option plan and paper account use */
+function sigOf(X,p){const n=X.c.length,up=p.dir>0,isNew=!p.x&&p.i>=n-1;
+  const f=p.x?{st:p.x.why,cls:p.R>0?'p-up':p.x.why==='Trail exit'?'p-dn':'p-mu',done:true,t1:p.t1,px:p.x.px,tx:p.x.t}:{st:isNew?'New':p.t1?'Target 1 hit':'Active',cls:isNew||p.t1?'p-up':'p-amb',done:false,t1:p.t1};
+  const why=[`30-min close ${up?'above':'below'} the usual range`,p.d.tr===p.dir?`Daily trend ${up?'up':'down'}`:'Against the daily trend',p.d.st===p.dir?`Daily Supertrend ${up?'up':'down'}`:null,(X.c[p.i]-X.tw[p.i])*p.dir>0?(up?'Above':'Below')+' session average':null].filter(Boolean);
+  return{dir:p.dir,setup:up?'Momentum breakout':'Momentum breakdown',score:Math.min(100,(p.d.tr===p.dir?55:35)+(p.d.st===p.dir?20:0)+Math.round(Math.min(25,p.ext*25))),why,i:p.i,t:p.t,f,age:p.nd-1,
+    fresh:!p.x&&!p.t1&&(X.c[n-1]-p.en)*p.dir<=.5*p.r,lv:{entry:tick(p.en),sl:tick(p.lvl),t1:tick(p.m1),t2:tick(p.m2),r:p.r}}}
+function biasOf2(X,d){const n=X.c.length,c=X.c[n-1],g=(dir,a,b)=>dir>0?a>b:a<b,sc=dir=>30*(d.tr===dir)+20*(d.st===dir)+20*g(dir,c,X.tw[n-1])+15*g(dir,c,d.open)+15*g(dir,c,dir>0?X.ub[n-1]:X.lb[n-1]);return{bull:sc(1),bear:sc(-1)}}
+function analyze(X,kind,mode){const n=X.c.length,D=X.days,d=D[D.length-1];if(!d||!d.use)throw new Error('not enough 5-minute history yet (needs 14 full sessions)');
+  const day=d.k,last=X.c[n-1],today=dkey(Date.now())===day&&market().open,over=X.mn[n-1]>=910||!today,all=momTrades(X,kind,mode);
+  const recent=kind==='intra'?all.filter(p=>p.day===day):all.filter(p=>p.d.q>=D.length-6),sigs=recent.map(p=>sigOf(X,p)),live=sigs.filter(s=>!s.f.done).pop()||null;
+  const hist=all.filter(p=>p.x&&p.day!==day);
+  return{kind,day,last,pc:d.pc,chg:last/d.pc-1,sigs,live,...biasOf2(X,d),ub:X.ub[n-1],lb:X.lb[n-1],tw:X.tw[n-1],sg:X.sg[n-1],tr:d.tr,st:d.st,ce:dirOK(kind,mode,d,1),pe:dirOK(kind,mode,d,-1),over,bt:stats(hist.map(p=>p.R)),btDays:D.filter(x=>x.use).length-1,X}}
+const intraAnalyze=(X,mode)=>analyze(X,'intra',mode),swingAnalyze=(X,mode)=>analyze(X,'swing',mode);
+
+/* ============================== option plan from the live chain ============================== */
+async function premAt(key,t,kind){if(!key||S.demo||S.yahoo)return NaN;const id='p|'+key+'|'+t;if(S.cache[id])return S.cache[id].v;let v=NaN;
+  /* option price at the signal candle: today's 5-minute candles, or that day's history for a swing call made earlier */
+  const pick=j=>{const b=parseC(j.data.candles).find(x=>x.t===t);if(b)v=b.c};
+  if(dkey(t)===dkey(Date.now()))pick(await api(`/v3/historical-candle/intraday/${enc(key)}/minutes/5`));
+  if(!(v>0))pick(await api(`/v3/historical-candle/${enc(key)}/minutes/5/${dkey(t)}/${dkey(t)}`));
+  if(v>0)S.cache[id]={t:Date.now(),v};return v}
+async function legFor(r,side,sig,spot,kind,lot,tag){const o=r[side]||{},md=o.market_data||{},gk=o.option_greeks||{};const ltp=+md.ltp;if(!(ltp>0))return null;
+  if(ltp<.8*Math.max(0,(spot-r.strike_price)*(side==='put_options'?-1:1)))return null;   /* stale quote: below intrinsic value, so not tradable at this price */
+  const dS=isFinite(+gk.delta)&&+gk.delta!==0?+gk.delta:(side==='put_options'?-.5:.5),delta=Math.min(.95,Math.max(.05,Math.abs(dS)));
+  const leg={strike:r.strike_price,type:side==='put_options'?'PE':'CE',key:o.instrument_key,ltp,delta,tag,lot};
+  const sid=kind+sig.t+sig.dir+leg.strike;let p0=S.p0[sid];
+  if(!(p0>0)){p0=await premAt(o.instrument_key,sig.t,kind).catch(()=>NaN);leg.est=!(p0>0);if(!(p0>0))p0=tick(Math.max(.05,ltp-dS*(spot-sig.lv.entry)));S.p0[sid]=p0;S.p0[sid+'e']=leg.est}
+  else leg.est=S.p0[sid+'e'];
+  const L=sig.lv,dist=x=>Math.abs(x-L.entry),sd=delta*(L.sl-L.entry)*sig.dir;leg.capped=sd<-.4*p0;   /* the trail stop can sit beyond entry once the call is in profit */
+  Object.assign(leg,{p0,psl:tick(Math.max(.05,p0+Math.max(sd,-.4*p0))),pt1:tick(p0+delta*dist(L.t1)),pt2:tick(p0+delta*dist(L.t2))});
+  leg.lotCost=ltp*lot;leg.riskLot=(ltp-leg.psl)*lot;leg.fits=leg.lotCost<=cfg().budget;leg.lots=Math.floor(cfg().budget/leg.lotCost);
+  leg.v=verdict(leg,sig);return leg}
+async function optionPlan(ch,sig,spot,kind){if(!ch||!ch.rows.length)return null;const rows=ch.rows;
+  let pc=0,po=0,mc=null,mp=null;for(const r of rows){const c=+((r.call_options||{}).market_data||{}).oi||0,p=+((r.put_options||{}).market_data||{}).oi||0;pc+=c;po+=p;
+    if(!mc||c>mc.oi)mc={k:r.strike_price,oi:c};if(!mp||p>mp.oi)mp={k:r.strike_price,oi:p}}
+  const out={exp:ch.exp,lot:ch.lot,pcr:pc?po/pc:NaN,res:mc&&mc.k,sup:mp&&mp.k,legs:[]};if(!sig)return out;
+  const ref=sig.lv.entry;let ai=0;rows.forEach((r,i)=>{if(Math.abs(r.strike_price-ref)<Math.abs(rows[ai].strike_price-ref))ai=i});
+  const ce=sig.dir>0,side=ce?'call_options':'put_options';
+  /* 1 ITM, ATM, 3 OTM. For CE, ITM = lower strike; for PE, ITM = higher strike */
+  for(const k of [-1,0,1,2,3]){const idx=ai+(ce?k:-k);if(idx<0||idx>=rows.length)continue;
+    const tag=k<0?'ITM':k===0?'ATM':'OTM '+k;const leg=await legFor(rows[idx],side,sig,spot,kind,ch.lot,tag);if(leg)out.legs.push(leg)}
+  if(!out.legs.some(l=>l.fits))for(let k=4;k<=14;k++){const idx=ai+(ce?k:-k);if(idx<0||idx>=rows.length)break;   // go further OTM until 1 lot fits the budget
+    const leg=await legFor(rows[idx],side,sig,spot,kind,ch.lot,'OTM '+k);if(leg&&leg.fits){if(leg.delta>=.12){leg.far=true;out.legs.push(leg)}break}}
+  const good=out.legs.filter(l=>l.fits&&l.v.ok&&l.delta>=.12);
+  out.best=good.length?out.legs.indexOf(good.sort((a,b)=>b.delta-a.delta)[0]):Math.max(0,out.legs.findIndex(l=>l.tag==='ATM'));
+  out.bestFits=good.length>0;return out}
+function verdict(o,sig){const L=o.ltp,up1=(o.pt1-L)/L,up2=(o.pt2-L)/L,dn=(L-o.psl)/L,rr=dn>0?up1/dn:0,mv=(L-o.p0)/o.p0;
+  const base={up1,up2,dn,rr,mv};
+  if(sig.f&&sig.f.done)return{...base,ok:false,cls:'dn',lab:sig.f.st+' — call closed',tip:'Do not enter.'};
+  if(L<=o.psl)return{...base,ok:false,cls:'dn',lab:'Premium below stop — do not enter',tip:'The price is already through the trailing stop.'};
+  if((sig.f&&sig.f.t1)||L>=o.pt1)return{...base,ok:false,cls:'dn',lab:'Target 1 already reached — don\'t chase',tip:'Most of the move is done. Wait for the next call.'};
+  if(up1<.05)return{...base,ok:false,cls:'dn',lab:`Too late — only ${(up1*100).toFixed(1)}% left to Target 1`,tip:`You would risk ${(dn*100).toFixed(1)}% to make ${(up1*100).toFixed(1)}%. Skip this one.`};
+  if(rr<1)return{...base,ok:false,cls:'dn',lab:'Too late — risk now bigger than reward',tip:`From here: risk ${(dn*100).toFixed(1)}% to make ${(up1*100).toFixed(1)}%. Skip this one.`};
+  if(rr<1.5||mv>.1)return{...base,ok:true,cls:'amb',lab:'Late entry — caution, smaller size only',tip:`Premium ${mv>=0?'up':'down'} ${(Math.abs(mv)*100).toFixed(1)}% since the call. From here: risk ${(dn*100).toFixed(1)}% to make ${(up1*100).toFixed(1)}% (R:R ${rr.toFixed(1)}).`};
+  return{...base,ok:true,cls:'up',lab:mv<=.03?'Valid — near the call price':'Still valid to enter',tip:`Risk ${(dn*100).toFixed(1)}% to make ${(up1*100).toFixed(1)}% (Target 1) or ${(up2*100).toFixed(1)}% (Target 2).`}}
+
+/* ============================== scanning ============================== */
+async function scan(kind,quiet){if(S.scanning)return;const c=cfg(),th=c.mode;
+  if(!S.demo&&!c.pin){openSettings();toast('Enter your PIN first');return}
+  S.scanning=kind;render();let fatal=null;
+  await Promise.all(IDX.map(async ix=>{try{
+      const X=prepM(await Data.m5(ix),await Data.daily(ix)),A=kind==='intra'?intraAnalyze(X,th):swingAnalyze(X,th);A.at=Date.now();
+      let spot=A.last;try{A.chain=await Data.chain(ix,kind,spot);if(A.chain&&A.chain.rows[0]&&+A.chain.rows[0].underlying_spot_price)spot=+A.chain.rows[0].underlying_spot_price}catch(e){if(e.code===401)throw e;A.chainErr=e.message}
+      A.spot=spot;
+      /* change against the last completed close: before today's session has candles (pre-open), that is the previous session's close, not the day before */
+      const base=A.day===dkey(Date.now())?A.pc:A.last;if(base>0&&spot>0)A.chg=spot/base-1;
+      A.opt=await optionPlan(A.chain,A.live,spot,kind);S.res[kind][ix.id]=A}
+    catch(e){if(e.code===401||e.code===500)fatal=e.message;S.res[kind][ix.id]={err:e.message}}}));
+  S.scanning=null;S.at[kind]=Date.now();if(!fatal){paperAuto(kind);await paperUpdate()}render();
+  if(fatal){toast(fatal);if(/PIN/i.test(fatal))openSettings();return}
+  if(!quiet){const n=IDX.filter(ix=>(S.res[kind][ix.id]||{}).live).length;toast(n?n+' live call'+(n>1?'s':''):'No live call right now')}
+  else{const nw=IDX.map(ix=>S.res[kind][ix.id]).filter(a=>a&&a.live&&a.live.f.st==='New');if(nw.length)toast('New call on '+IDX.find(ix=>S.res[kind][ix.id]===nw[0]).name)}}
+
+/* ============================== rendering ============================== */
+function biasOf(A){if(!A||A.err)return{lab:'—',cls:'mu'};const d=A.bull-A.bear;return d>=20?{lab:'Bullish',cls:'up'}:d<=-20?{lab:'Bearish',cls:'dn'}:{lab:'Neutral',cls:'amb'}}
+function callChip(A,kind,ix){if(!A)return{t:'…',c:'mu'};if(A.err)return{t:'error',c:'dn'};
+  const L=A.live;if(!L)return{t:'No call',c:'mu'};const side=L.dir>0?'CE':'PE',leg=A.opt&&A.opt.legs&&A.opt.legs.length?pickLeg(A,kind,ix):null;
+  if(!leg)return{t:side+' · no strike',c:'amb'};
+  return leg.v.cls==='up'?{t:'Buy '+side,c:L.dir>0?'up':'dn'}:leg.v.cls==='amb'?{t:side+' · late',c:'amb'}:{t:side+' · skip',c:'mu'}}
+function tilesHTML(){return IDX.map(ix=>{const a=S.res.intra[ix.id],b=S.res.swing[ix.id],A=a&&!a.err?a:b&&!b.err?b:null;
+  const row=(lab,X,k)=>{const c=callChip(X,k,ix);return`<div class="cl"><span>${lab}</span><b class="${c.c}">${c.t}</b></div>`};
+  return`<div class="tile"><div class="n">${ix.name}</div><div class="p num">${A?f2(A.spot||A.last):'—'}</div><div class="c num ${A&&A.chg>=0?'up':'dn'}">${A?pct(A.chg):'&nbsp;'}</div>${row('Intra',a,'intra')}${row('NRML',b,'swing')}</div>`}).join('')}
+function lvGrid(v,labels,cls,base,first,fmt){const p=x=>base?pct((x-base)/base,2):'';return`<div class="lv num">${v.map((x,j)=>`<div><span>${labels[j]}</span><b class="${cls[j]}">${fmt(x)}</b><i>${j===0?first:p(x)}</i></div>`).join('')}</div>`}
+function btLine(bt,span){if(!bt||!bt.n)return`<span>Backtest (${span}): too few past signals</span>`;
+  return`<span>Same rules, ${span}:</span><b>${bt.n} trades</b>·<b class="${bt.win>=.5?'up':''}">${Math.round(bt.win*100)}% win</b>·<b class="${bt.avg>0?'up':'dn'}">${sgn(bt.avg,2)}R avg</b>`}
+function resLine(kind,ix){const r=kind==='intra'?RESEARCH.intra[ix.id]:RESEARCH.swing;
+  return`<span>Real option prices, Oct 2024–Nov 2026${kind==='swing'?', all 3 indices':''}:</span><b>${r.n} trades</b>·<b>${r.win}% win</b>·<b class="${r.pf>=1.1?'up':'amb'}">profit factor ${r.pf.toFixed(2)}</b>${r.pf<1.1?'<span>· about break-even, lower confidence</span>':''}`}
+function oiLine(o){if(!o)return'<span>Option chain unavailable</span>';if(S.yahoo)return'<span>Premiums estimated from India VIX · OI &amp; PCR need the Upstox token</span>';return`<span>PCR <b>${isFinite(o.pcr)?o.pcr.toFixed(2):'—'}</b></span>·<span>Support <b>${f0(o.sup)}</b> PE OI</span>·<span>Resistance <b>${f0(o.res)}</b> CE OI</span>`}
+function track(o){const lo=o.psl,hi=o.pt2,P=x=>Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+  return`<div class="rail"><i class="seg-r" style="width:${P(o.p0)}%"></i><i class="seg-g" style="left:${P(o.p0)}%;width:${100-P(o.p0)}%"></i><em style="left:${P(o.p0)}%"></em><em style="left:${P(o.pt1)}%"></em><u style="left:${P(o.ltp)}%"></u></div><div class="rail-l num"><span>SL ${f2(o.psl)}</span><span>Entry ${f2(o.p0)}</span><span>T1 ${f2(o.pt1)}</span><span>T2 ${f2(o.pt2)}</span></div>`}
+function pbtn(kind,ixId,L){const sid=sidOf(kind,ixId,L),done=P&&P.on&&(P.pos.some(p=>p.sid===sid)||P.hist.some(p=>p.sid===sid));return`<button class="sbtn ${done?'done':'pri'}" data-pbuy="${kind}|${ixId}">${done?'Paper ✓':'Paper buy'}</button>`}
+function pickLeg(A,kind,ix){const o=A.opt;if(!o||!o.legs||!o.legs.length)return null;const k=S.pick[kind+ix.id+(A.live?A.live.t:'')];return o.legs.find(l=>l.strike===k)||o.legs[o.best]}
+function ladder(A,kind,ix,cur){const o=A.opt;return`<div class="lad">${o.legs.map((l,j)=>({l,j})).sort((a,b)=>(b.j===o.best&&o.bestFits)-(a.j===o.best&&o.bestFits)).map(({l,j})=>{const v=l.v,sel=l===cur,best=j===o.best&&o.bestFits;
+  return`<button class="leg ${sel?'sel':''}" data-pick="${kind}|${ix.id}|${A.live.t}|${l.strike}">
+    <div class="l1"><b>${f0(l.strike)} ${l.type}</b><span class="tg">${l.tag}</span>${best?'<span class="tg bst">Best pick</span>':''}${l.far?'<span class="tg" style="color:var(--amb)">Far</span>':''}<span class="sp"></span><b class="num">₹${f2(l.ltp)}</b></div>
+    <div class="l2 num">Entry ${f2(l.p0)} · SL ${f2(l.psl)} · T1 ${f2(l.pt1)} · T2 ${f2(l.pt2)}</div>
+    <div class="l3 num"><span class="${l.fits?'':'dn'}">1 lot ₹${f0(l.lotCost)}${l.fits?'':' · over budget'}</span><span>To T1 <b class="${v.up1>0?'up':'dn'}">${pct(v.up1,0)}</b></span><span>R:R ${v.rr>0?v.rr.toFixed(1):'—'}</span><span class="pill ${v.cls==='up'?'p-up':v.cls==='amb'?'p-amb':'p-dn'}">${v.cls==='up'?'Valid':v.cls==='amb'?'Caution':'Skip'}</span></div></button>`}).join('')}</div>
+  <div class="sub" style="margin:6px 0 0">${o.legs.some(l=>l.far)?'Within your budget only a far OTM strike fits. It is cheap, but it needs a big index move and can expire worthless. Keep the stop strict. ':''}ITM moves most with the index and holds value better. OTM is cheaper but needs a bigger move, and loses value faster from time decay.</div>`}
+function indexCard(ix,kind){const A=S.res[kind][ix.id],key=kind+'|'+ix.id,more=!!S.more[key],bi=A&&!A.err?biasOf(A):null;
+  const head=`<div class="c-top"><div><div class="iname">${ix.name}</div>${bi?`<div class="meta"><span class="num">${f2(A.spot)}</span><span class="${A.chg>=0?'up':'dn'} num">${pct(A.chg)}</span></div>`:''}</div>${bi?`<span class="pill ${bi.cls==='up'?'p-up':bi.cls==='dn'?'p-dn':'p-amb'}">${bi.lab}</span>`:''}</div>`;
+  if(!A)return`<article class="card">${head}<div class="sub" style="margin:8px 0 0">Not scanned yet</div></article>`;
+  if(A.err)return`<article class="card">${head}<div class="err">${esc(A.err)}</div></article>`;
+  const L=A.live,o=A.opt,bud=cfg().budget;let h=`<article class="card">${head}`,det='';
+  if(L){const ce=L.dir>0,leg=pickLeg(A,kind,ix),ok=!!leg,v=ok&&leg.v;
+    const when=kind==='intra'||L.age===0?'called '+hhmm(L.t+5*60000):'called '+nice(dkey(L.t))+' · day '+(L.age+1)+' of 3';
+    h+=`<div class="action ${ce?'ce':'pe'}"><div><div class="big ${ce?'up':'dn'}">BUY ${ok?f0(leg.strike)+' '+leg.type:ce?'CE':'PE'}</div><div class="sm">${o?'Expiry '+nice(o.exp)+' · ':''}${when}</div></div>
+      <div class="prem"><b class="num">${ok?'₹'+f2(leg.ltp):'—'}</b><span class="sm">price now</span></div></div>`;
+    if(ok){h+=`<div class="verdict ${v.cls}"><b>${v.ok?'✓ ':'✕ '}${esc(v.lab)}</b>${v.ok?'':'<span>'+esc(v.tip)+'</span>'}</div>
+      ${!v.ok?'':lvGrid([leg.ltp,leg.psl,leg.pt1,leg.pt2],['Buy now','Stop','Target 1','Target 2'],['','dn','up','up'],leg.ltp,'live price',f2)}
+      ${!v.ok?'':`<div class="qty1">${leg.fits?`${leg.lots} lot${leg.lots>1?'s':''} (${leg.lots*leg.lot} qty) · <b>total outlay ₹${f0(leg.lots*leg.lotCost)}</b> · max loss ₹${f0(leg.lots*leg.riskLot)}${v.cls==='amb'?' · late: use fewer lots':''}<br>If it reaches Target 1: <b class="up">+₹${f0((leg.pt1-leg.ltp)*leg.lot*leg.lots)}</b> (${pct(v.up1,0)} left) · Target 2: <b class="up">+₹${f0((leg.pt2-leg.ltp)*leg.lot*leg.lots)}</b> (${pct(v.up2,0)} left)`:`1 lot costs ₹${f0(leg.lotCost)}, above your ₹${f0(bud)} budget.`}</div>
+      <div class="qty1 mu">${kind==='intra'?'Exit by 3:15 PM, or earlier when a 30-min candle closes back through the average.':'Hold up to 3 days. Exit when a 30-min candle closes back through the average.'}</div>`}`;
+      det+=`<div class="lvh">Why this price</div><div class="sub" style="margin:0 0 8px">${esc(v.tip)}</div>${track(leg)}
+      <div class="lvh">Choose your strike · budget ₹${f0(bud)} <button class="lnk" data-budget="1">change</button></div>${ladder(A,kind,ix,leg)}`}
+    det+=`<div class="lvh">${ix.name} index levels</div>${lvGrid([L.lv.entry,L.lv.sl,L.lv.t1,L.lv.t2],['Entry','Trail stop','Target 1','Target 2'],['','dn','up','up'],L.lv.entry,'signal price',f0)}
+      <div class="why">${L.why.slice(0,6).map(w=>`<span>${esc(w)}</span>`).join('')}</div>`;
+    h+=`<div class="c-act"><button class="sbtn" data-more="${key}">${more?'Hide details':'Details'}</button><span class="sp"></span><button class="sbtn" data-chart="${kind}|${ix.id}|${L.i}">Chart</button>${pbtn(kind,ix.id,L)}${ordBtn(kind,ix,leg,v)}</div>`}
+  else{const mk=market();let need;
+    if(!mk.open)need='Market closed. Calls can appear at 30-minute marks between 9:45 AM and 2:30 PM.';
+    else if(mk.m>=875)need='No new calls after 2:30 PM.';
+    else if(!A.ce&&!A.pe)need=kind==='swing'?'The daily trend and daily Supertrend disagree, so no NRML calls are taken today.':'The daily filters allow no calls in this mode today.';
+    else need=[A.ce?`CE: a 30-minute close above ${f0(A.ub)}.`:'',A.pe?`PE: a 30-minute close below ${f0(A.lb)}.`:''].filter(Boolean).join(' ')+(A.ce&&A.pe?'':` Daily trend is ${A.tr>0?'up':'down'}, so only ${A.ce?'CE':'PE'} calls are taken.`);
+    h+=`<div class="wait"><b>No call right now</b>${need}</div><div class="c-act"><button class="sbtn" data-more="${key}">${more?'Hide details':'Details'}</button></div>`}
+  det+=`<div class="info">${oiLine(o)}</div><div class="info" style="border-top:0;margin-top:0;padding-top:4px">${btLine(A.bt,'last '+A.btDays+' sessions')}</div><div class="info" style="border-top:0;margin-top:0;padding-top:4px">${resLine(kind,ix)}</div>`;
+  const past=A.sigs.filter(s=>s!==L).slice(kind==='swing'?-2:0);
+  if(past.length)det+=`<div class="lvh">${kind==='intra'?'Earlier today':'Previous calls'}</div><div class="list">${past.sort((a,b)=>b.t-a.t).map(s=>`<div class="row"><div><div class="n ${s.dir>0?'up':'dn'}">${s.dir>0?'CE':'PE'} · ${s.setup}</div><div class="s num">${kind==='swing'?nice(dkey(s.t))+' ':''}${hhmm(s.t+5*60000)} · in ${f0(s.lv.entry)} · ${s.f.done?'out '+f0(s.f.px):'trail '+f0(s.lv.sl)}</div></div><span class="pill ${s.f.cls}">${s.f.st==='Active'?'Moved away':s.f.st}</span></div>`).join('')}</div>`;
+  return h+(more?`<div class="more">${det}</div>`:'')+'</article>'}
+function scanBar(kind){const busy=S.scanning===kind,at=S.at[kind];const c=cfg();
+  return`<div class="bar"><button class="btn" id="btnScan" ${S.scanning?'disabled':''}>${busy?'<span class="spin"></span> Scanning…':(at?'Refresh':'Scan indices')}</button>${kind==='intra'?`<button class="btn2 ${S.auto?'on':''}" id="btnAuto">${S.auto?'Auto ✓':'Auto 1m'}</button>`:''}</div>
+  <div class="sub">${S.demo?'Demo data · ':''}${at?'Updated '+new Date(at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' · ':''}${c.mode} mode · ${kind==='intra'?'exit by 3:15 PM, nearest expiry':'carry up to 3 days, monthly expiry'}</div>`}
+/* ============================== PAPER TRADING ==============================
+   Virtual account. Buys fill at the live option premium. Each position is then managed like the call:
+   stop-loss, half booked at Target 1 (stop moved to cost), rest at Target 2, intraday square-off 3:15 PM, swing exit after 10 days.
+   Real mode checks the option's own 1-minute candles (30-minute for swing), so hits are caught even while the app was closed that day. */
+let P=null,saveT=null;
+const rs=x=>(x<0?'−₹':'+₹')+f0(Math.abs(x));
+async function paperLoad(){let b=null;
+  if(!S.demo&&cfg().pin){try{const r=await fetch('api.php?store=paper',{headers:{'X-App-Pin':cfg().pin},cache:'no-store'});const j=await r.json();if(j&&j.book)b=j.book}catch(e){}}
+  const l=LS.get(S.demo?'paper_demo':'paper',null);let fromLocal=false;
+  if(l&&!S.viewer&&(!b||(l.ts||0)>(b.ts||0))){b=l;fromLocal=true}else if(!b)b=l;
+  P=b||{on:false,auto:true,start:50000,cash:50000,fee:20,pos:[],hist:[],log:[]};
+  if(fromLocal&&!S.demo)paperSave()}   /* the server was behind: bring it up to date */
+function paperSave(){if(S.viewer)return;P.ts=Date.now();LS.set(S.demo?'paper_demo':'paper',P);if(S.demo)return;S.saveDirty=true;clearTimeout(saveT);saveT=setTimeout(paperFlush,150)}
+async function paperFlush(unloading){if(!S.saveDirty||S.demo||S.viewer||!P)return;S.saveDirty=false;clearTimeout(saveT);
+  const body=JSON.stringify({book:P});
+  try{const r=await fetch('api.php?store=paper',{method:'POST',keepalive:!!unloading&&body.length<60000,headers:{'X-App-Pin':cfg().pin,'Content-Type':'application/json'},body});
+    if(r.status===409){const j=await r.json().catch(()=>({}));S.viewer=false;await paperLoad();render();toast('Another window changed the paper account, so this one reloaded it.')}}catch(e){S.saveDirty=true}}
+addEventListener('pagehide',()=>{if(!RUN)paperFlush(true)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)paperFlush(true);else if(!RUN)svcCheck()});
+function plog(txt,cls){P.log.unshift({t:Date.now(),txt,cls});if(P.log.length>300)P.log.length=300}
+const ixName=id=>(IDX.find(i=>i.id===id)||{}).name||id;
+const sidOf=(kind,ixId,L)=>kind+'|'+ixId+'|'+L.t+'|'+L.dir;
+function paperBuy(kind,ixId,auto,legOverride){
+  if(!P||!P.on){if(!auto){S.tab='paper';LS.set('tab','paper');render();toast('Start paper trading first')}return false}
+  const ix=IDX.find(i=>i.id===ixId),A=S.res[kind][ixId];if(!A||!A.live)return false;
+  const L=A.live,leg=legOverride||pickLeg(A,kind,ix),sid=sidOf(kind,ixId,L);if(!leg)return false;
+  if(P.pos.some(p=>p.sid===sid)||P.hist.some(p=>p.sid===sid)){if(!auto)toast('Already traded this call');return false}
+  if(!leg.v.ok){if(!auto)toast('Skip: '+leg.v.lab.replace(/^.*? — /,''));return false}
+  const mk=market();if(!S.demo&&(!mk.open||(kind==='intra'&&mk.m>=900))){if(!auto)toast(kind==='intra'?'Intraday paper buys: 9:15 AM – 3:00 PM':'Market closed');return false}
+  const px=leg.ltp,lotCost=px*leg.lot;let lots=Math.max(1,Math.floor(cfg().budget/lotCost));
+  if(lots*lotCost+P.fee>P.cash)lots=Math.floor((P.cash-P.fee)/lotCost);
+  if(lots<1){if(!auto)toast('Not enough paper cash');else{plog(`Skipped ${ix.name} ${f0(leg.strike)} ${leg.type} — not enough cash`,'mu');paperSave()}return false}
+  const qty=lots*leg.lot;P.cash-=qty*px+P.fee;
+  const pos={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),sid,ix:ixId,kind,dir:L.dir,setup:L.setup,score:L.score,strike:leg.strike,type:leg.type,tag:leg.tag,key:leg.key,
+    lot:leg.lot,lots,qty,open:qty,entry:px,callPx:leg.p0,sl:tick(px*.6),t1:leg.pt1,t2:leg.pt2,slNow:tick(px*.6),half:false,booked:-P.fee,delta:leg.delta,idx0:A.spot,t0:Date.now(),lastT:Date.now(),ltp:px,hi:px,lo:px,exp:A.opt.exp,auto:!!auto};
+  P.pos.push(pos);plog(`${auto?'Auto-bought':'Bought'} ${lots} lot${lots>1?'s':''} (${qty} qty) ${ix.name} ${f0(leg.strike)} ${leg.type} @ ₹${f2(px)} · ${L.setup}`,'up');
+  paperSave();if(!auto)toast('Paper buy filled @ ₹'+f2(px));render();return true}
+function sellPart(p,q,px,why){const pnl=(px-p.entry)*q-P.fee;p.open-=q;p.booked+=pnl;P.cash+=q*px-P.fee;
+  plog(`${why}: sold ${q} ${ixName(p.ix)} ${f0(p.strike)} ${p.type} @ ₹${f2(px)} (${rs(pnl)})`,pnl>=0?'up':'dn')}
+function closePos(p,px,why,t){if(/Stop/.test(why))p.lo=Math.max(p.lo,Math.min(px,p.entry));if(p.open>0)sellPart(p,p.open,px,why);
+  Object.assign(p,{exit:px,why,tC:t||Date.now(),pnl:p.booked,ret:p.booked/(p.entry*p.qty),peak:p.hi/p.entry-1,trough:p.lo/p.entry-1});
+  P.pos=P.pos.filter(x=>x!==p);P.hist.unshift(p);if(P.hist.length>500)P.hist.length=500}
+/* one price bar against the position; returns true when the position closed */
+function stepPos(p,b,live){if(!live&&b.t<p.lastT)return false;
+  p.hi=Math.max(p.hi,b.h);p.lo=Math.min(p.lo,b.l);
+  if(b.l<=p.slNow){closePos(p,live?b.c:p.slNow,'Stop-loss hit (premium −40%)',b.t);return true}
+  if(!p.half&&b.h>=p.t1){p.half=true;plog(`Target 1 reached on ${ixName(p.ix)} ${f0(p.strike)} ${p.type} — holding with the trailing exit`,'up')}
+  if(p.kind!=='swing'&&istMin(b.t)>=915){closePos(p,b.c,'Square-off 3:15 PM',b.t);return true}
+  if(!live)p.lastT=b.t;p.ltp=b.c;return false}
+async function optBars(p){
+  if(!S.demo&&!S.yahoo&&p.key){try{let b;
+    if(p.kind!=='swing')b=parseC((await api(`/v3/historical-candle/intraday/${enc(p.key)}/minutes/1`)).data.candles);
+    else{const e={data:{candles:[]}};const [h,t]=await Promise.all([api(`/v3/historical-candle/${enc(p.key)}/minutes/30/${dkey(Date.now())}/${dkey(p.t0)}`).catch(()=>e),api(`/v3/historical-candle/intraday/${enc(p.key)}/minutes/30`).catch(()=>e)]);
+      const m=new Map();for(const x of parseC(h.data.candles))m.set(x.t,x);for(const x of parseC(t.data.candles))m.set(x.t,x);b=[...m.values()].sort((a,c)=>a.t-c.t)}
+    if(b.length)return b.filter(x=>x.t>=p.t0)}catch(e){}}
+  /* demo, or option candles unavailable: follow the index and translate with the option's delta */
+  const ix=IDX.find(i=>i.id===p.ix);if(!ix)return[];const ib=(await Data.m5(ix)).filter(x=>x.t>=p.t0),f=v=>tick(Math.max(.05,p.entry+p.dir*p.delta*(v-p.idx0)));
+  return ib.map(x=>({t:x.t,o:f(x.o),h:p.dir>0?f(x.h):f(x.l),l:p.dir>0?f(x.l):f(x.h),c:f(x.c)}))}
+function weekdaysSince(t0){let n=0,t=t0;while(t<Date.now()-DAY/2){t+=DAY;const wd=new Date(t+IST).getUTCDay();if(wd&&wd!==6)n++}return n}
+async function paperUpdate(){if(!P||!P.on||!P.pos.length||S.viewer)return;
+  for(const p of P.pos.slice()){try{
+    /* the call's own status (trail exit / time exit) comes from the index; the position is closed at the option price of that moment */
+    const A=(S.res[p.kind]||{})[p.ix],sg=A&&!A.err&&A.at>Date.now()-18e4?A.sigs.find(s=>sidOf(p.kind,p.ix,s)===p.sid):null,cut=sg&&sg.f.done?sg.f.tx:Infinity;
+    for(const b of await optBars(p)){if(b.t>=cut)break;if(stepPos(p,b,false))break}
+    if(!P.pos.includes(p))continue;
+    if(cut<Infinity){closePos(p,p.ltp,sg.f.st==='Trail exit'?'Trail exit: 30-min close through the average':sg.f.st,cut);continue}
+    if(!S.demo&&!S.yahoo){const A=p.kind==='stk'?{chain:(S.cache['co|'+p.ix+p.exp]||{}).v}:(S.res[p.kind]||{})[p.ix],r=A&&A.chain&&A.chain.rows.find(r=>r.strike_price===p.strike&&r.expiry===p.exp);
+      const v=r?+((r[p.dir>0?'call_options':'put_options']||{}).market_data||{}).ltp:NaN;if(v>0&&stepPos(p,{t:Date.now(),o:v,h:v,l:v,c:v},true))continue}
+    if(p.kind!=='swing'&&dkey(Date.now())!==dkey(p.t0))closePos(p,p.ltp,'Squared off at day end');
+    else if(p.exp&&dkey(Date.now())>p.exp)closePos(p,p.ltp,'Expired');
+    else if(p.kind==='swing'&&weekdaysSince(p.t0)>=3)closePos(p,p.ltp,'Time exit after 3 days');
+  }catch(e){}}
+  paperSave()}
+function paperAuto(kind){if(!P||!P.on||!P.auto||S.viewer)return;
+  for(const ix of IDX){const A=S.res[kind][ix.id];if(!A||A.err||!A.live||!A.opt||!A.opt.legs.length||!A.opt.bestFits)continue;
+    const leg=A.opt.legs[A.opt.best];if(leg&&leg.v.cls==='up'&&!A.live.f.done&&!A.live.f.t1)paperBuy(kind,ix.id,true,leg)}}
+
+/* ---------- paper view ---------- */
+function paperView(){
+  if(!P||!P.on)return`<div class="card" style="margin-top:14px"><div class="iname">Paper trading</div>
+    <div class="how" style="margin-top:8px">Trade every call with virtual money before risking real money. When a call is <b>Valid</b>, the account buys the best strike for your budget at the live premium. It then manages the trade the way the tested plan does: a hard stop at 40% of the premium, exit on a 30-minute close through the average price, and square-off at 3:15 PM (swing: after 3 days). You see real P&amp;L, win rate and how far each call actually ran.</div>
+    <div class="fld"><label>Starting virtual balance (₹)</label><input id="pStart" type="number" inputmode="numeric" value="50000"><div class="hint">₹20 is charged per order, roughly like a discount broker. Budget per trade is set in Settings (now ₹${f0(cfg().budget)}).</div></div>
+    <div class="bar"><button class="btn" id="pOn">Start paper trading</button></div></div>`;
+  const openVal=P.pos.reduce((a,p)=>a+p.open*p.ltp,0),eq=P.cash+openVal,tot=eq-P.start,today=dkey(Date.now());
+  const unreal=p=>p.booked+(p.ltp-p.entry)*p.open;
+  const todayPnl=P.hist.filter(p=>dkey(p.tC)===today).reduce((a,p)=>a+p.pnl,0)+P.pos.reduce((a,p)=>a+unreal(p),0);
+  const C=P.hist,w=C.filter(p=>p.pnl>0).length,avg=C.length?C.reduce((a,p)=>a+p.ret,0)/C.length:NaN;
+  let h=`<div class="stats num" style="grid-template-columns:1fr 1fr"><div class="stat"><span>Balance</span><b>₹${f0(eq)}</b><i class="${tot>=0?'up':'dn'}">${rs(tot)} · ${pct(tot/P.start,1)}</i></div>
+    <div class="stat"><span>Today</span><b class="${todayPnl>=0?'up':'dn'}">${rs(todayPnl)}</b><i class="mu">${P.pos.length} open · cash ₹${f0(P.cash)}</i></div>
+    <div class="stat"><span>Win rate</span><b>${C.length?Math.round(w/C.length*100)+'%':'—'}</b><i class="mu">${w} of ${C.length} closed</i></div>
+    <div class="stat"><span>Avg per trade</span><b class="${avg>=0?'up':'dn'}">${isFinite(avg)?pct(avg,1):'—'}</b><i class="mu">on premium paid</i></div></div>
+    <div class="bar"><button class="btn2 ${P.auto?'on':''}" id="pAuto" style="flex:1">${P.auto?'Auto-buy calls: ON':'Auto-buy calls: OFF'}</button><button class="btn2" id="pUpd">${S.scanning==='paper'?'Updating…':'Update'}</button><button class="btn2" id="pReset" style="color:var(--dn)">${S.resetArm?'Tap again':'Reset'}</button></div>
+    <div class="sub">${P.auto?'Valid calls are bought automatically while this app is open during market hours.':'Auto-buy is off. Use Paper buy on any call.'}</div>`;
+  h+=`<h3>Open positions</h3>`+(P.pos.length?P.pos.map(p=>{const u=unreal(p),r=u/(p.entry*p.qty);
+    return`<div class="card"><div class="c-top"><div><div class="iname" style="font-size:16px"><span class="${p.dir>0?'up':'dn'}">${f0(p.strike)} ${p.type}</span> · ${ixName(p.ix)}</div>
+      <div class="meta"><span class="tag">${p.kind==='intra'?'Intraday':p.kind==='stk'?'Stock · experimental':'Swing'}</span>${p.auto?'<span class="tag">Auto</span>':''}<span class="num">${p.lots} lot${p.lots>1?'s':''} · ${p.open}/${p.qty} qty</span></div></div>
+      <div style="text-align:right"><b class="num ${u>=0?'up':'dn'}" style="font-size:17px">${rs(u)}</b><div class="sm num ${r>=0?'up':'dn'}" style="font-size:12px">${pct(r,1)}</div></div></div>
+      <div class="info num" style="border-top:0;padding-top:0">Bought ₹${f2(p.entry)} at ${hhmm(p.t0)}${p.entry!==p.callPx?` (call ₹${f2(p.callPx)})`:''} · LTP <b>₹${f2(p.ltp)}</b> · peak ${pct(p.hi/p.entry-1,1)}</div>
+      ${posPlan(p)}
+      ${p.kind==='stk'?'':track({psl:p.slNow<p.entry?p.sl:p.slNow,p0:p.entry,pt1:p.t1,pt2:p.t2,ltp:p.ltp})}
+      <div class="c-act"><span class="qty">${p.kind==='stk'?'SL ₹'+f2(p.slNow)+' · exit by 3:15 PM':p.half?'<span class="pill p-up">T1 reached · trailing exit</span>':'SL ₹'+f2(p.slNow)+' · T1 ₹'+f2(p.t1)+' · T2 ₹'+f2(p.t2)}</span><button class="sbtn" data-pexit="${p.id}">Exit now</button></div></div>`}).join(''):`<div class="empty">No open positions.${P.auto?' The next Valid call will be bought automatically.':''}</div>`);
+  if(C.length){const t1=C.filter(p=>p.half).length,sl=C.filter(p=>/Stop-loss/.test(p.why)).length,pk=C.reduce((a,p)=>a+p.peak,0)/C.length,dd=C.reduce((a,p)=>a+p.trough,0)/C.length;
+    h+=`<h3>Did the calls have potential?</h3><div class="list out">
+      <div class="row"><div><div class="n">Average peak after entry</div><div class="s">How high the premium went before exit</div></div><b class="num up">${pct(pk,1)}</b></div>
+      <div class="row"><div><div class="n">Average captured</div><div class="s">What the exit rules actually banked</div></div><b class="num ${avg>=0?'up':'dn'}">${pct(avg,1)}</b></div>
+      <div class="row"><div><div class="n">Reached Target 1</div><div class="s">Calls that hit the first target</div></div><b class="num">${Math.round(t1/C.length*100)}%</b></div>
+      <div class="row"><div><div class="n">Hit stop-loss first</div><div class="s">Average dip after entry ${pct(dd,1)}</div></div><b class="num dn">${Math.round(sl/C.length*100)}%</b></div>
+      ${IDX.map(ix=>{const c=C.filter(p=>p.ix===ix.id);if(!c.length)return'';const pn=c.reduce((a,p)=>a+p.pnl,0);return`<div class="row"><div><div class="n">${ix.name}</div><div class="s">${c.length} trades · ${Math.round(c.filter(p=>p.pnl>0).length/c.length*100)}% win</div></div><b class="num ${pn>=0?'up':'dn'}">${rs(pn)}</b></div>`}).join('')}</div>
+      <h3>Closed trades</h3><div class="list out">${C.slice(0,40).map(p=>`<div class="row"><div style="min-width:0"><div class="n"><span class="${p.dir>0?'up':'dn'}">${f0(p.strike)} ${p.type}</span> · ${ixName(p.ix)}</div>
+      <div class="s num">${nice(dkey(p.t0))} ${hhmm(p.t0)} · ₹${f2(p.entry)} → ₹${f2(p.exit)} · peak ${pct(p.peak,0)}</div><div class="s">${esc(p.why)}</div></div>
+      <div style="text-align:right;flex-shrink:0"><b class="num ${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</b><div class="s num ${p.ret>=0?'up':'dn'}">${pct(p.ret,1)}</div></div></div>`).join('')}</div>`}
+  if(P.log.length)h+=`<h3>Activity</h3><div class="list out">${P.log.slice(0,60).map(l=>`<div class="row" style="align-items:flex-start"><div class="s num" style="margin:0;flex-shrink:0;width:72px">${nice(dkey(l.t))}<br>${hhmm(l.t)}</div><div style="flex:1;font-size:13px" class="${l.cls==='dn'?'dn':l.cls==='up'?'':'mu'}">${esc(l.txt)}</div></div>`).join('')}</div>`;
+  return h+`<div class="sub" style="margin-top:12px">${S.yahoo?'Free mode: paper fills use estimated premiums (India VIX), so treat P&amp;L as approximate until the Upstox token is added.':'Paper fills use the live premium with no slippage, so real fills can be slightly worse.'} Your account is saved on your server${S.demo?' (this demo keeps it on this device only)':''}.</div>`}
+
+/* ---------- chart ---------- */
+function openChart(spec){const [kind,ixId,iS]=spec.split('|'),i=+iS,A=S.res[kind][ixId],X=A.X,L=A.sigs.find(s=>s.i===i)||A.live,ix=IDX.find(z=>z.id===ixId);
+  let a=i,b=X.c.length-1;while(a>0&&X.dk[a-1]===X.dk[i])a--;if(kind==='intra'){let e=a;while(e<b&&X.dk[e+1]===X.dk[i])e++;b=e}
+  openSheet(`<h2>${ix.name} <span class="tag ${L.dir>0?'up':'dn'}">${L.dir>0?'CE':'PE'} · ${L.setup}</span></h2><div class="sub" style="margin:4px 0 0">5-minute candles · ${kind==='swing'?'from '+nice(X.dk[i]):nice(X.dk[i])}</div>
+  <canvas id="cv"></canvas><div class="legend"><span><i style="background:var(--acc)"></i>Session average</span><span><i style="background:var(--amb)"></i>Usual range</span><span><i style="background:var(--tx)"></i>Entry</span><span><i style="background:var(--dn)"></i>Trail stop</span><span><i style="background:var(--up)"></i>Targets</span></div>`);
+  requestAnimationFrame(()=>drawChart($('#cv'),X,a,b,i,L.lv,[[X.tw,'--acc'],[X.ub,'--amb'],[X.lb,'--amb']],L.dir))}
+function drawChart(cv,X,a,b,si,lv,lines,dir){const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=300;cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext('2d');g.scale(dpr,dpr);const cs=getComputedStyle(document.documentElement),V=n=>cs.getPropertyValue(n).trim()||'#888',C=c=>c.slice(0,2)==='--'?V(c):c;
+  const padR=64,padT=10,padB=10,cw=W-padR;let lo=Infinity,hi=-Infinity;for(let k=a;k<=b;k++){lo=Math.min(lo,X.l[k]);hi=Math.max(hi,X.h[k])}
+  for(const v of [lv.sl,lv.t2,lv.t1]){lo=Math.min(lo,v);hi=Math.max(hi,v)}const pad=(hi-lo)*.04;lo-=pad;hi+=pad;
+  const y=v=>padT+(hi-v)/(hi-lo)*(H-padT-padB),n=b-a+1,step=cw/n,bw=Math.max(1,step*.62),x=k=>(k-a+.5)*step;
+  g.strokeStyle=V('--line');g.lineWidth=1;for(let q=0;q<=4;q++){const yy=y(lo+(hi-lo)*q/4);g.beginPath();g.moveTo(0,yy);g.lineTo(cw,yy);g.stroke()}
+  g.fillStyle='rgba(76,141,255,.09)';g.fillRect(x(si)-step/2,padT,step,H-padT-padB);
+  for(let k=a;k<=b;k++){const up=X.c[k]>=X.o[k];g.strokeStyle=g.fillStyle=up?V('--up'):V('--dn');g.beginPath();g.moveTo(x(k),y(X.h[k]));g.lineTo(x(k),y(X.l[k]));g.stroke();
+    const t=y(Math.max(X.o[k],X.c[k])),bt=y(Math.min(X.o[k],X.c[k]));g.fillRect(x(k)-bw/2,t,bw,Math.max(1,bt-t))}
+  for(const [arr,col] of lines){g.strokeStyle=C(col);g.lineWidth=1.3;g.beginPath();let on=false;for(let k=a;k<=b;k++){if(!isFinite(arr[k])){on=false;continue}on?g.lineTo(x(k),y(arr[k])):g.moveTo(x(k),y(arr[k]));on=true}g.stroke()}
+  const lvl=(v,col,lab,d)=>{g.setLineDash(d?[4,4]:[]);g.strokeStyle=C(col);g.lineWidth=1.2;g.beginPath();g.moveTo(x(si),y(v));g.lineTo(cw,y(v));g.stroke();g.setLineDash([]);
+    g.fillStyle=C(col);g.fillRect(cw+2,y(v)-8,padR-4,16);g.fillStyle=V('--inv');g.font='600 10px Inter,sans-serif';g.fillText(lab+' '+Math.round(v),cw+5,y(v)+3.5)};
+  lvl(lv.t2,'--up','T2',1);lvl(lv.t1,'--up','T1',1);lvl(lv.entry,'--tx','E',0);lvl(lv.sl,'--dn','SL',0)}
+
+/* ---------- sheets / settings ---------- */
+function openSheet(html){$('#sheetBody').innerHTML=html;$('#sheet').hidden=false;$('#sheetBg').hidden=false;document.body.style.overflow='hidden'}
+function closeSheet(){$('#sheet').hidden=true;$('#sheetBg').hidden=true;document.body.style.overflow=''}
+function openSettings(){const c=cfg();
+  openSheet(`<h2>Settings</h2><div class="sub" style="margin:4px 0 0">${S.demo?'Demo mode — sample data (api.php not reachable here)':S.yahoo?'Free mode — Yahoo index data, estimated premiums':'Connected to Upstox through your server'}</div>
+  ${(S.demo||AUTH.mode==='users')?'':`<div class="fld"><label>App PIN</label><input id="sPin" type="password" inputmode="numeric" value="${esc(c.pin)}" placeholder="Same as APP_PIN in api.php"></div>`}
+  <div class="fld"><label>Signal strictness</label><div class="seg" id="sMode">${['conservative','balanced','aggressive'].map(m=>`<button data-m="${m}" class="${c.mode===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}<br><span style="font-weight:500;font-size:11px">${MODES[m]}</span></button>`).join('')}</div><div class="hint">Intraday: which daily filters must agree with a call. Swing calls always need the daily trend; Conservative and Balanced also need the daily Supertrend.</div></div>
+  <div class="fld"><label>Budget per trade (₹)</label><input id="sBud" type="number" inputmode="numeric" value="${c.budget}"><div class="hint">Strikes whose 1-lot cost fits this are marked, and the best one is shown first. ₹8–9k suits most small accounts.</div></div>
+  <div class="fld"><label>Layout</label><div class="seg" id="sLay">${['auto','desktop','mobile'].map(m=>`<button data-m="${m}" class="${LS.get('layout','auto')===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><div class="hint">Auto switches to the desktop layout on wide screens.</div></div>
+  <div class="fld"><label>Theme</label><div class="seg" id="sTheme">${['light','dark'].map(m=>`<button data-m="${m}" class="${theme()===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><div class="hint">Light is the default. The choice is remembered on this device. The sun / moon button at the top switches it too.</div></div>
+  <div class="bar"><button class="btn" id="sSave">Save</button></div>
+  <h3>How the engine decides</h3><div class="how">
+  <p><b>One rule, tested on 3.75 years of 5-minute data.</b> Every 30 minutes from 9:45 AM to 2:30 PM the engine compares the index with its usual distance from the open at that time of day (average of the last 14 sessions). A close beyond that range, in the direction of the daily trend (previous close against the daily 20 EMA), is a call: CE above, PE below.</p>
+  <p><b>Intraday:</b> exit when a 30-minute close crosses back through the session average price, or at 3:15 PM. At most two calls a day per index, and none in a direction that already failed that day.</p>
+  <p><b>Swing (NRML):</b> the daily Supertrend must agree with the daily trend. The position is carried up to 3 sessions and exits when a 30-minute close crosses the average price since the entry day's open. It uses a monthly expiry at least 7 days away.</p>
+  <p><b>Stops and targets:</b> the trail stop is checked on 30-minute closes, with a hard stop at 40% of the premium in between. Target 1 (1.5× risk) and Target 2 (3× risk) are reference marks. In testing, booking profit early made results worse, so the plan holds until the trailing exit.</p>
+  <p><b>What testing showed:</b> about two calls in three lose a little, and the gains come from a few trend days. On real option prices from Oct 2024 to Nov 2026 the intraday rule was slightly positive on Nifty and Sensex and about break-even on Bank Nifty. The 3-day rule did better. Neither result is statistically proven, so use paper trading first.</p>
+  <p><b>Strike ladder:</b> 1 ITM, ATM and 3 OTM strikes, plus the nearest strike that fits your budget, from the live Upstox chain with its real premium and delta. Premium levels are estimates from delta. Time decay and IV changes move premiums too, so decide exits on the index levels first.</p>
+  <p><b>PCR and OI:</b> put/call OI ratio, plus the strikes with the highest put OI (support) and call OI (resistance) in that expiry.</p>
+  <p><b>Backtest line:</b> the same rule replayed on the recent 5-minute history loaded in the app, in multiples of the initial risk (R). The line under it is the longer test on real option prices.</p></div>`);
+  $('#sTheme').onclick=e=>{const b=e.target.closest('button');if(!b)return;setTheme(b.dataset.m);[...$('#sTheme').children].forEach(x=>x.classList.toggle('on',x===b))};
+  $('#sLay').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sLay').children].forEach(x=>x.classList.toggle('on',x===b))};
+  $('#sMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sMode').children].forEach(x=>x.classList.toggle('on',x===b))};
+  $('#sSave').onclick=()=>{if($('#sPin'))LS.set('pin',$('#sPin').value.trim());const m=$('#sMode .on');if(m)LS.set('mode',m.dataset.m);
+    LS.set('budget',Math.max(500,+$('#sBud').value||9000));const ly=$('#sLay .on');if(ly){LS.set('layout',ly.dataset.m);applyLayout()}if(!S.demo&&!S.at.intra&&!S.at.swing){paperLoad().then(()=>{render();scan(['paper','chk','stk'].includes(S.tab)?'intra':S.tab,true)})}
+    closeSheet();(async()=>{for(const k of ['intra','swing'])for(const ix of IDX){const A=S.res[k][ix.id];if(A&&!A.err)A.opt=await optionPlan(A.chain,A.live,A.spot,k)}render()})();toast('Saved')}}
+
+/* ============================== STOCKS (information only) ==============================
+   64 liquid F&O stocks ranked by facts: today's volume pace against the usual, strength against Nifty, trend and VWAP. These are NOT buy calls: research/ tested
+   every rule I could find on these stocks and none made money as an option buy after costs. Tapping a stock opens its option details in the Check tab. */
+const STK=[{"s":"RELIANCE","k":"NSE_EQ|INE002A01018","t":10},{"s":"HDFCBANK","k":"NSE_EQ|INE040A01034","t":10},{"s":"ICICIBANK","k":"NSE_EQ|INE090A01021","t":10},{"s":"INFY","k":"NSE_EQ|INE009A01021","t":14},{"s":"TCS","k":"NSE_EQ|INE467B01029","t":20},{"s":"SBIN","k":"NSE_EQ|INE062A01020","t":10},{"s":"AXISBANK","k":"NSE_EQ|INE238A01034","t":10},{"s":"KOTAKBANK","k":"NSE_EQ|INE237A01036","t":5},{"s":"BHARTIARTL","k":"NSE_EQ|INE397D01024","t":20},{"s":"ITC","k":"NSE_EQ|INE154A01025","t":2.5},{"s":"LT","k":"NSE_EQ|INE018A01030","t":50},{"s":"HINDUNILVR","k":"NSE_EQ|INE030A01027","t":20},{"s":"BAJFINANCE","k":"NSE_EQ|INE296A01032","t":10},{"s":"MARUTI","k":"NSE_EQ|INE585B01010","t":100},{"s":"SUNPHARMA","k":"NSE_EQ|INE044A01036","t":20},{"s":"TATASTEEL","k":"NSE_EQ|INE081A01020","t":2.5},{"s":"M&M","k":"NSE_EQ|INE101A01026","t":50},{"s":"NTPC","k":"NSE_EQ|INE733E01010","t":2.5},{"s":"POWERGRID","k":"NSE_EQ|INE752E01010","t":2.5},{"s":"ONGC","k":"NSE_EQ|INE213A01029","t":2.5},{"s":"COALINDIA","k":"NSE_EQ|INE522F01014","t":0.25},{"s":"ADANIENT","k":"NSE_EQ|INE423A01024","t":50},{"s":"ADANIPORTS","k":"NSE_EQ|INE742F01042","t":20},{"s":"JSWSTEEL","k":"NSE_EQ|INE019A01038","t":10},{"s":"HINDALCO","k":"NSE_EQ|INE038A01020","t":10},{"s":"WIPRO","k":"NSE_EQ|INE075A01022","t":2.5},{"s":"HCLTECH","k":"NSE_EQ|INE860A01027","t":20},{"s":"TECHM","k":"NSE_EQ|INE669C01036","t":20},{"s":"ULTRACEMCO","k":"NSE_EQ|INE481G01011","t":100},{"s":"ASIANPAINT","k":"NSE_EQ|INE021A01026","t":20},{"s":"TITAN","k":"NSE_EQ|INE280A01028","t":50},{"s":"NESTLEIND","k":"NSE_EQ|INE239A01024","t":10},{"s":"BAJAJFINSV","k":"NSE_EQ|INE918I01026","t":20},{"s":"INDUSINDBK","k":"NSE_EQ|INE095A01012","t":10},{"s":"DLF","k":"NSE_EQ|INE271C01023","t":10},{"s":"TRENT","k":"NSE_EQ|INE849A01020","t":50},{"s":"BEL","k":"NSE_EQ|INE263A01024","t":5},{"s":"HAL","k":"NSE_EQ|INE066F01020","t":50},{"s":"VEDL","k":"NSE_EQ|INE205A01025","t":5},{"s":"GRASIM","k":"NSE_EQ|INE047A01021","t":20},{"s":"CIPLA","k":"NSE_EQ|INE059A01026","t":10},{"s":"DRREDDY","k":"NSE_EQ|INE089A01031","t":10},{"s":"EICHERMOT","k":"NSE_EQ|INE066A01021","t":100},{"s":"HEROMOTOCO","k":"NSE_EQ|INE158A01026","t":50},{"s":"BPCL","k":"NSE_EQ|INE029A01011","t":5},{"s":"IOC","k":"NSE_EQ|INE242A01010","t":1},{"s":"SBILIFE","k":"NSE_EQ|INE123W01016","t":20},{"s":"HDFCLIFE","k":"NSE_EQ|INE795G01014","t":5},{"s":"PNB","k":"NSE_EQ|INE160A01022","t":1},{"s":"BANKBARODA","k":"NSE_EQ|INE028A01039","t":2.5},{"s":"JIOFIN","k":"NSE_EQ|INE758E01017","t":2.5},{"s":"TATAPOWER","k":"NSE_EQ|INE245A01021","t":5},{"s":"CANBK","k":"NSE_EQ|INE476A01022","t":1},{"s":"BAJAJ-AUTO","k":"NSE_EQ|INE917I01010","t":100},{"s":"APOLLOHOSP","k":"NSE_EQ|INE437A01024","t":100},{"s":"DIVISLAB","k":"NSE_EQ|INE361B01024","t":100},{"s":"TATACONSUM","k":"NSE_EQ|INE192A01025","t":10},{"s":"ETERNAL","k":"NSE_EQ|INE758T01015","t":5},{"s":"SHRIRAMFIN","k":"NSE_EQ|INE721A01047","t":20},{"s":"SIEMENS","k":"NSE_EQ|INE003A01024","t":50},{"s":"HAVELLS","k":"NSE_EQ|INE176B01034","t":10},{"s":"PFC","k":"NSE_EQ|INE134E01011","t":5},{"s":"RECLTD","k":"NSE_EQ|INE020B01018","t":5},{"s":"GAIL","k":"NSE_EQ|INE129A01019","t":2.5}];
+const stkIx=s=>({id:s.s,name:s.s,key:s.k,step:s.t,lot:0,demo:NaN,stock:true});
+function stkFind(q){const n=' '+String(q).toLowerCase().replace(/&/g,'').replace(/-/g,'')+' ',
+  al={'hdfc bank':'HDFCBANK','icici bank':'ICICIBANK','bajaj finance':'BAJFINANCE','bajaj finserv':'BAJAJFINSV','bajaj auto':'BAJAJ-AUTO','tata steel':'TATASTEEL','tata power':'TATAPOWER','tata consumer':'TATACONSUM','sun pharma':'SUNPHARMA','asian paints':'ASIANPAINT','m and m':'M&M','mahindra':'M&M','kotak':'KOTAKBANK','sbi':'SBIN','hul':'HINDUNILVR','zomato':'ETERNAL','dr reddy':'DRREDDY','dr reddys':'DRREDDY','power grid':'POWERGRID','coal india':'COALINDIA','adani ent':'ADANIENT','adani ports':'ADANIPORTS','jsw steel':'JSWSTEEL','bank of baroda':'BANKBARODA','canara bank':'CANBK','hero moto':'HEROMOTOCO','hdfc life':'HDFCLIFE','sbi life':'SBILIFE'};
+  for(const [a,sym] of Object.entries(al))if(n.includes(' '+a+' '))return STK.find(x=>x.s===sym);
+  return STK.find(x=>n.includes(' '+x.s.toLowerCase().replace(/[&-]/g,'')+' '))}
+S.stk={rows:[],at:0,busy:false,err:'',sort:'vol',q:''};
+/* typical share of a day's volume traded by minutes after 9:15, so the pace is fair early in the session */
+const VSH=[[0,0],[60,.25],[120,.38],[180,.48],[240,.57],[300,.67],[360,.82],[375,1]];
+function volShare(){const m=market();if(!m.open)return 1;const x=Math.max(5,m.m-555);for(let i=1;i<VSH.length;i++)if(x<=VSH[i][0]){const [a,b]=VSH[i-1],[c,d]=VSH[i];return b+(d-b)*(x-a)/(c-a)}return 1}
+async function stkScan(force){const c=S.stk;if(c.busy)return;
+  if(S.demo||S.yahoo){c.err='The stock list needs the Upstox token (connected mode). It is not available in demo or free mode.';stkRender();return}
+  if(!S.demo&&!cfg().pin){openSettings();return}
+  if(!force&&c.at&&Date.now()-c.at<60000)return;c.busy=true;c.err='';stkRender();
+  try{const qj=await api('/v2/market-quote/quotes',{instrument_key:STK.map(x=>x.k).concat('NSE_INDEX|Nifty 50').join(',')}),by={};for(const v of Object.values(qj.data||{}))by[v.instrument_token]=v;
+    const nq=by['NSE_INDEX|Nifty 50'],nA=S.res.intra.NIFTY,nchg=nq&&nq.last_price>0?nq.net_change/(nq.last_price-nq.net_change):(nA&&!nA.err?nA.chg:0),today=dkey(Date.now()),from=dkey(Date.now()-62*DAY),hist={},queue=STK.slice();
+    await Promise.all(Array.from({length:6},async()=>{while(queue.length){const s=queue.shift();try{hist[s.s]=await stkDaily(s)}catch(e){}}}));
+    const sh=volShare(),rows=[];
+    for(const s of STK){const q=by[s.k];if(!q||!(q.last_price>0))continue;const last=q.last_price,prev=last-q.net_change,chg=q.net_change/prev,h=(hist[s.s]||[]).filter(x=>dkey(x.t)!==today).slice(-20);
+      const av=h.length?h.reduce((a,b)=>a+b.v,0)/h.length:NaN,avg20=h.length?h.reduce((a,b)=>a+b.c,0)/h.length:NaN,hi=h.length?Math.max(...h.map(x=>x.h)):NaN,lo=h.length?Math.min(...h.map(x=>x.l)):NaN;
+      rows.push({sym:s.s,last,rO:q.ohlc&&q.ohlc.open>0?last/q.ohlc.open-1:NaN,chg,vsN:chg-nchg,pace:av>0?q.volume/(av*sh):NaN,vw:q.average_price>0?last/q.average_price-1:NaN,above:last>avg20,hi:last>=hi,lo:last<=lo,avg20})}
+    c.rows=rows;c.at=Date.now();c.nchg=nchg}
+  catch(e){c.err=e.message}
+  c.busy=false;stkRender()}
+function stkHTML(){const c=S.stk;if(c.err)return`<div class="err" style="margin-top:12px">${esc(c.err)}</div>`;if(!c.rows.length)return`<div class="empty" style="margin-top:12px">${c.busy?'<span class="spin" style="border-color:var(--line2);border-top-color:var(--tx)"></span> Loading stocks…':'No data yet.'}</div>`;
+  const q=c.q.trim().toLowerCase().replace(/[^a-z0-9]/g,''),f=x=>isFinite(x)?x:0,sorts={vol:(a,b)=>f(b.pace)-f(a.pace),lead:(a,b)=>b.vsN-a.vsN,lag:(a,b)=>a.vsN-b.vsN,move:(a,b)=>Math.abs(b.chg)-Math.abs(a.chg)};
+  const rows=c.rows.filter(r=>!q||r.sym.toLowerCase().replace(/[^a-z0-9]/g,'').includes(q)).sort(sorts[c.sort]).slice(0,q?64:25);
+  return`<div class="sub" style="margin:12px 0 8px">${market().open?'Live':'As of the last close'} · updated ${new Date(c.at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · Nifty ${pct(c.nchg,2)} · ${q?'matches':'top 25 of '+c.rows.length}</div>
+  <div class="list out">${rows.map(r=>`<button class="row" data-stk="${esc(r.sym)}"><div style="min-width:0"><div class="n">${esc(r.sym)} <span class="${r.chg>=0?'up':'dn'} num">${pct(r.chg,2)}</span></div>
+  <div class="s num">${isFinite(r.pace)?'Volume '+r.pace.toFixed(1)+'× usual':'Volume n/a'} · ${r.vsN>=0?'ahead of':'behind'} Nifty by ${(Math.abs(r.vsN)*100).toFixed(2)}% · ${r.above?'above':'below'} 20-day avg${r.hi?' · at 20-day high':r.lo?' · at 20-day low':''}${isFinite(r.vw)?' · '+(r.vw>=0?'above':'below')+' VWAP':''}</div></div><b class="num">₹${f2(r.last)}</b></button>`).join('')||'<div class="empty">No stock matches.</div>'}</div>`}
+function stkView(){const c=S.stk;return`<div id="scOut">${scHTML()}</div><div class="card" style="margin-top:14px"><div class="iname">Stocks in play</div>
+  <div class="sub" style="margin:4px 0 10px">F&amp;O stocks ranked by facts: volume pace against the usual, strength against Nifty and trend. <b style="color:var(--tx)">These are not buy calls.</b> In testing, no stock option rule made money after costs (the index calls are different), so use this to find what is moving, then check the option before trading.</div>
+  <div class="c-act" style="flex-wrap:wrap;margin:0 0 10px">${[['vol','Volume pace'],['lead','Leading Nifty'],['lag','Lagging Nifty'],['move','Biggest move']].map(([k,l])=>`<button class="sbtn ${c.sort===k?'pri':''}" data-stks="${k}">${l}</button>`).join('')}<span class="sp"></span><button class="sbtn" data-stks="refresh">Refresh</button></div>
+  <div class="fld" style="margin:0"><input id="stkQ" type="search" autocomplete="off" autocapitalize="off" placeholder="Find a stock, e.g. reliance" value="${esc(c.q)}"></div></div><div id="stkOut">${stkHTML()}</div>`}
+function stkRender(){const o=$('#stkOut');if(o)o.innerHTML=stkHTML()}
+addEventListener('input',e=>{if(e.target.id==='stkQ'){S.stk.q=e.target.value;stkRender()}});
+/* ---------- experimental stock calls (paper trading only) ----------
+   The one stock idea that held up best in testing: a stock far from its open (more than its usual move for that time of day) on 3x its usual volume,
+   in the direction of the move. It still lost money as an option buy on real prices (research/README.md), so it is shown as an experiment, paper account only.
+   Calls are checked at 30-minute marks, one per stock a day, none after about 2:15 PM; exit by 3:15 PM or at -40% of the premium; one lot. */
+const STK_RES={n:230,win:38,pf:.73};
+const stkDaily=s=>cached('sd|'+s.s,1800e3,async()=>parseC((await api(`/v3/historical-candle/${enc(s.k)}/days/1/${dkey(Date.now())}/${dkey(Date.now()-62*DAY)}`)).data.candles));
+async function stk5m(s){return cached('s5|'+s.s,45000,async()=>{const d=n=>dkey(Date.now()-n*DAY),e={data:{candles:[]}};
+  const [h,t]=await Promise.all([cached('s5h|'+s.s,1800e3,()=>api(`/v3/historical-candle/${enc(s.k)}/minutes/5/${d(0)}/${d(28)}`).catch(()=>e)),api(`/v3/historical-candle/intraday/${enc(s.k)}/minutes/5`).catch(()=>e)]);
+  const m=new Map();for(const j of [h,t])for(const b of parseC(j.data.candles))m.set(b.t,b);let out=[...m.values()].sort((a,b)=>a.t-b.t).filter(b=>{const mm=istMin(b.t);return mm>=555&&mm<930});
+  if(market().open)out=out.filter(b=>b.t+5*60000<=Date.now()+15000);return out})}
+/* first qualifying 30-minute checkpoint of the latest session: |move from open| >= 1 usual move and cumulative volume >= 3x the usual for that time */
+function stkSignals(X){const days=X.days,q=days.length-1,d=days[q];if(!d||!d.use)return[];const open=X.o[d.s],out=[];let cumV=0;
+  for(let i=d.s;i<=d.e&&!out.length;i++){cumV+=X.bars[i].v;const bn=X.bn[i];if(bn%6!==5||bn<5||bn>56||!isFinite(X.sg[i]))continue;
+    let tot=0,cnt=0;for(let k=q-1;k>=0&&cnt<14;k--){const p=days[k];if(!p.full)continue;let cv=0;for(let j=p.s;j<=p.e;j++){if(X.bn[j]>bn)break;cv+=X.bars[j].v}tot+=cv;cnt++}
+    const rv=cnt&&tot?cumV/(tot/cnt):NaN,z=(X.c[i]/open-1)/X.sg[i];if(Math.abs(z)>=1&&rv>=3)out.push({i,t:X.bars[i].t,dir:z>=0?1:-1,z,rv,px:X.c[i]})}
+  return out}
+function stkVerdict(L,p0,mk){const mv=L/p0-1;
+  if(!mk.open)return{ok:false,cls:'mu',lab:"Market closed — this is the last session's signal"};
+  if(L<=p0*.6)return{ok:false,cls:'dn',lab:'Premium already down 40% — stopped out'};
+  if(mk.m>=855)return{ok:false,cls:'dn',lab:'Too late in the day for a new stock call'};
+  if(mv<-.2)return{ok:false,cls:'amb',lab:`Premium already down ${(-mv*100).toFixed(0)}% since the call — the move may have faded`};
+  if(mv>.25)return{ok:false,cls:'dn',lab:`Premium already up ${(mv*100).toFixed(0)}% — don't chase`};
+  if(mv>.1)return{ok:false,cls:'amb',lab:`Late entry: premium up ${(mv*100).toFixed(0)}% since the call`};
+  return{ok:true,cls:'up',lab:'Valid — near the call price'}}
+S.sc={calls:[],near:[],at:0,busy:false,err:''};
+async function stkCalls(quiet){const c=S.sc;if(c.busy||S.demo||S.yahoo)return;c.busy=true;c.err='';if(!quiet)scRender();
+  try{if(!S.stk.at)await stkScan();const rows=S.stk.rows,cand=rows.filter(r=>r.pace>=2.2&&isFinite(r.rO)&&Math.abs(r.rO)>=.003).sort((a,b)=>b.pace-a.pace).slice(0,12),calls=[];
+    await Promise.all(cand.map(async r=>{const s=STK.find(x=>x.s===r.sym);try{const [bars,daily]=await Promise.all([stk5m(s),stkDaily(s)]);if(bars.length<500)return;const X=prepM(bars,daily);
+      for(const g of stkSignals(X)){const ix=stkIx(s),ex=await expiriesFor(ix),exp=ex.list.find(e=>daysTo(e)>=.5)||ex.list[0],ch=await chainAt(ix,exp),spot=+ch.rows[0].underlying_spot_price||g.px,
+          row=ch.rows.reduce((a,b)=>Math.abs(b.strike_price-g.px)<Math.abs(a.strike_price-g.px)?b:a),o=row[g.dir>0?'call_options':'put_options']||{},ltp=+(o.market_data||{}).ltp;if(!(ltp>0))continue;
+        const sid='stk|'+s.s+'|'+g.t+'|'+g.dir;let p0=S.p0[sid];if(!(p0>0)){p0=await premAt(o.instrument_key,g.t,'intra').catch(()=>NaN);if(!(p0>0))p0=ltp;S.p0[sid]=p0}
+        calls.push({sym:s.s,dir:g.dir,t:g.t,z:g.z,rv:g.rv,spot,strike:row.strike_price,type:g.dir>0?'CE':'PE',key:o.instrument_key,ltp,p0,lot:ch.lot,exp:ch.exp,delta:Math.abs(+((o.option_greeks||{}).delta))||.5,v:stkVerdict(ltp,p0,market()),sid,pace:r.pace})}}catch(e){}}));
+    c.calls=calls.sort((a,b)=>b.t-a.t);c.near=rows.filter(r=>!calls.some(x=>x.sym===r.sym)&&r.pace>=1.5).sort((a,b)=>b.pace-a.pace).slice(0,3);c.at=Date.now()}
+  catch(e){c.err=e.message}
+  c.busy=false;scRender();paperAutoStk();if(P&&P.on&&P.pos.some(p=>p.kind==='stk'))await paperUpdate()}
+function paperBuyStk(c,auto){
+  if(!P||!P.on){if(!auto){S.tab='paper';LS.set('tab','paper');render();toast('Start paper trading first')}return false}
+  if(P.pos.some(p=>p.sid===c.sid)||P.hist.some(p=>p.sid===c.sid)){if(!auto)toast('Already traded this call');return false}
+  if(!c.v.ok){if(!auto)toast(c.v.lab);return false}
+  if(auto&&P.pos.filter(p=>p.kind==='stk').length>=3)return false;
+  const px=c.ltp,lotCost=px*c.lot;
+  if(lotCost+P.fee>P.cash){if(!auto)toast('Not enough paper cash for one lot (₹'+f0(lotCost)+')');else{plog(`Skipped ${c.sym} ${f0(c.strike)} ${c.type}: one lot costs ₹${f0(lotCost)}, more than the paper cash`,'mu');paperSave()}return false}
+  const qty=c.lot;P.cash-=qty*px+P.fee;
+  P.pos.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),sid:c.sid,ix:c.sym,kind:'stk',dir:c.dir,setup:'Stock momentum (experimental)',score:0,strike:c.strike,type:c.type,tag:'ATM',key:c.key,lot:c.lot,lots:1,qty,open:qty,entry:px,callPx:c.p0,sl:tick(px*.6),t1:1e9,t2:1e9,slNow:tick(px*.6),half:false,booked:-P.fee,delta:c.delta,idx0:c.spot,t0:Date.now(),lastT:Date.now(),ltp:px,hi:px,lo:px,exp:c.exp,auto:!!auto});
+  plog(`${auto?'Auto-bought':'Bought'} 1 lot (${qty} qty) ${c.sym} ${f0(c.strike)} ${c.type} @ ₹${f2(px)} · stock momentum (experimental)`,'up');paperSave();if(!auto)toast('Paper buy filled @ ₹'+f2(px));render();return true}
+function paperAutoStk(){if(!P||!P.on||P.autoStk===false||S.viewer)return;for(const c of S.sc.calls)if(c.v.cls==='up')paperBuyStk(c,true)}
+const stkCard=c=>{const ce=c.dir>0,v=c.v,done=P&&(P.pos.some(p=>p.sid===c.sid)||P.hist.some(p=>p.sid===c.sid));
+  return`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div class="action ${ce?'ce':'pe'}"><div><div class="big ${ce?'up':'dn'}">BUY ${esc(c.sym)} ${f0(c.strike)} ${c.type}</div><div class="sm">Expiry ${nice(c.exp)} · called ${hhmm(c.t+5*60000)} · volume ${c.rv.toFixed(1)}× · move ${Math.abs(c.z).toFixed(1)}× usual</div></div><div class="prem"><b class="num">₹${f2(c.ltp)}</b><span class="sm">price now</span></div></div>
+  <div class="verdict ${v.cls}" style="margin:10px 0"><b>${v.ok?'✓ ':'✕ '}${esc(v.lab)}</b></div>
+  ${kv([['Called at','₹'+f2(c.p0),'',''],['Stop −40%','₹'+f2(c.p0*.6),'dn','premium'],['1 lot costs','₹'+f0(c.ltp*c.lot),'',c.lot+' qty'],['Exit','3:15 PM','','or the stop']])}
+  ${kv([['Total outlay','₹'+f0(c.ltp*c.lot+20),'','1 lot + charge'],['Ref. target 1','₹'+f2(tick(c.p0*1.6)),'up','+₹'+f0((c.p0*1.6-c.ltp)*c.lot)+' left'],['Ref. target 2','₹'+f2(tick(c.p0*2.2)),'up','+₹'+f0((c.p0*2.2-c.ltp)*c.lot)+' left'],['Max loss','−₹'+f0(Math.max(0,c.ltp-c.p0*.6)*c.lot),'dn','if stopped']])}
+  <div class="c-act"><button class="sbtn" data-stk="${esc(c.sym)}">Option details</button><span class="sp"></span><button class="sbtn ${done?'done':'pri'}" data-spb="${esc(c.sid)}">${done?'Paper ✓':'Paper buy'}</button></div></div>`};
+function scHTML(){const c=S.sc,hist=P?P.hist.filter(p=>p.kind==='stk'):[],n=hist.length,w=hist.filter(p=>p.pnl>0).length,pl=hist.reduce((a,p)=>a+p.pnl,0),avg=n?hist.reduce((a,p)=>a+p.ret,0)/n:NaN;
+  let body;if(S.demo||S.yahoo)body='<div class="sub" style="margin:10px 0 0">Stock calls need the Upstox token (connected mode).</div>';
+  else if(c.err)body=`<div class="err">${esc(c.err)}</div>`;
+  else if(!c.at)body=`<div class="sub" style="margin:10px 0 0">${c.busy?'Checking the stocks…':'Not checked yet.'}</div>`;
+  else body=c.calls.length?c.calls.map(stkCard).join(''):`<div class="wait" style="margin-top:12px"><b>No stock call right now</b>A call needs a big move from the open on 3× the usual volume.${c.near.length?' Closest: '+c.near.map(r=>`${esc(r.sym)} (volume ${r.pace.toFixed(1)}×)`).join(', ')+'.':''}</div>`;
+  return`<div class="card" style="margin-top:14px;border-color:var(--ambbd)"><div class="c-top"><div><div class="iname">Stock CE / PE calls</div><div class="meta"><span>Paper trading only</span></div></div><span class="pill p-amb">Experimental</span></div>
+  <div class="verdict dn" style="margin-top:12px"><b>Unproven, and it lost money in testing</b><span>On real option prices (Oct 2024 – Nov 2026) the rule won ${STK_RES.win}% of ${STK_RES.n} trades with a profit factor of ${STK_RES.pf.toFixed(2)}. Anything under 1.0 loses over time. These calls exist to collect live paper results, not as recommendations.</span></div>
+  <div class="sub" style="margin:10px 0 0">The rule: a stock has moved away from its open by more than its usual move for that time of day, on 3× its usual volume. CE if it is up, PE if it is down. One call per stock a day, none after 2:15 PM. Exit by 3:15 PM or when the premium falls 40%. One lot of paper money.</div>
+  ${body}
+  <div class="info" style="margin-top:12px"><span>Live paper results so far:</span>${n?`<b>${n} trades</b>·<b class="${w/n>=.5?'up':''}">${Math.round(w/n*100)}% win</b>·<b class="${pl>=0?'up':'dn'}">${rs(pl)}</b>·<b class="${avg>=0?'up':'dn'}">${pct(avg,1)} avg</b>`:'<span>none yet</span>'}</div>
+  <div class="c-act"><button class="btn2 ${P&&P.on&&P.autoStk!==false?'on':''}" data-sauto="1">Auto paper-buy: ${P&&P.on&&P.autoStk!==false?'ON':'OFF'}</button><span class="qty" style="font-size:12px">${P&&P.on?'Valid calls are bought while this app is open.':'Start paper trading in the Paper tab first.'}</span></div></div>`}
+function scRender(){const o=$('#scOut');if(o)o.innerHTML=scHTML()}
+/* money view of a trade: what it costs, what the targets pay, what is left. Targets are reference marks (the plan exits on its own rule, the stop or 3:15 PM). */
+function posPlan(p){const q=p.open,q0=p.qty,fee=P?P.fee:20,cost=p.entry*q0+fee,risk=Math.max(p.entry-p.sl,p.entry*.1),ok=x=>x>0&&x<1e8,
+    t1=ok(p.t1)?p.t1:tick(p.entry+1.5*risk),t2=ok(p.t2)?p.t2:tick(p.entry+3*risk),so=p.booked+(p.ltp-p.entry)*q,dl=(p.slNow-p.ltp)*q;
+  return kv([['Total outlay','₹'+f0(cost),'',p.lots+' lot'+(p.lots>1?'s':'')+' · '+q0+' qty'],['Target 1','₹'+f2(t1),'up',p.half?'reached':'+₹'+f0((t1-p.entry)*q0)+' on the trade'],['Target 2','₹'+f2(t2),'up','+₹'+f0((t2-p.entry)*q0)+' on the trade'],['Risk to stop',rs(dl),'dn','stop ₹'+f2(p.slNow)]])
+   +kv([['Value now','₹'+f0(p.ltp*q),'',p.ltp>=p.entry?'above cost':'below cost'],['Left to Target 1',p.half||t1<=p.ltp?'—':'+₹'+f0((t1-p.ltp)*q),'up',p.half||t1<=p.ltp?'':pct(t1/p.ltp-1,0)+' from now'],['Left to Target 2',t2<=p.ltp?'reached':'+₹'+f0((t2-p.ltp)*q),'up',t2<=p.ltp?'':pct(t2/p.ltp-1,0)+' from now'],['Profit so far',rs(so),so>=0?'up':'dn','after entry charge']])
+   +'<div class="sub" style="margin:6px 0 0">Targets are reference marks. The plan holds to its exit rule, the stop or 3:15 PM and does not sell at them.</div>'}
+/* ============================== OPTION CHECK ==============================
+   Type an option ("nifty 25800 ce", "bank nifty 59000 pe") to see its live details and a rule-based hold / caution / exit read, or type a price
+   ("150") to list, for each index, the call and put whose premium is closest to it. Add what you paid to get your profit or loss and the exit read. */
+const kv=a=>`<div class="lv num">${a.map(([l,v,c,s])=>`<div><span>${l}</span><b class="${c||''}">${v}</b><i>${s||'&nbsp;'}</i></div>`).join('')}</div>`;
+function parseOptQ(q){q=' '+String(q).toLowerCase().replace(/[,₹]/g,' ').replace(/nifty\s*50/g,' nifty ')+' ';
+  const bank=/bank\s*nifty|banknifty|\bbn\b|nifty\s*bank|\bbank\b/.test(q),sens=/sensex/.test(q),nif=/\bnifty\b/.test(q),nums=[...q.matchAll(/\d+(?:\.\d+)?/g)].map(m=>+m[0]);
+  const stk=stkFind(q);return{stk,ixId:stk?null:bank?'BANKNIFTY':sens?'SENSEX':nif?'NIFTY':null,type:/(?<![a-z])(ce|call)\b/.test(q)?'CE':/(?<![a-z])(pe|put)\b/.test(q)?'PE':null,strike:stk?nums.find(n=>n>0):nums.find(n=>n>=5000),price:stk?undefined:nums.find(n=>n>0&&n<5000)}}
+const knownSpot=ix=>{const a=S.res.intra[ix.id]||S.res.swing[ix.id];return a&&a.spot?a.spot:ix.demo};
+const nearestIx=k=>IDX.slice().sort((a,b)=>Math.abs(Math.log(k/knownSpot(a)))-Math.abs(Math.log(k/knownSpot(b))))[0];
+async function expiriesFor(ix){
+  if(S.demo||S.yahoo)return{list:[expiryFor(ix,'intra')],lot:ix.lot};
+  return cached('ex|'+ix.id,6*3600e3,async()=>{const j=await api('/v2/option/contract',{instrument_key:ix.key}),d=j.data||[];
+    return{list:[...new Set(d.map(x=>x.expiry))].sort().filter(e=>daysTo(e)>-.05).slice(0,10),lot:(d[0]&&d[0].lot_size)||ix.lot}})}
+async function chainAt(ix,exp){
+  if(S.demo||S.yahoo){const d=await Data.daily(ix);return Data.chain(ix,'intra',d[d.length-1].c)}
+  return cached('co|'+ix.id+exp,20000,async()=>{const j=await api('/v2/option/chain',{instrument_key:ix.key,expiry_date:exp}),rows=(j.data||[]).filter(r=>r&&r.strike_price).sort((a,b)=>a.strike_price-b.strike_price);
+    if(!rows.length)throw new Error('No option chain for '+exp+' yet');return{exp,lot:(await expiriesFor(ix)).lot,rows}})}
+/* rule-based read of the app's own engine for one option; returns {cls, lab, reasons} */
+function optRead(ix,dir,A,ltp,b,dte,spreadPct){const mk=market(),when=mk.open?'now':'at the last close',r=[],has=isFinite(b);let bad=0,warn=0,wrong=false,against=false;
+  if(has){const pl=ltp/b-1;if(pl<=-.4){bad++;r.push(['dn',`Down ${Math.abs(pl*100).toFixed(0)}% from your price. The app's rule exits at −40% (₹${f2(b*.6)}).`])}
+    else if(pl<0)r.push(['amb',`Down ${Math.abs(pl*100).toFixed(0)}% from your price. The app's hard stop is −40% (₹${f2(b*.6)}).`]);else r.push(['up',`Up ${(pl*100).toFixed(0)}% from your price.`])}
+  if(A){wrong=(A.last-A.tw)*dir<0;against=!!A.tr&&A.tr!==dir;
+    r.push(wrong?['amb',`The index is on the wrong side of its average price ${when} (${f0(A.last)} vs ${f0(A.tw)}). The app exits a call when a 30-minute candle closes there.`]:['up',`The index is on the right side of its average price ${when} (${f0(A.last)} vs ${f0(A.tw)}).`]);
+    r.push(against?['amb',`The daily trend is ${A.tr>0?'up':'down'}, against this option.`]:A.tr?['up',`The daily trend is ${A.tr>0?'up':'down'}, the same way.`]:['mu','No clear daily trend.']);
+    const L=A.live;if(L&&L.dir===dir)r.push(['up',`The app has an open ${dir>0?'CE':'PE'} intraday call on ${ix.name}.`]);else if(L){r.push(['amb',`The app's open intraday call on ${ix.name} is the other way (${L.dir>0?'CE':'PE'}).`])}}
+  else r.push(ix.stock?['mu','The app has no tested signal for stocks (testing found no rule that makes money as an option buy), so this card shows details only. If you trade it, keep the size small and respect the stop.']:['mu','Index signal data is still loading.']);
+  if(dte<1){warn++;r.push(['amb',`Expires in about ${Math.max(0,Math.round(dte*24))} hours. Time decay is fastest now.`])}else if(dte<3)r.push(['mu',`Expires in ${dte.toFixed(1)} days. Decay speeds up close to expiry.`]);
+  if(spreadPct>3){warn++;r.push(['amb',`Wide bid-ask gap (${spreadPct.toFixed(1)}% of the price). Getting out can cost extra.`])}
+  if(wrong||against)warn++;
+  const out=bad||(wrong&&against),cls=ix.stock?(bad?'dn':'amb'):!A?'amb':out?'dn':warn?'amb':'up';
+  const lab=ix.stock?(bad?'Exit — down 40% from your price':'Details only — no tested signal for stocks'):has?(cls==='dn'?'Exit — the rules say get out':cls==='amb'?'Caution — watch closely':'Hold — the index still supports it'):(cls==='dn'?'The index works against this option':cls==='amb'?'Mixed — the index only partly supports it':'The index supports this option');
+  return{cls,lab,reasons:r}}
+function optCard(ix,ch,row,side,A,bought){
+  const call=side==='CE',o=row[call?'call_options':'put_options']||{},md=o.market_data||{},g=o.option_greeks||{},K=row.strike_price,spot=+row.underlying_spot_price||(A&&A.spot)||NaN,ltp=+md.ltp,lot=ch.lot,dir=call?1:-1,dte=daysTo(ch.exp),
+    bid=+md.bid_price,ask=+md.ask_price,oi=+md.oi,poi=+md.prev_oi,vol=+md.volume,cl=+md.close_price,iv=+g.iv,dl=+g.delta,th=+g.theta,pop=+g.pop,b=+bought>0?+bought:NaN,est=!!ch.est||S.demo||S.yahoo;
+  if(!(ltp>0))return`<article class="card"><div class="iname">${ix.name} ${f0(K)} ${side}</div><div class="err">No price for this strike right now (no trades or no quote).</div></article>`;
+  const intr=Math.max(0,(spot-K)*dir),tv=ltp-intr,be=K+dir*ltp,need=(be/spot-1)*dir,n=Math.round(Math.abs(K-spot)/ix.step),itm=(spot-K)*dir>0,tag=n===0?'ATM':(itm?'ITM ':'OTM ')+n,
+    spr=bid>0&&ask>0?(ask-bid)/ltp*100:NaN,R=optRead(ix,dir,A,ltp,b,dte,spr),pl=ltp/b-1;
+  /* targets: the app's reference marks (index moves 1.5x and 3x the risk distance), turned into option prices with delta */
+  const base=isFinite(b)?b:ltp,dS=dir*(isFinite(dl)&&dl!==0?Math.min(.95,Math.max(.05,Math.abs(dl))):.5),tw=A&&isFinite(A.tw)?A.tw:NaN,sgm=A&&isFinite(A.sg)?A.sg:.004,through=isFinite(tw)&&(spot-tw)*dir<=0,
+    rI=Math.max(isFinite(tw)&&!through?Math.abs(spot-tw):0,sgm*spot,.0005*spot),i1=spot+dir*1.5*rI,i2=spot+dir*3*rI,px=x=>Math.max(.05,ltp+dS*(x-spot));
+  let h=`<article class="card"><div class="c-top"><div><div class="iname">${ix.name} ${f0(K)} <span class="${call?'up':'dn'}">${side}</span></div><div class="meta"><span>Expiry ${nice(ch.exp)}</span><span>· ${dte>=1?Math.floor(dte)+' day'+(Math.floor(dte)===1?'':'s')+' left':'expires today'}</span><span>· lot ${lot}</span></div></div><span class="pill ${itm?'p-up':n===0?'p-amb':'p-mu'}">${tag}</span></div>
+    <div class="action ${call?'ce':'pe'}"><div><div class="big num">₹${f2(ltp)}</div><div class="sm num">${isFinite(bid)&&bid>0?'Bid '+f2(bid)+' · Ask '+f2(ask):'Last traded price'}${isFinite(cl)&&cl>0?' · '+pct(ltp/cl-1,1)+' vs prev close':''}</div></div><div class="prem"><b class="num">${f0(spot)}</b><span class="sm">${ix.name} now</span></div></div>
+    <div class="verdict ${R.cls}"><b>${R.cls==='up'?'✓ ':R.cls==='dn'?'✕ ':'! '}${esc(R.lab)}</b></div>`;
+  if(isFinite(b))h+=`<div class="lvh">Your trade</div>${kv([['You paid','₹'+f2(b),'',''],['Now','₹'+f2(ltp),'',''],['Profit / loss',rs((ltp-b)*lot),pl>=0?'up':'dn','per lot'],['Return',pct(pl,1),pl>=0?'up':'dn','on your price']])}`;
+  if(!ix.stock)h+=`<div class="lvh">Target &amp; exit${isFinite(b)?' · from your price ₹'+f2(b):''}</div>${kv([['Target 1','₹'+f2(px(i1)),'up',pct(px(i1)/base-1,0)+' · '+f0(i1)],['Target 2','₹'+f2(px(i2)),'up',pct(px(i2)/base-1,0)+' · '+f0(i2)],['Hard stop','₹'+f2(base*.6),'dn','−40%'],['Index exit',through?'Now':f0(tw),through?'amb':'dn',through?'through average':'30-min close']])}
+    <div class="sub" style="margin:8px 0 0">Targets are estimates from delta for ${ix.name} reaching ${f0(i1)} and ${f0(i2)} (1.5× and 3× a risk distance of ${f0(rI)} points). The plan holds to a target, the index exit (a 30-minute candle closing ${dir>0?'below':'above'} the average price${isFinite(tw)?', now '+f0(tw):''}), or the hard stop, whichever comes first.${A?'':' Index data is still loading, so a typical risk distance is used.'}</div>`;
+  h+=`<div class="lvh">The option</div>${kv([['Break-even','₹'+f0(be),'',(need>=0?'needs ':'passed by ')+pct(Math.abs(need),2)],['Delta',isFinite(dl)?Math.abs(dl).toFixed(2):'—','',isFinite(pop)?'chance '+pop.toFixed(0)+'%':''],['IV',isFinite(iv)?iv.toFixed(1)+'%':'—','',''],['Decay / day',isFinite(th)?'−₹'+f0(Math.abs(th)*lot):'—','dn','per lot']])}
+    ${kv([['1 lot costs','₹'+f0(ltp*lot),'',lot+' qty'],['Real value','₹'+f2(intr),'','in the money'],['Time value','₹'+f2(tv),'',tv/ltp>0?Math.round(tv/ltp*100)+'% of price':''],[isFinite(oi)?'Open interest':'Volume',isFinite(oi)?f0(oi):f0(vol),'',isFinite(oi)&&isFinite(poi)&&poi>0?sgn((oi/poi-1)*100,0)+'% today':''] ])}`;
+  h+=`<div class="lvh">What the app's rules say</div><div class="why" style="flex-direction:column;align-items:stretch">${R.reasons.map(([c,t])=>`<span class="${c}" style="border-radius:10px;border-color:var(--line2)">${esc(t)}</span>`).join('')}</div>
+    <div class="sub" style="margin:10px 0 0">${est?'Prices here are estimates (no Upstox token), so treat the numbers as rough. ':''}This is a read of the app's own rules, not advice. Options can lose their whole price.</div></article>`;
+  return h}
+async function chkRun(quiet){const c=S.chk,p=parseOptQ(c.q),bought=c.b;
+  if(!c.q.trim()){c.out=chkHelp('');return chkRender()}
+  if(!S.demo&&!cfg().pin){openSettings();return}
+  if(!quiet){c.out='<div class="empty">Looking up…</div>';chkRender()}
+  try{
+    if(p.strike||p.stk){if(p.stk&&(S.demo||S.yahoo))throw new Error('Stock options need the Upstox token (connected mode).');const ix=p.stk?stkIx(p.stk):(IDX.find(i=>i.id===p.ixId)||nearestIx(p.strike)),ex=await expiriesFor(ix),exp=c.exp&&ex.list.includes(c.exp)?c.exp:(ex.list.find(e=>daysTo(e)>=.5)||ex.list[0]),ch=await chainAt(ix,exp);
+      const want=p.strike||+ch.rows[0].underlying_spot_price;let row=ch.rows.reduce((a,r)=>Math.abs(r.strike_price-want)<Math.abs(a.strike_price-want)?r:a);const A=S.res.intra[ix.id]&&!S.res.intra[ix.id].err?S.res.intra[ix.id]:null;
+      c.out=`${S.demo||S.yahoo||ex.list.length<2?'':`<div class="fld" style="margin:12px 0 0"><label>Expiry</label><select id="chkExp">${ex.list.map(e=>`<option value="${e}" ${e===ch.exp?'selected':''}>${nice(e)}${daysTo(e)<1?' (today)':''}</option>`).join('')}</select></div>`}
+        ${p.strike&&row.strike_price!==p.strike?`<div class="sub" style="margin:10px 0 0">There is no ${f0(p.strike)} strike for ${ix.name} on ${nice(ch.exp)}. Showing the closest, ${f0(row.strike_price)}.</div>`:''}
+        <div style="margin-top:12px">${(p.type?[p.type]:['CE','PE']).map(t=>optCard(ix,ch,row,t,A,bought)).join('<div style="height:12px"></div>')}</div>`;
+      if(!A&&!c.tried&&!ix.stock){c.tried=true;scan('intra',true).then(()=>{if(S.tab==='chk')chkRun(true)})}}
+    else if(p.price){const ids=p.ixId?IDX.filter(i=>i.id===p.ixId):IDX,res=await Promise.all(ids.map(async ix=>{const ex=await expiriesFor(ix),exp=ex.list.find(e=>daysTo(e)>=.5)||ex.list[0],ch=await chainAt(ix,exp);
+        const pick=sd=>{const k=sd==='CE'?'call_options':'put_options';let best=null;for(const r of ch.rows){const v=+((r[k]||{}).market_data||{}).ltp;if(v>0&&(!best||Math.abs(v-p.price)<Math.abs(best.v-p.price)))best={r,v,sd}}return best};
+        return{ix,ch,list:(p.type?[p.type]:['CE','PE']).map(pick).filter(Boolean)}}));
+      c.out=`<h3>Options priced near ₹${f2(p.price)}</h3><div class="sub" style="margin:0 0 8px">Nearest expiry for each index. Tap one for full details.</div><div class="list out">${res.map(({ix,ch,list})=>list.map(({r,v,sd})=>{const g=((r[sd==='CE'?'call_options':'put_options']||{}).option_greeks||{}),spot=+r.underlying_spot_price,n=Math.round(Math.abs(r.strike_price-spot)/ix.step),itm=(spot-r.strike_price)*(sd==='CE'?1:-1)>0;
+        return`<button class="row" data-chk="${ix.id}|${r.strike_price}|${sd}|${ch.exp}"><div style="min-width:0"><div class="n">${ix.name} ${f0(r.strike_price)} <span class="${sd==='CE'?'up':'dn'}">${sd}</span></div><div class="s num">Exp ${nice(ch.exp)} · ${n===0?'ATM':(itm?'ITM ':'OTM ')+n} · 1 lot ₹${f0(v*ch.lot)}${isFinite(+g.delta)?' · delta '+Math.abs(+g.delta).toFixed(2):''}</div></div><b class="num">₹${f2(v)}</b></button>`}).join('')).join('')}</div>`}
+    else c.out=chkHelp('Could not read that. ')}
+  catch(e){c.out=`<div class="err" style="margin-top:12px">${esc(e.message)}</div>`}
+  chkRender()}
+const CHK_EX=['nifty 25800 ce','bank nifty 59000 pe','sensex 81000 ce','reliance','150','300 pe'];
+const chkHelp=pre=>`<div class="sub" style="margin:12px 0 0">${pre}Try:</div><div class="c-act" style="flex-wrap:wrap;margin-top:6px">${CHK_EX.map(x=>`<button class="sbtn" data-chkq="${x}">${x}</button>`).join('')}</div><div class="sub" style="margin:10px 0 0">A name needs the index, strike and CE or PE (the index and CE/PE are guessed if left out). A price alone lists the closest option on each index.</div>`;
+function chkView(){return`<div class="card" style="margin-top:14px"><div class="iname">Check an option</div><div class="sub" style="margin:4px 0 12px">Type an option or a price. You get its live details and whether the index still supports it.</div>
+  <div class="fld" style="margin:0 0 10px"><label>Search</label><input id="chkQ" type="search" autocomplete="off" autocapitalize="off" placeholder="nifty 25800 ce  ·  or a price like 150" value="${esc(S.chk.q)}"></div>
+  <div class="fld" style="margin:0 0 12px"><label>I bought at ₹ (optional, for profit / loss and hold or exit)</label><input id="chkB" type="number" inputmode="decimal" placeholder="e.g. 180" value="${esc(S.chk.b)}"></div>
+  <div class="bar" style="margin:0"><button class="btn" id="chkGo">Check</button></div><div id="chkHelp">${S.chk.out?'':chkHelp('')}</div></div><div id="chkOut">${S.chk.out}</div>`}
+function chkRender(){const o=$('#chkOut'),h=$('#chkHelp');if(o)o.innerHTML=S.chk.out;if(h)h.hidden=!!S.chk.out}
+addEventListener('input',e=>{if(e.target.id==='chkQ')S.chk.q=e.target.value;else if(e.target.id==='chkB')S.chk.b=e.target.value});
+addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='chkQ'||e.target.id==='chkB')){e.preventDefault();S.chk.exp='';e.target.blur();chkRun()}});
+addEventListener('change',e=>{if(e.target.id==='chkExp'){S.chk.exp=e.target.value;chkRun()}});
+/* ============================== LIVE TICKER ==============================
+   Every 10 seconds, ONE Upstox quote request refreshes: the index prices and day changes, the option prices on the call cards (and the verdicts built from them),
+   and the open paper positions (so a stop or the 3:15 PM square-off is caught within seconds, not at the next full scan). The full scans (candles, chains, signals)
+   still run on their own timing; this only keeps the prices current. Runs from 9:00 AM (pre-open) to 3:35 PM on weekdays, connected mode only. */
+S.live={at:0,busy:false,ms:0};
+const hms=t=>new Date(t+IST).toISOString().slice(11,19);
+async function liveTick(){if(S.live.busy||S.demo||S.yahoo||!cfg().pin)return;const mk=market();if(!(mk.wd&&mk.wd!==6&&mk.m>=540&&mk.m<935))return;
+  S.live.busy=true;
+  try{const keys=new Set(IDX.map(i=>i.key));
+    for(const k of ['intra','swing'])for(const ix of IDX){const A=S.res[k][ix.id];if(A&&!A.err&&A.live&&A.opt&&A.opt.legs)for(const l of A.opt.legs)if(l.key)keys.add(l.key)}
+    if(P&&P.on)for(const p of P.pos)if(p.key)keys.add(p.key);
+    const t0=performance.now(),j=await api('/v2/market-quote/quotes',{instrument_key:[...keys].join(',')});S.live.ms=Math.round(performance.now()-t0);
+    const by={};for(const v of Object.values(j.data||{}))by[v.instrument_token]=v;const today=dkey(Date.now());
+    for(const ix of IDX){const q=by[ix.key];if(!q||!(q.last_price>0))continue;
+      for(const k of ['intra','swing']){const A=S.res[k][ix.id];if(!A||A.err)continue;A.spot=q.last_price;const base=A.day===today?A.pc:A.last;if(base>0)A.chg=q.last_price/base-1}}
+    for(const k of ['intra','swing'])for(const ix of IDX){const A=S.res[k][ix.id];if(!A||A.err||!A.live||!A.opt)continue;
+      for(const l of A.opt.legs){const q=by[l.key];if(q&&q.last_price>0){l.ltp=q.last_price;l.lotCost=l.ltp*l.lot;l.riskLot=(l.ltp-l.psl)*l.lot;l.fits=l.lotCost<=cfg().budget;l.lots=Math.floor(cfg().budget/l.lotCost);l.v=verdict(l,A.live)}}}
+    let closed=false;
+    if(P&&P.on&&!S.viewer)for(const p of P.pos.slice()){const q=by[p.key];if(q&&q.last_price>0&&stepPos(p,{t:Date.now(),o:q.last_price,h:q.last_price,l:q.last_price,c:q.last_price},true))closed=true}
+    S.live.at=Date.now();$('#mLive').textContent=' · live '+hms(S.live.at);
+    if(closed)paperSave();
+    render()}
+  catch(e){const m=$('#mLive');if(m)m.textContent=' · live feed paused'}
+  S.live.busy=false}
+setInterval(liveTick,10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveTick()});
+/* ============================== UPSTOX ORDERS (optional) ==============================
+   The SERVER decides whether trading is off, dry-run or live (ORDER_MODE in trade.php) and enforces every safety rule. This page only builds the order,
+   shows exactly what it costs and what is left, and asks for a deliberate confirmation. Orders are limit / stop-limit only. Nothing is placed automatically. */
+S.trd={status:null,funds:null,pos:[],orders:[],err:'',busy:false};
+async function trdApi(action,params,body,method){const qs=new URLSearchParams({trade:action,...(params||{})});
+  const r=await fetch('api.php?'+qs,{method:method||(body?'POST':'GET'),headers:{'X-App-Pin':cfg().pin,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});
+  let j;try{j=await r.json()}catch(e){throw new Error('Bad response ('+r.status+')')}if(!r.ok||j.status==='error')throw new Error(j.message||('HTTP '+r.status));return j}
+async function trdLoad(){if(S.demo||S.yahoo||!cfg().pin||!canTrade())return;const c=S.trd;if(c.busy)return;c.busy=true;c.err='';
+  try{c.status=await trdApi('status');if(!RUN&&c.status.auto&&c.status.auto.configured)botLoad(true).then(()=>{if(S.tab==='paper')render()});
+    if(c.status.mode!=='off'&&c.status.connected){const [f,p,o]=await Promise.all([trdApi('funds').catch(()=>null),trdApi('positions').catch(()=>({data:[]})),trdApi('orders').catch(()=>({data:[]}))]);c.funds=f&&f.data;c.pos=p.data||[];c.orders=o.data||[]}
+    else{c.funds=null;c.pos=[];c.orders=[]}}
+  catch(e){c.err=e.message}
+  c.busy=false;if(S.tab==='paper')render();else if(S.tab==='intra'||S.tab==='swing')render()}
+const trdName=()=>S.trd.status&&S.trd.status.broker==='indstocks'?'INDstocks':'Upstox';
+const trdInd=()=>S.trd.status&&S.trd.status.broker==='indstocks';
+const trdOn=()=>S.trd.status&&S.trd.status.mode&&S.trd.status.mode!=='off';
+const trdBanner=()=>{const m=S.trd.status.mode;return m==='live'?'<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>Orders go to your '+trdName()+' account. Check the contract, quantity and price every time.</span></div>':'<div class="verdict amb" style="margin:10px 0"><b>DRY RUN — nothing is sent</b><span>Orders are checked and logged exactly as in live mode, but they are not sent to '+trdName()+'.</span></div>'};
+function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="err">${esc(c.err)}</div></div>`:'';
+  if(s.mode==='off')return`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>Switched off</span></div></div><span class="pill p-mu">Off</span></div><div class="sub" style="margin:8px 0 0">This app can send orders to your Upstox or INDstocks account, but it is switched off. To turn it on, set <b style="color:var(--tx)">ORDER_MODE</b> (and <b style="color:var(--tx)">ORDER_BROKER</b>, upstox or indstocks) in <b style="color:var(--tx)">trade-local.php</b> on your server: first <b style="color:var(--tx)">dry</b> (checks and logs, sends nothing), later <b style="color:var(--tx)">live</b>.</div></div>`;
+  const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>${s.connected?'Connected'+(s.user?' as '+esc(s.user):''):'Not connected today'}</span><span>· ${s.sentToday}/${s.limits.perDay} orders today</span></div></div><span class="pill ${s.mode==='live'?'p-dn':'p-amb'}">${s.mode==='live'?'Live':'Dry run'}</span></div>${trdBanner()}`;
+  if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
+  const pasteBox=()=>`<div class="sub" style="margin:0 0 10px">Paste today's INDstocks access token (indstocks.com/app/api-trading/access-tokens). Tokens reset every day at 7:00 AM. It is sent to your server only and never shown again.</div><div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div><div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button><button class="btn2" data-trd="refresh">Refresh</button></div>`;
+  if(s.tokenMode==='paste'&&(!s.connected||c.paste))h+=pasteBox();
+  else if(!s.connected)h+=`<div class="sub" style="margin:0 0 10px">${s.configured?'Log in to Upstox once each day (the login lasts until about 3:30 AM). Your password is typed on Upstox, never here.':'Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in trade.php on your server first.'}</div><div class="c-act">${s.configured?'<button class="btn2 on" data-trd="login">Connect Upstox</button>':''}<button class="btn2" data-trd="refresh">Refresh</button></div>`;
+  else{h+=`<div class="info num" style="border-top:0;padding-top:0">Available to trade: <b>${isFinite(+f)?'₹'+f0(+f):'—'}</b> · ${s.tokenMode==='paste'?'token':'login'} valid until ${esc(exp)} · caps: ₹${f0(s.limits.maxValue)} per order${s.tokenMode==='paste'?' · <button class="lnk" data-trd="newtoken">change token</button>':''}</div>`;
+    if(trdInd())h+=`<div class="sub" style="margin:0 0 6px">INDstocks has no stop order for an open position in its API. Place your stop-loss in the INDstocks app as soon as a buy fills.</div>`;
+    h+=`<h3 style="margin-top:12px">Your option positions</h3>`+(c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(p.trading_symbol||p.instrument_token)} <span class="tag">${p.product==='I'?'Intraday':'Overnight'}</span></div><div class="s num">${p.quantity} qty · avg ₹${f2(p.average_price)} · now ₹${f2(p.last_price)} · <span class="${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</span></div>${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}</div></div>`).join('')}</div>`:'<div class="empty" style="padding:14px">No open option positions on '+trdName()+'.</div>');
+    if(c.orders.length)h+=`<h3>Recent orders</h3><div class="list out">${c.orders.slice(0,5).map(o=>`<div class="row"><div><div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div><div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div></div><span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span></div>`).join('')}</div>`;
+    h+=`<div class="c-act" style="margin-top:12px"><button class="btn2" data-trd="refresh">Refresh</button><span class="qty" style="font-size:12px">No order is placed unless you confirm it.</span></div>`}
+  return h+'</div>'}
+const ordBtn=(kind,ix,leg,v)=>trdOn()&&S.trd.status.connected&&leg&&leg.key&&v&&v.ok?`<button class="sbtn" data-ord="${kind}|${ix.id}">${trdName()} order</button>`:'';
+function ordSheet(o){S.ord=o;const s=S.trd.status,lim=s.limits;
+  openSheet(`<h2>${esc(o.title)}</h2><div class="sub" style="margin:4px 0 0">${esc(o.sub||'')}</div>${trdBanner()}
+  <div class="two"><div class="fld" style="margin:8px 0"><label>${o.unit?'Quantity (units)':'Lots'}${o.unit?'':' (1 lot = '+o.lot+')'}</label><input id="ordLots" type="number" inputmode="numeric" min="1" value="${o.lots}"></div>
+  <div class="fld" style="margin:8px 0"><label>Limit price (₹)</label><input id="ordPrice" type="number" inputmode="decimal" step="0.05" value="${o.price.toFixed(2)}"></div></div>
+  ${o.type==='SL'?`<div class="fld" style="margin:8px 0"><label>Trigger price (₹): the order wakes up when the price touches this</label><input id="ordTrig" type="number" inputmode="decimal" step="0.05" value="${o.trigger.toFixed(2)}"></div>`:''}
+  <div class="fld" style="margin:8px 0"><label>Product</label><select id="ordProd">${[['I','Intraday (closes by 3:20 PM)'],['D','Overnight / NRML']].map(([k,l])=>`<option value="${k}" ${k===o.product?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div id="ordCalc"></div>
+  <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;margin:12px 0"><input type="checkbox" id="ordOk" style="margin-top:3px"><span>${s.mode==='live'?'I have checked the contract, quantity, price and product. This sends a <b>real order with real money</b>.':'I have checked the details. This is a dry run: nothing is sent.'}</span></label>
+  <button class="btn" id="ordGo" disabled>${o.side==='BUY'?'Send buy order':'Send sell order'}</button><div id="ordRes"></div>
+  <div class="sub" style="margin:10px 0 0">Limit orders fill only at your price or better, so they can stay unfilled. Raise a buy price (or lower a sell price) to fill faster. Brokerage and taxes are extra. This is not advice.</div>`);ordCalc()}
+function ordRead(){const o=S.ord,n=+($('#ordLots')||{}).value||0,price=+($('#ordPrice')||{}).value||0,trig=+($('#ordTrig')||{}).value||0,qty=o.unit?n:n*o.lot;return{qty,lots:n,price,trig,prod:($('#ordProd')||{}).value||o.product}}
+function ordCalc(){const o=S.ord,r=ordRead(),el=$('#ordCalc');if(!el)return;const lim=S.trd.status.limits,val=r.qty*r.price,fee=20;let h='';
+  if(o.side==='BUY'){const pl=x=>(x-r.price)*r.qty;
+    h=kv([['Total outlay','₹'+f0(val+fee),'',r.qty+' qty · ₹'+f0(val)+' + ₹'+fee+' charge'],['Target 1',isFinite(o.t1)?'₹'+f2(o.t1):'—','up',isFinite(o.t1)?'+₹'+f0(pl(o.t1))+' · '+pct(o.t1/r.price-1,0):''],['Target 2',isFinite(o.t2)?'₹'+f2(o.t2):'—','up',isFinite(o.t2)?'+₹'+f0(pl(o.t2))+' · '+pct(o.t2/r.price-1,0):''],['Max loss at stop',isFinite(o.stop)?'−₹'+f0(Math.max(0,-pl(o.stop))):'—','dn',isFinite(o.stop)?'stop ₹'+f2(o.stop):'']])
+     +kv([['Potential left to T1',isFinite(o.t1)?'+₹'+f0(pl(o.t1)):'—','up',isFinite(o.t1)?pct(o.t1/r.price-1,0)+' from your price':''],['Potential left to T2',isFinite(o.t2)?'+₹'+f0(pl(o.t2)):'—','up',isFinite(o.t2)?pct(o.t2/r.price-1,0)+' from your price':''],['Order value','₹'+f0(val),val>lim.maxValue?'dn':'','cap ₹'+f0(lim.maxValue)],['Product',r.prod==='I'?'Intraday':'Overnight','','']])
+     +'<div class="sub" style="margin:6px 0 0">Targets are reference marks. The plan exits on its rule, the stop or 3:15 PM, and does not sell at them. Place the stop yourself after the buy fills (Paper tab, your positions'+(trdInd()?', or in the INDstocks app':'')+').</div>'}
+  else{const pnl=o.avg?(r.price-o.avg)*r.qty:NaN;h=kv([['You receive','₹'+f0(val),'',r.qty+' qty × ₹'+f2(r.price)],['Against your average',isFinite(pnl)?rs(pnl):'—',pnl>=0?'up':'dn',o.avg?'avg ₹'+f2(o.avg):''],[o.type==='SL'?'Trigger':'Type',o.type==='SL'?'₹'+f2(r.trig):'Limit',o.type==='SL'?'dn':'',o.type==='SL'?'wakes the order':'sells at this price or better'],['Order value','₹'+f0(val),val>lim.maxValue?'dn':'','cap ₹'+f0(lim.maxValue)]])}
+  el.innerHTML=h;const ok=r.qty>0&&r.price>0&&(o.type!=='SL'||r.trig>0)&&val<=lim.maxValue,go=$('#ordGo');if(go)go.disabled=!(ok&&($('#ordOk')||{}).checked&&!S.ordBusy)}
+async function ordSend(){const o=S.ord,r=ordRead(),res=$('#ordRes'),go=$('#ordGo');if(!o||S.ordBusy)return;S.ordBusy=true;if(go)go.disabled=true;res.innerHTML='<div class="sub" style="margin:10px 0 0">Sending…</div>';
+  const body={instrument_token:o.token,quantity:r.qty,transaction_type:o.side,order_type:o.type,product:r.prod,price:+r.price.toFixed(2),trigger_price:o.type==='SL'?+r.trig.toFixed(2):0,ref:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),label:o.title,contract:o.contract};
+  try{const j=await trdApi('place',null,body),id=j.data&&j.data.order_ids&&j.data.order_ids[0];
+    res.innerHTML=`<div class="verdict ${j.mode==='live'?'up':'amb'}" style="margin-top:12px"><b>${j.mode==='live'?'✓ Order sent to Upstox':'✓ Dry run passed — nothing was sent'}</b><span>${id?'Order id '+esc(id)+'. ':''}${esc(j.note||'')}</span><span id="ordSt"></span></div>`;
+    if(j.mode==='live'&&id)for(let k=0;k<8;k++){await new Promise(z=>setTimeout(z,2500));try{const d=(await trdApi('order',{order_id:id})).data||{};const st=$('#ordSt');if(st)st.textContent=' Status: '+(d.status||'?')+(d.filled_quantity?' · filled '+d.filled_quantity+(d.average_price?' @ ₹'+f2(+d.average_price):''):'');if(/complete|reject|cancel/i.test(d.status||''))break}catch(e){break}}
+    trdLoad()}
+  catch(e){res.innerHTML=`<div class="verdict dn" style="margin-top:12px"><b>✕ Order not sent</b><span>${esc(e.message)}</span></div>`}
+  S.ordBusy=false;if(go)go.disabled=true}
+function ordFromCall(kind,ixId){const ix=IDX.find(i=>i.id===ixId),A=S.res[kind][ixId],leg=A&&pickLeg(A,kind,ix);if(!trdOn()||!leg||!leg.key)return;
+  ordSheet({title:'BUY '+ix.name+' '+f0(leg.strike)+' '+leg.type,sub:'Expiry '+nice(A.opt.exp)+' · lot '+leg.lot+' · '+(kind==='intra'?'intraday call':'NRML call'),token:leg.key,side:'BUY',type:'LIMIT',product:kind==='intra'?'I':'D',lot:leg.lot,lots:1,price:tick(leg.ltp),stop:leg.psl,t1:leg.pt1,t2:leg.pt2,contract:{u:ix.id,e:A.opt.exp,k:leg.strike,t:leg.type}})}
+function ordFromPos(i,stop){const p=S.trd.pos[i];if(!p||p.quantity<=0)return;const trig=tick(p.average_price*.6);
+  ordSheet(stop?{title:'STOP-LOSS SELL '+(p.trading_symbol||''),sub:'Protects '+p.quantity+' qty bought at ₹'+f2(p.average_price)+'. Trigger −40% of your average. Place it only after the buy has filled.',token:p.instrument_token,side:'SELL',type:'SL',product:p.product,unit:true,lot:1,lots:p.quantity,price:tick(trig*.95),trigger:trig,avg:p.average_price}
+    :{title:'SELL '+(p.trading_symbol||''),sub:'Closes your position: '+p.quantity+' qty, average ₹'+f2(p.average_price)+'.',token:p.instrument_token,side:'SELL',type:'LIMIT',product:p.product,unit:true,lot:1,lots:p.quantity,price:tick(p.last_price),avg:p.average_price})}
+addEventListener('input',e=>{if(['ordLots','ordPrice','ordTrig','ordProd'].includes(e.target.id))ordCalc()});
+addEventListener('change',e=>{if(e.target.id==='ordOk'||e.target.id==='ordProd')ordCalc()});
+addEventListener('focus',()=>{if(S.tab==='paper')trdLoad()});
+/* ============================== 24/7 RUNNER, VIEWER AND POSITION GUARD ==============================
+   service/runner.js opens this same page headlessly on your VPS (window.__RUNNER is set), so the engine, the paper account and the stock calls run all day with no browser open,
+   using exactly the code you test here. While a runner is alive, every other browser becomes a READ-ONLY viewer of the server paper account (no double trades).
+   The runner also watches your REAL Upstox positions: it alerts your phone, and only if autoStop is switched on it places the stop-loss through the same guarded order API. */
+const RUN=window.__RUNNER||null;S.viewer=false;
+const CID=(()=>{try{let c=sessionStorage.getItem('ix_cid');if(!c){c=Math.random().toString(36).slice(2,12);sessionStorage.setItem('ix_cid',c)}return c}catch(e){return Math.random().toString(36).slice(2,12)}})();
+async function svcApi(a,body){const r=await fetch('api.php?svc='+a,{method:body!==undefined?'POST':'GET',headers:{'X-App-Pin':cfg().pin,...(body!==undefined?{'Content-Type':'application/json'}:{})},body:body!==undefined?JSON.stringify(body):undefined,cache:'no-store'});
+  const j=await r.json();if(!r.ok||j.status==='error')throw new Error(j.message||'HTTP '+r.status);return j}
+const notify=(title,message)=>{if(RUN&&RUN.notify!==false)svcApi('notify',{title,message}).catch(()=>{})};
+async function svcLease(){if(RUN||S.demo||S.yahoo||!cfg().pin)return;try{const j=await svcApi('lease',{id:CID,runner:false});S.leaseAt=Date.now();S.viewer=!j.granted;S.viewerBy=j.runnerAlive?'server':'window'}catch(e){}}
+async function svcCheck(){const was=S.viewer;await svcLease();if(S.viewer||was){await paperLoad();render()}}
+const viewerNote=()=>S.viewer?(S.viewerBy==='server'?'<div class="verdict amb" style="margin:14px 0 0"><b>24/7 server account</b><span>A runner on your server manages the paper account all day, so this screen is read-only. It refreshes every 15 seconds.</span></div>':'<div class="verdict amb" style="margin:14px 0 0"><b>Read-only here</b><span>Another window is managing the paper account, so this one only shows it and does not take new calls (refreshes every 15 seconds).</span><div class="c-act" style="margin-top:8px"><button class="sbtn pri" data-takeover="1">Manage the account from this window</button></div></div>'):'';
+if(RUN){const _plog=plog;plog=function(txt,cls){_plog(txt,cls);if(/Auto-bought|^Bought|Stop-loss|Square-off|Trail exit|Time exit|Expired|Target/.test(txt))notify('Paper trade',txt)}}
+S.guard={seen:{},stop:{},warn:{},exit:{},rem:{},busy:false};
+async function guardTick(){if(!RUN||S.guard.busy||S.demo||S.yahoo)return;const mk=market();if(!RUN.anytime&&!mk.open)return;S.guard.busy=true;const g=S.guard;
+  try{
+    /* 1. new Valid calls: tell the phone once */
+    for(const k of ['intra','swing'])for(const ix of IDX){const A=S.res[k][ix.id];if(!A||A.err||!A.live||!A.opt||!A.opt.legs||!A.opt.legs.length)continue;const leg=pickLeg(A,k,ix);if(!leg||!leg.v.ok)continue;const sid=sidOf(k,ix.id,A.live);if(g.seen[sid])continue;g.seen[sid]=1;
+      notify('New '+(k==='intra'?'intraday':'NRML')+' call',`BUY ${ix.name} ${f0(leg.strike)} ${leg.type} @ ₹${f2(leg.ltp)} (${leg.v.lab}). 1 lot ₹${f0(leg.lotCost)}, stop ₹${f2(leg.psl)}, ${k==='intra'?'exit by 3:15 PM':'hold up to 3 days'}.`)}
+    for(const c of S.sc.calls)if(c.v.ok&&!g.seen[c.sid]){g.seen[c.sid]=1;notify('Experimental stock call (paper only)',`BUY ${c.sym} ${f0(c.strike)} ${c.type} @ ₹${f2(c.ltp)}. Paper trading only.`)}
+    /* 2. your real Upstox positions */
+    await trdLoad();const tr=S.trd,today=dkey(Date.now());
+    if(tr.status&&tr.status.mode==='live'&&!tr.status.connected&&!g.warn['login'+today]){g.warn['login'+today]=1;notify(trdName()+(trdInd()?' token needed':' login needed'),trdInd()?'Live trading is on but there is no valid INDstocks token (they reset at 7:00 AM). Generate one on the INDstocks dashboard and paste it in the app, Paper tab. Until then your real positions are not being watched.':'Live trading is on but today\'s Upstox login has expired (it lasts until about 3:30 AM). Open the app, Paper tab, Connect Upstox. Until then your real positions are not being watched.')}
+    if(tr.status&&tr.status.mode!=='off'&&tr.status.connected){
+      for(const p of tr.pos){if(!(p.quantity>0))continue;const sym=p.trading_symbol||p.instrument_token,ixId=/BANK/i.test(sym)?'BANKNIFTY':/SENSEX/i.test(sym)?'SENSEX':/NIFTY/i.test(sym)?'NIFTY':null,dir=/\bCE\b/.test(sym)?1:/\bPE\b/.test(sym)?-1:0,key=p.instrument_token+'|'+today;
+        const hasStop=tr.orders.some(o=>o.instrument_token===p.instrument_token&&o.transaction_type==='SELL'&&/trigger pending|open|pending/i.test(o.status||''));
+        const mine=S.bot.st&&S.bot.st.trades.some(x=>x.state==='open'&&x.mode!=='dry'&&x.key===p.instrument_token);
+        if(!hasStop&&!mine){
+          if(RUN.autoStop&&!trdInd()&&!g.stop[key]){g.stop[key]=1;const trig=tick(p.average_price*.6),price=tick(trig*.95);
+            try{const j=await trdApi('place',null,{instrument_token:p.instrument_token,quantity:p.quantity,transaction_type:'SELL',order_type:'SL',product:p.product,price,trigger_price:trig,ref:'stop-'+p.instrument_token+'-'+today,label:'AUTO STOP '+sym});
+              notify('Stop-loss placed',`${sym}: sells ${p.quantity} if it falls to ₹${f2(trig)} (limit ₹${f2(price)}). ${j.mode==='dry'?'DRY RUN: nothing was sent.':''}`)}
+            catch(e){notify('Stop-loss NOT placed',`${sym}: ${e.message}`)}}
+          else if(!(RUN.autoStop&&!trdInd())&&!g.warn[key]){g.warn[key]=1;notify('No stop-loss on your position',`${sym} (${p.quantity} qty, avg ₹${f2(p.average_price)}) has no stop order. ${trdInd()?'INDstocks cannot hold one from this app: place it in the INDstocks app now.':'Auto stop is off: place one yourself (Paper tab, Stop −40%).'}`)}}
+        /* the index exit rule: a 30-minute candle that closes on the wrong side of the session average */
+        const A=ixId&&S.res.intra[ixId];if(A&&!A.err&&A.X&&dir){const X=A.X,n=X.c.length-1,ek=key+'|'+X.bars[n].t;
+          if(X.bn[n]%6===5&&(X.c[n]-X.tw[n])*dir<0&&!g.exit[ek]){g.exit[ek]=1;notify('Exit rule: index closed through its average',`${ixId} closed ${f0(X.c[n])} ${dir>0?'below':'above'} its average ${f0(X.tw[n])} on a 30-minute candle. The app's rule says exit ${sym}.`)}}
+        if(p.product==='I'&&mk.m>=910&&!g.rem[key]){g.rem[key]=1;notify('Square off intraday positions',`It is past 3:10 PM. ${sym} is an intraday position: sell it yourself before 3:20 PM or the broker squares it off.`)}}}
+  }catch(e){}
+  g.busy=false}
+/* ============================== AUTOMATIC TRADING (runner only) ==============================
+   When a Valid intraday Nifty / Bank Nifty call appears, the runner buys it on INDstocks as ONE smart order: the buy with its stop-loss and target attached, so the protection sits at the broker from the
+   first second, even if this runner dies. After the fill it trails the stop up (the tested rule: once the price is 30% above your entry the stop follows 25% below the highest price, never below your entry),
+   cancels an entry that has not filled after a minute, and closes the position at the square-off time. In DRY mode nothing is sent: the same logic runs as a SHADOW on real prices and the would-have results
+   are kept, so you can judge it before any real order. Every limit (lots, open positions, buys a day, time window, stop and target size, kill switch) is enforced AGAIN on the server (trade.php), and the
+   runner needs "autoTrade": true in service/config.json. The ledger lives on the server (trade.php autostate), so a restart never forgets an open trade. */
+S.bot={st:null,busy:false,seen:{},warn:{},dirty:false,savedAt:0,err:''};
+const BOT_IX=['NIFTY','BANKNIFTY'];
+const botMin=s=>{const p=String(s||'').split(':');return(+p[0]||0)*60+(+p[1]||0)};
+const botAu=()=>{const s=S.trd.status;return s&&s.broker==='indstocks'&&s.mode!=='off'&&s.auto&&s.auto.configured?s.auto:null};
+const botNm=t=>t.name+' '+f0(t.strike)+' '+t.type;
+const botTrades=()=>S.bot.st?S.bot.st.trades:[];
+const botAct=()=>botTrades().filter(t=>t.state==='entry'||t.state==='open');
+function botLog(txt,cls){const st=S.bot.st;if(!st)return;st.log=st.log||[];st.log.unshift({t:Date.now(),txt,cls:cls||''});if(st.log.length>80)st.log.length=80;S.bot.dirty=true}
+function botSay(title,txt,cls){botLog(txt,cls);notify(title,txt)}
+/* estimated result after costs: a dry-run shadow trade also pays the 0.3% slippage each way that the research used; a live one already has the real prices */
+function botPnl(t,exit){const q=t.qty;return Math.round(t.mode==='dry'?(exit*(1-.003-.0012)-t.fill*1.003)*q-50:(exit*(1-.0012)-t.fill)*q-50)}
+async function botLoad(view){let st;try{st=(await trdApi('autostate')).state}catch(e){return false}
+  const today=dkey(Date.now());if(!st||typeof st!=='object')st={day:today,trades:[],hist:[],log:[]};st.trades=Array.isArray(st.trades)?st.trades:[];st.hist=Array.isArray(st.hist)?st.hist:[];st.log=Array.isArray(st.log)?st.log:[];
+  if(!view&&st.day!==today){const keep=[];for(const t of st.trades)(t.state==='closed'||t.state==='dead'?st.hist.unshift(t):keep.push(t));st.trades=keep;st.day=today;if(st.hist.length>200)st.hist.length=200}
+  S.bot.st=st;return true}
+async function botSave(){if(!S.bot.st)return;try{await trdApi('autostate',null,{state:S.bot.st})}catch(e){S.bot.err='could not save the ledger: '+e.message}}
+/* Upstox last prices: the same source as every other price in the app (a function declaration so a test can swap it) */
+async function botPrices(keys){const by={};if(!keys.length)return by;const j=await api('/v2/market-quote/quotes',{instrument_key:keys.join(',')});for(const v of Object.values(j.data||{}))if(v.last_price>0)by[v.instrument_token]=v.last_price;return by}
+async function botSnap(){try{const [p,o]=await Promise.all([trdApi('positions'),trdApi('orders')]);return{pos:p.data||[],orders:o.data||[]}}catch(e){return null}}
+function botFinish(t,exit,why){t.state='closed';t.exit=exit;t.why=why;t.tC=Date.now();t.pnl=botPnl(t,exit);t.ret=exit/t.fill-1;S.bot.dirty=true;
+  botSay(t.mode==='dry'?'Shadow trade closed':'Auto trade closed',`${botNm(t)}: ${why}. In ₹${f2(t.fill)}, out ₹${f2(exit)}, ${rs(t.pnl)} (estimate after costs).`,t.pnl>=0?'up':'dn')}
+/* the tested trailing rule: once the highest price is trailStart above your entry, the stop follows trailGive below that highest price, never below your entry, and only moves in steps worth sending */
+function botTrail(t,au,px){if(!(px>0)||t.peak<t.fill*(1+au.trailStart))return 0;
+  const want=Math.min(tick(t.tgt-.05),Math.max(tick(t.peak*(1-au.trailGive)),tick(t.fill)));
+  return want>=t.stop+Math.max(.5,t.fill*.03)&&want<px?want:0}
+async function botModify(t,ns,au){if(Date.now()-(t.tMod||0)<21000)return false;t.tMod=Date.now();
+  const slT=Math.min(ns,tick(t.tgt-.05)),slL=Math.max(.05,tick(slT*.95)),ids=t.mode==='dry'?['DRY-'+t.id]:[t.modId,t.child,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  let err='';
+  for(const id of ids){try{await trdApi('smartmodify',null,{order_id:id,sl_trigger:slT,sl_limit:slL,tgt_trigger:t.tgt,tgt_limit:t.tgtLim});t.modId=id;err='';break}catch(e){err=e.message;if(/Wait before|limit for this order/i.test(err))break}}
+  if(err){if(/Wait before/i.test(err))return false;t.modFail=(t.modFail||0)+1;S.bot.dirty=true;if(t.modFail===1||t.modFail===5)botSay('Trailing stop NOT moved',`${botNm(t)}: ${err}. The stop and target already at INDstocks stay in place.`,'dn');return false}
+  t.modFail=0;t.mods=(t.mods||0)+1;const was=t.stop;t.stop=slT;t.slLim=slL;S.bot.dirty=true;
+  botLog(`Stop moved up ₹${f2(was)} → ₹${f2(slT)} (highest ₹${f2(t.peak)})${t.mode==='dry'?' [shadow]':''}`,'up');if(t.mods===1)notify(t.mode==='dry'?'Shadow trade: stop trailing':'Stop trailing',`${botNm(t)}: stop moved to ₹${f2(slT)}${slT>=t.fill?' (at or above your entry, so the trade can no longer lose)':''}.`);return true}
+function botShadow(t,px,au,mk){if(!(px>0))return;
+  if(px<=t.stop){botFinish(t,px,t.stop>t.fill?'Trailing stop hit':'Stop-loss hit');return}
+  if(px>=t.tgt){botFinish(t,t.tgt,'Target hit');return}
+  if(mk.m>=botMin(au.squareOff)){botFinish(t,px,'Square-off '+au.squareOff);return}
+  const ns=botTrail(t,au,px);if(ns)return botModify(t,ns,au)}
+async function botLiveEntry(t,px,snap,au){
+  const row=snap.orders.find(o=>o.order_id===t.parent),pos=snap.pos.find(p=>p.instrument_token===t.key&&p.product==='I'&&p.quantity>0);
+  if((row&&row.status==='complete')||(!row&&pos)){const q=(row&&row.filled_quantity)||(pos&&pos.quantity)||t.qty;t.fill=(row&&row.average_price)||(pos&&pos.average_price)||t.px;t.qty=q;t.state='open';t.peak=Math.max(t.peak,px||0,t.fill);t.gone=0;S.bot.dirty=true;
+    botSay('Auto buy filled',`${botNm(t)} ${q} qty @ ₹${f2(t.fill)}. Stop ₹${f2(t.stop)} and target ₹${f2(t.tgt)} are attached at INDstocks.`,'up');return}
+  if(row&&(row.status==='rejected'||row.status==='cancelled')){
+    if(row.filled_quantity>0){t.qty=row.filled_quantity;t.fill=row.average_price||t.px;t.state='open';t.partial=true;t.peak=Math.max(t.peak,px||0,t.fill);t.gone=0;S.bot.dirty=true;
+      botSay('Auto buy partly filled',`${botNm(t)}: only ${t.qty} of the quantity filled. The rest was cancelled. Stop and target are still attached.`,'dn');return}
+    t.state='dead';t.why='Entry '+row.status+(row.message?': '+row.message:'');S.bot.dirty=true;botSay('Auto buy not filled',botNm(t)+': '+t.why,'mu');
+    if(t.child){try{await trdApi('smartcancel',null,{order_id:t.child})}catch(e){}}return}   // make sure its stop and target cannot wake up later
+  if(Date.now()-t.t0>au.entryWait*1000&&(!t.cxl||Date.now()-t.cxl>30000)){t.cxl=Date.now();t.cxlN=(t.cxlN||0)+1;S.bot.dirty=true;
+    if(t.cxlN>3){if(t.cxlN===4)botSay('Entry could not be cancelled',`${botNm(t)}: cancel it in the INDstocks app.`,'dn');return}
+    const errs=[];for(const id of [t.parent,t.child].filter(Boolean)){try{await trdApi('smartcancel',null,{order_id:id})}catch(e){errs.push(e.message)}}
+    botLog(errs.length?'Cancel problem: '+errs.join('; '):`Entry not filled in ${au.entryWait} s: cancel sent.`,errs.length?'dn':'mu')}}
+async function botSquare(t,px,pos,au){
+  /* 1) take the stop and target away first, so nothing can sell the same shares twice */
+  if(!t.sqCancel){const ids=[t.child,t.modId,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);let done=false,err='';
+    for(const id of ids){try{await trdApi('smartcancel',null,{order_id:id});done=true;break}catch(e){err=e.message}}
+    if(!done){t.sqFail=(t.sqFail||0)+1;S.bot.dirty=true;if(t.sqFail===1)botSay('Square-off: could not cancel the stop',`${botNm(t)}: ${err}. Close the position in the INDstocks app. The broker also squares off intraday positions around 3:20 PM.`,'dn');return}
+    t.sqCancel=Date.now();botLog('Square-off time: stop and target cancelled, selling next.','mu');return}
+  if(Date.now()-t.sqCancel<8000)return;
+  /* 2) sell what is held, a little under the last price so it fills; try again lower if it does not */
+  if(!t.sqSell||Date.now()-t.sqSell>45000){const n=(t.sqTry||0)+1;S.bot.dirty=true;
+    if(n>3){if(n===4){t.sqTry=n;botSay('Square-off not completed',`${botNm(t)} is still open after 3 sell attempts. Close it in the INDstocks app now.`,'dn')}return}
+    const price=Math.max(.05,tick(px*(1-.03*n)));t.sqTry=n;t.sqSell=Date.now();
+    try{await trdApi('place',null,{instrument_token:t.key,quantity:pos.quantity,transaction_type:'SELL',order_type:'LIMIT',product:'I',price,trigger_price:0,ref:'sq-'+t.id+'-'+n,label:'AUTO SQUAREOFF '+botNm(t)});botLog(`Selling ${pos.quantity} at ₹${f2(price)} (attempt ${n}).`,'mu')}
+    catch(e){botSay('Square-off sell failed',`${botNm(t)}: ${e.message}. Close it in the INDstocks app.`,'dn')}}}
+async function botLiveOpen(t,px,snap,au,mk){
+  const pos=snap.pos.find(p=>p.instrument_token===t.key&&p.product==='I'&&p.quantity>0);
+  if(!pos){t.gone=(t.gone||0)+1;S.bot.dirty=true;if(t.gone<2)return;   // two looks in a row, so one odd reply cannot close a trade
+    const sells=snap.orders.filter(o=>o.instrument_token===t.key&&o.transaction_type==='SELL'&&o.status==='complete'&&o.average_price>0),ex=sells.length?sells[0].average_price:(t.last||t.fill);
+    botFinish(t,ex,t.sqCancel?'Square-off '+au.squareOff:ex>=t.tgt*.97?'Target hit':ex>t.fill?'Trailing stop hit':ex<=t.stop*1.03?'Stop-loss hit':'Closed');return}
+  t.gone=0;
+  if(mk.m>=botMin(au.squareOff))return botSquare(t,px,pos,au);
+  const ns=botTrail(t,au,px);if(ns)return botModify(t,ns,au)}
+async function botEnter(c,au,s){const {ix,A,leg,sid}=c,ltp=leg.ltp,qty=leg.lot*au.lots;S.bot.seen[sid]=1;
+  const px=tick(ltp*(1+au.entryBuffer)),slT=tick(ltp*(1-au.sl)),slL=Math.max(.05,tick(slT*.95)),tgT=tick(ltp*(1+au.target)),tgL=tick(tgT*.98);
+  const t={id:'a'+Date.now().toString(36),sid,day:dkey(Date.now()),ix:ix.id,name:ix.name,key:leg.key,strike:leg.strike,type:leg.type,exp:A.opt.exp,lot:leg.lot,qty,t0:Date.now(),callPx:ltp,px,stop:slT,slLim:slL,tgt:tgT,tgtLim:tgL,peak:ltp,last:ltp,mods:0,state:'entry',mode:s.mode,fill:0,parent:'',child:''};
+  try{const j=await trdApi('place',null,{instrument_token:leg.key,quantity:qty,transaction_type:'BUY',order_type:'LIMIT',product:'I',price:px,trigger_price:0,ref:'auto-'+String(sid).replace(/[^A-Za-z0-9]/g,'_'),label:'AUTO BUY '+botNm(t),
+      contract:{u:ix.id,e:A.opt.exp,k:leg.strike,t:leg.type},auto:true,attach:{sl_trigger:slT,sl_limit:slL,tgt_trigger:tgT,tgt_limit:tgL}});
+    t.mode=j.mode;
+    if(j.mode==='dry'){t.fill=ltp;t.state='open';botSay('Shadow buy (dry run)',`${botNm(t)} ${qty} qty @ ₹${f2(ltp)} · stop ₹${f2(slT)} · target ₹${f2(tgT)}. Nothing was sent: this is a shadow trade on real prices.`,'up')}
+    else{t.parent=((j.data&&j.data.order_ids)||[])[0]||'';t.child=(j.data&&j.data.child_id)||'';botSay('Auto buy placed',`${botNm(t)} ${qty} qty, limit ₹${f2(px)}, stop ₹${f2(slT)} and target ₹${f2(tgT)} attached. Waiting for the fill.`,'up')}
+    S.bot.st.trades.push(t);S.bot.dirty=true}
+  catch(e){const unsure=/Bad response|Failed to fetch|fetch failed|NetworkError|network/i.test(e.message);t.state='dead';t.refused=!unsure;t.unsure=unsure;t.why=e.message;S.bot.st.trades.push(t);S.bot.dirty=true;
+    botSay(unsure?'Auto buy: result unknown':'Auto buy NOT placed',unsure?`${botNm(t)}: no clear answer from the server (${e.message}). Check the INDstocks app for an open order or position.`:`${botNm(t)}: ${e.message}`,'dn')}}
+async function botScan(s,au,mk){
+  const st=S.bot.st,today=dkey(Date.now());
+  if(!RUN.anytime&&(mk.m<585||mk.m>botMin(au.entryUntil)))return;
+  if(Date.now()-S.live.at>45000)return;   // no fresh prices, no new entry
+  for(const ix of IDX){if(!BOT_IX.includes(ix.id))continue;const A=S.res.intra[ix.id];
+    if(!A||A.err||!A.live||!A.opt||!A.opt.legs||!A.opt.legs.length||Date.now()-A.at>4*60000||Date.now()-A.live.t>75*60000)continue;
+    const leg=pickLeg(A,'intra',ix);if(!leg||!leg.key||!/^NSE_FO\|/.test(leg.key)||!leg.v||!leg.v.ok)continue;
+    const sid=sidOf('intra',ix.id,A.live);if(S.bot.seen[sid]||st.trades.some(t=>t.sid===sid)||st.hist.some(t=>t.sid===sid))continue;
+    const n=st.trades.filter(t=>t.day===today&&!t.refused).length,
+      why=botAct().length>=au.maxOpen?'a trade is already open':n>=au.maxPerDay?'the daily limit is reached':!leg.fits?'one lot is over your budget':'';
+    if(why){if(!S.bot.warn[sid]){S.bot.warn[sid]=1;botLog(`Skipped ${ix.name} ${f0(leg.strike)} ${leg.type}: ${why}.`,'mu')}continue}
+    if(s.mode==='live'){let f=null;try{const d=(await trdApi('funds')).data;f=d&&d.available_to_trade&&d.available_to_trade.total}catch(e){}
+      if(!(f>=leg.lotCost*au.lots*1.02+100)){if(!S.bot.warn['f'+sid]){S.bot.warn['f'+sid]=1;botSay('Auto buy skipped: funds',`${ix.name} ${f0(leg.strike)} ${leg.type} needs about ₹${f0(leg.lotCost*au.lots)}. Available to trade: ${isFinite(f)?'₹'+f0(f):'unknown'}.`,'dn')}continue}}
+    await botEnter({ix,A,leg,sid},au,s)}}
+async function botTick(){if(!RUN||!RUN.autoTrade||S.bot.busy||S.demo||S.yahoo||!cfg().pin)return;const mk=market();if(!RUN.anytime&&!mk.open)return;
+  S.bot.busy=true;
+  try{
+    if(!S.bot.st&&!(await botLoad()))return;
+    try{S.trd.status=await trdApi('status')}catch(e){if(!S.trd.status)return}
+    const s=S.trd.status,au=botAu();if(!au)return;
+    const act=botAct();let by={};
+    if(act.length){try{by=await botPrices(act.map(t=>t.key))}catch(e){}}
+    const snap=act.some(t=>t.mode==='live')&&s.connected?await botSnap():null;
+    for(const t of act){const px=by[t.key]||0;if(px>0){t.last=px;if(px>t.peak)t.peak=px}
+      if(t.mode==='dry')await botShadow(t,px,au,mk);
+      else if(snap)await(t.state==='entry'?botLiveEntry:botLiveOpen)(t,px,snap,au,mk);
+      else if(!S.bot.warn['snap'+t.id]){S.bot.warn['snap'+t.id]=1;botSay('Cannot see your INDstocks account',`${botNm(t)} is open but the account could not be read (token expired or INDstocks unreachable). Its stop and target stay at INDstocks. Paste a fresh token if it expired.`,'dn')}}
+    if(au.enabled&&s.connected)await botScan(s,au,mk);
+    if(S.bot.dirty||(botAct().length&&Date.now()-S.bot.savedAt>60000)){S.bot.dirty=false;S.bot.savedAt=Date.now();await botSave()}
+  }catch(e){S.bot.err=e.message}
+  finally{S.bot.busy=false}}
+function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.broker!=='indstocks'||s.mode==='off'||!s.auto)return'';const au=s.auto,st=S.bot.st,today=dkey(Date.now()),all=st?st.trades.concat(st.hist||[]):[],fin=all.filter(t=>t.state==='closed'),tod=st?st.trades.filter(t=>t.day===today||t.state==='open'||t.state==='entry'):[];
+  const sum=a=>a.reduce((x,t)=>x+(t.pnl||0),0),sh=fin.filter(t=>t.mode==='dry'),lv=fin.filter(t=>t.mode!=='dry'),pc=x=>Math.round(x*100)+'%';
+  const pill=!au.configured?['Not set up','p-mu']:au.killed?['Paused','p-amb']:s.mode==='live'?['Live','p-dn']:['Shadow · dry run','p-amb'];
+  let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">Automatic trading</div><div class="meta"><span>INDstocks · intraday Nifty and Bank Nifty options</span></div></div><span class="pill ${pill[1]}">${pill[0]}</span></div>`;
+  if(!au.configured)return h+`<div class="sub" style="margin:8px 0 0">Switched off. The 24/7 runner can buy a Valid intraday call by itself with the stop-loss and target attached, and trail the stop. To turn it on, set <b style="color:var(--tx)">ORDER_AUTO</b> to true in <b style="color:var(--tx)">trade-local.php</b> and <b style="color:var(--tx)">"autoTrade": true</b> in the runner's config.json (SETUP-hostinger.txt). Start with ORDER_MODE <b style="color:var(--tx)">dry</b>: it then only shadows the trades on real prices and sends nothing.</div></div>`;
+  h+=s.mode==='live'?`<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>The runner buys by itself when a Valid call appears. Check your INDstocks app often, especially for the first trades.</span></div>`:`<div class="verdict amb" style="margin:10px 0"><b>SHADOW — nothing is sent to INDstocks</b><span>Every step (entry, stop, target, trailing, square-off) runs on real prices and is recorded below, so you can judge it before any real order.</span></div>`;
+  h+=`<div class="sub" style="margin:0 0 8px">Rules: buys a Valid call with stop −${pc(au.sl)} and target +${pc(au.target)} attached; once the price is +${pc(au.trailStart)} the stop follows ${pc(au.trailGive)} below the highest price, never below your entry; ${au.lots} lot, ${au.maxOpen} open at a time, ${au.maxPerDay} a day, entries until ${esc(au.entryUntil)}, closed by ${esc(au.squareOff)}. Nifty and Bank Nifty only.</div>`;
+  if(sh.length)h+=`<div class="info num" style="border-top:0;padding-top:0">Shadow results: <b>${sh.length}</b> trade${sh.length>1?'s':''} · <b>${sh.filter(t=>t.pnl>0).length}</b> won · <b class="${sum(sh)>=0?'up':'dn'}">${rs(sum(sh))}</b> after estimated costs</div>`;
+  if(lv.length)h+=`<div class="info num" style="border-top:0;padding-top:0">Live results: <b>${lv.length}</b> trade${lv.length>1?'s':''} · <b>${lv.filter(t=>t.pnl>0).length}</b> won · <b class="${sum(lv)>=0?'up':'dn'}">${rs(sum(lv))}</b> (estimate)</div>`;
+  const row=t=>`<div class="row"><div style="min-width:0"><div class="n">${esc(botNm(t))} <span class="tag">${t.mode==='dry'?'Shadow':'Live'}</span></div><div class="s num">${t.qty} qty · in ₹${f2(t.fill||t.px)} · stop ₹${f2(t.stop)} · target ₹${f2(t.tgt)}${t.state==='closed'?' · out ₹'+f2(t.exit)+' · '+esc(t.why):t.state==='open'?' · now ₹'+f2(t.last):t.state==='entry'?' · waiting for the fill':' · '+esc(t.why||'')}</div></div><span class="pill ${t.state==='closed'?(t.pnl>=0?'p-up':'p-dn'):t.state==='dead'?'p-mu':'p-amb'}">${t.state==='closed'?rs(t.pnl):t.state==='open'?'Open':t.state==='entry'?'Entry':'Not filled'}</span></div>`;
+  h+=`<h3 style="margin-top:12px">Today</h3>`+(tod.length?`<div class="list out">${tod.slice().reverse().map(row).join('')}</div>`:'<div class="empty" style="padding:14px">No automatic trade yet today.</div>');
+  const lg=st&&st.log&&st.log.slice(0,6);if(lg&&lg.length)h+=`<div class="sub" style="margin:10px 0 0">${lg.map(l=>`<div>${hhmm(l.t)} · ${esc(l.txt)}</div>`).join('')}</div>`;
+  h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 ${au.killed?'on':''}" data-bot="${au.killed?'resume':'pause'}">${au.killed?'Resume automatic trading':'Pause automatic trading'}</button></div><div class="sub" style="margin:8px 0 0">Pausing stops new entries at once. A trade that is already open keeps its stop and target at INDstocks and is still managed until it closes.</div>`;
+  return h+'</div>'}
+/* ============================== ACCOUNTS: sign up, log in, account menu, owner admin ==============================
+   With accounts on (AUTH.mode 'users') everyone logs in first. The account id is decided by the login session on the server; this page never sends or chooses one.
+   Browser-side copies (paper account, settings) are stored per account (LS.ns), so two people on one device never see each other's data. */
+const authPost=async(action,body)=>{const r=await fetch('api.php?auth='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{}),cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){const e=new Error(j.message||('HTTP '+r.status));e.code=r.status;throw e}return j};
+const authGet=async a=>{const r=await fetch('api.php?auth='+a,{cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error')throw new Error(j.message||('HTTP '+r.status));return j};
+function authExpired(){if(RUN||S.authShown)return;S.authShown=true;showAuth('Your session ended. Please log in again.')}
+const canTrade=()=>AUTH.mode!=='users'||(AUTH.user&&(AUTH.user.role==='admin'||AUTH.user.role==='runner'));
+function applyAuthUI(){const b=$('#btnAccount');if(b){b.hidden=!(AUTH.mode==='users'&&AUTH.user&&AUTH.user.role!=='runner');if(AUTH.user)b.title='Account: '+AUTH.user.username}
+  const f=$('#footNote');if(f)f.textContent=AUTH.mode==='users'&&AUTH.user&&AUTH.user.role==='member'?' This site places no real orders for you: it is for research and paper trading only.':''}
+function showAuth(note,tab){
+  const must=AUTH.user&&AUTH.user.mustChange;S.authTab=tab||S.authTab||(AUTH.first?'signup':'login');
+  let el=$('#auth');if(!el){el=document.createElement('div');el.id='auth';document.body.appendChild(el)}
+  const t=S.authTab,mark='<div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:var(--up)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>';
+  let h=`<div class="auth-box"><div class="brand" style="justify-content:center;margin-bottom:16px">${mark}<div class="bname">Index Signals</div></div><div class="card">`;
+  if(AUTH.pinDefault)h+=`<div class="verdict dn" style="margin:0 0 12px"><b>Server not secured</b><span>This server still uses the default PIN. The owner must set a PIN or switch on accounts in auth-local.php (SETUP-hostinger.txt).</span></div>`;
+  if(must)h+=`<div class="iname" style="font-size:18px">Choose a new password</div><div class="sub" style="margin:6px 0 0">The owner gave you a temporary password. Pick your own now.</div>
+    <form id="aForm" autocomplete="on"><div class="fld"><label>Temporary password</label><input id="aOld" type="password" autocomplete="current-password"></div><div class="fld"><label>New password (8 or more characters)</label><input id="aNew" type="password" autocomplete="new-password"></div>
+    <div class="err" id="aErr">${esc(note||'')}</div><div class="bar"><button class="btn" id="aGo" type="submit">Save and continue</button></div></form>`;
+  else{
+    h+=`<div class="seg" style="margin-bottom:4px"><button data-at="login" class="${t==='login'?'on':''}">Log in</button><button data-at="signup" class="${t==='signup'?'on':''}">Create account</button></div>`;
+    if(t==='signup'&&AUTH.first&&!AUTH.setupReady)h+=`<div class="verdict amb" style="margin:12px 0 0"><b>This server is not set up yet</b><span>The owner must set ADMIN_SETUP_CODE in auth-local.php on the server (SETUP-contabo.md). Until then nobody can sign up.</span></div>`;
+    if(t==='recover')h+=`<div class="iname" style="font-size:18px;margin-top:12px">Owner password recovery</div><div class="sub" style="margin:6px 0 0">Only for the owner. It needs the setup code, which must be set again in auth-local.php on the server while you do this.</div>`;
+    if(t==='forgot')h+=`<div class="iname" style="font-size:18px;margin-top:12px">Reset password</div><div class="sub" style="margin:6px 0 0">Enter your registered email ID to receive a verification OTP.</div>`;
+    h+=`<form id="aForm" autocomplete="on">`;
+    if(t==='signup'){
+      h+=`<div class="fld"><label>Email ID</label>
+        <div style="display:flex;gap:8px">
+          <input id="aEmail" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
+          <button type="button" class="btn2" id="aSendOtp" style="white-space:nowrap;padding:0 12px;font-size:13px">Send OTP</button>
+        </div>
+      </div>
+      <div class="fld" id="otpRow" style="display:none">
+        <label>6-Digit Verification OTP (sent to your email)</label>
+        <input id="aOtp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX" autocomplete="one-time-code">
+      </div>
+      <div class="fld"><label>Username</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24"></div>
+      <div class="fld"><label>Password (8 or more characters)</label><input id="aPass" type="password" autocomplete="new-password" maxlength="72"></div>`;
+      if(AUTH.first)h+=`<div class="fld"><label>Setup code (from auth-local.php: creating OWNER account)</label><input id="aInv" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>`;
+      else if(AUTH.requireInvite)h+=`<div class="fld"><label>Invite code from owner</label><input id="aInv" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></div>`;
+      h+=`<label class="chk"><input type="checkbox" id="aAcc"><span>I understand this is a research and paper-trading tool. It places no real orders for me and is not investment advice. Options can lose their full premium.</span></label>`;
+    } else if(t==='forgot'){
+      h+=`<div class="fld"><label>Registered Email ID</label>
+        <div style="display:flex;gap:8px">
+          <input id="aEmail" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
+          <button type="button" class="btn2" id="aSendResetOtp" style="white-space:nowrap;padding:0 12px;font-size:13px">Send OTP</button>
+        </div>
+      </div>
+      <div class="fld" id="resetOtpRow" style="display:none">
+        <label>6-Digit Verification OTP</label>
+        <input id="aOtp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX">
+      </div>
+      <div class="fld" id="resetPassRow" style="display:none">
+        <label>New password (8 or more characters)</label>
+        <input id="aPass" type="password" autocomplete="new-password" maxlength="72">
+      </div>`;
+    } else if(t==='recover'){
+      h+=`<div class="fld"><label>Owner username</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+        <div class="fld"><label>New password (8 or more characters)</label><input id="aPass" type="password" autocomplete="new-password" maxlength="72"></div>
+        <div class="fld"><label>Setup code (from auth-local.php)</label><input id="aInv" autocomplete="off" spellcheck="false"></div>`;
+    } else {
+      h+=`<div class="fld"><label>Username or Email</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Username or email address"></div>
+        <div class="fld"><label>Password</label><input id="aPass" type="password" autocomplete="current-password" maxlength="72"></div>`;
+    }
+    h+=`<div class="err" id="aErr">${esc(note||'')}</div><div class="bar"><button class="btn" id="aGo" type="submit">${t==='signup'?'Create account':t==='recover'?'Set new password':t==='forgot'?'Reset password':'Log in'}</button></div></form>
+    ${t==='login'?`<div class="c-act" style="justify-content:center;margin-top:0"><button type="button" class="lnk" data-at="forgot" style="margin:0">Forgot password?</button>${AUTH.first||AUTH.setupReady?'<span style="color:var(--mu);margin:0 8px">·</span><button type="button" class="lnk" data-at="recover" style="margin:0">Owner recovery</button>':''}</div>`:t==='recover'||t==='forgot'?`<div class="c-act" style="justify-content:center;margin-top:0"><button type="button" class="lnk" data-at="login" style="margin:0">Back to log in</button></div>`:''}`}
+  h+=`</div><div class="auth-note">${t==='signup'&&!must?'Sign-up is by invitation. Your paper trades are private: nobody else can see or change them.':'Research and paper trading. Not investment advice.'}</div></div>`;
+  el.innerHTML=h;document.body.style.overflow='hidden';
+  el.onclick=e=>{
+    const sendBtn=e.target.closest('#aSendOtp, #aSendResetOtp');
+    if(sendBtn){
+      const isReset=sendBtn.id==='aSendResetOtp',em=($('#aEmail')?.value||'').trim(),er=$('#aErr');
+      if(!em||!em.includes('@')){er.className='err';er.textContent='Please enter a valid email address first.';return}
+      sendBtn.disabled=true;sendBtn.textContent='Sending…';er.textContent='';
+      authPost('send_otp',{email:em,username:$('#aUser')?.value||'',purpose:isReset?'reset':'registration'}).then(res=>{
+        er.className='sub';er.textContent=res.message||'OTP sent! Check your inbox/spam.';
+        if(isReset){const r1=$('#resetOtpRow'),r2=$('#resetPassRow');if(r1)r1.style.display='block';if(r2)r2.style.display='block'}
+        else{const r=$('#otpRow');if(r)r.style.display='block'}
+        const o=$('#aOtp');if(o)setTimeout(()=>o.focus(),50);
+        let sec=60;sendBtn.textContent=`Resend (${sec}s)`;
+        const timer=setInterval(()=>{sec--;if(sec<=0){clearInterval(timer);sendBtn.disabled=false;sendBtn.textContent='Resend OTP'}else{sendBtn.textContent=`Resend (${sec}s)`}},1000);
+      }).catch(x=>{er.className='err';er.textContent=x.message;sendBtn.disabled=false;sendBtn.textContent='Send OTP'});
+      return;
+    }
+    const b=e.target.closest('button[data-at]');if(b){S.authTab=b.dataset.at;showAuth('',b.dataset.at)}
+  };
+  el.onsubmit=async e=>{e.preventDefault();const go=$('#aGo'),er=$('#aErr');er.className='err';er.textContent='';go.disabled=true;
+    try{
+      if(must)await authPost('password',{old:$('#aOld').value,new:$('#aNew').value});
+      else if(S.authTab==='recover'){await authPost('recover',{username:$('#aUser').value,password:$('#aPass').value,code:$('#aInv').value});S.authTab='login';showAuth('Password changed. Now log in.','login');return}
+      else if(S.authTab==='forgot'){await authPost('reset_password_otp',{email:$('#aEmail').value,otp:$('#aOtp').value,password:$('#aPass').value});S.authTab='login';showAuth('Password reset successfully! Now log in.','login');return}
+      else if(S.authTab==='signup'){
+        const em=$('#aEmail')?$('#aEmail').value.trim():'',otp=$('#aOtp')?$('#aOtp').value.trim():'';
+        if(em&&!otp){er.textContent='Please request and enter the 6-digit OTP sent to your email.';go.disabled=false;return}
+        await authPost('signup',{email:em,otp:otp,username:$('#aUser').value,password:$('#aPass').value,invite:$('#aInv')?$('#aInv').value:'',accept:$('#aAcc')?$('#aAcc').checked:false});
+      }
+      else await authPost('login',{username:$('#aUser').value,password:$('#aPass').value});
+      location.reload()}
+    catch(x){er.textContent=x.message;go.disabled=false}};
+  const f=$('#aEmail')||$('#aUser')||$('#aOld');if(f)setTimeout(()=>f.focus(),50)}
+async function authLogout(){try{await authPost('logout',{})}catch(e){}LS.del('paper');location.reload()}
+function accountSheet(){const u=AUTH.user;if(!u)return;
+  openSheet(`<h2>${esc(u.username)}</h2><div class="sub" style="margin:4px 0 0">${u.role==='admin'?'Owner account':'Member account'} · research and paper trading${u.role==='admin'?', plus the owner tools below':' only'}</div>
+  <div class="c-act" style="margin-top:12px"><button class="btn2" id="outGo">Log out</button></div>
+  ${u.role==='admin'?'<div id="adm"><div class="sub">Loading…</div></div>':''}
+  <h3>Change password</h3>
+  <div class="fld" style="margin:8px 0"><label>Current password</label><input id="pwOld" type="password" autocomplete="current-password"></div>
+  <div class="fld" style="margin:8px 0"><label>New password (8 or more characters)</label><input id="pwNew" type="password" autocomplete="new-password"></div>
+  <div class="c-act"><button class="btn2 on" id="pwGo">Change password</button></div><div class="err" id="pwRes"></div>
+  <h3>Delete my account</h3><div class="sub">Removes your account and all your paper trades from this server. This cannot be undone.</div>
+  <div class="fld" style="margin:8px 0"><label>Your password</label><input id="delPw" type="password" autocomplete="current-password"></div>
+  <div class="c-act"><button class="btn2" id="delGo" style="color:var(--dn)">Delete my account</button></div><div class="err" id="delRes"></div>`);
+  $('#outGo').onclick=authLogout;
+  $('#pwGo').onclick=async()=>{const er=$('#pwRes');er.className='err';er.textContent='';try{await authPost('password',{old:$('#pwOld').value,new:$('#pwNew').value});$('#pwOld').value='';$('#pwNew').value='';er.className='sub';er.textContent='Password changed. Your other devices were logged out.'}catch(e){er.textContent=e.message}};
+  $('#delGo').onclick=async()=>{const er=$('#delRes');er.textContent='';if(!S.delArm){S.delArm=true;er.textContent='Press the button again to delete your account for good.';setTimeout(()=>{S.delArm=false},5000);return}
+    try{await authPost('delete_me',{password:$('#delPw').value});LS.del('paper');location.reload()}catch(e){S.delArm=false;er.textContent=e.message}};
+  if(u.role==='admin')admLoad()}
+/* ---- owner: invites and people ---- */
+const admDate=ts=>ts?new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'never';
+async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i]=await Promise.all([authGet('admin_users'),authGet('admin_invites')]);S.adm={users:u.users,invites:i.invites,max:u.max};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUTH.user.id;
+  el.innerHTML=`<h3>Invite a friend</h3><div class="sub">Make a code, send it to your friend. They open the site, choose Create account and type it. A code works once.</div>
+  <div class="c-act"><select id="admDays"><option value="7">ends in 7 days</option><option value="14" selected>ends in 14 days</option><option value="30">ends in 30 days</option></select><button class="btn2 on" id="admNew">Make invite code</button></div><div id="admCode"></div>
+  <h3>People (${A.users.length} of ${A.max})</h3><div class="list out">${A.users.map(x=>`<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(x.username)}${x.email?' <span class="mu" style="font-size:12px;font-weight:normal">('+esc(x.email)+')</span>':''} <span class="tag">${x.role==='admin'?'Owner':'Member'}</span>${x.disabled?' <span class="tag" style="color:var(--dn)">Off</span>':''}</div><div class="s num">last visit ${admDate(x.last)} · ${x.trades} closed paper trade${x.trades===1?'':'s'}${x.open?', '+x.open+' open':''}</div>
+    ${x.id===me?'':`<div class="c-act" style="margin-top:6px;flex-wrap:wrap"><button class="sbtn" data-adm="${x.disabled?'enable':'disable'}|${x.id}">${x.disabled?'Switch on':'Switch off'}</button><button class="sbtn" data-adm="reset|${x.id}">Reset password</button><button class="sbtn" data-adm="delete|${x.id}" style="color:var(--dn)">Delete</button></div>`}</div></div>`).join('')||'<div class="empty" style="padding:14px">Nobody yet.</div>'}</div>
+  <div id="admMsg"></div>
+  <h3>Invite codes</h3>${A.invites.length?`<div class="list out">${A.invites.map(i=>`<div class="row"><div><div class="n num">…${esc(i.hint)}${i.note?' · '+esc(i.note):''}</div><div class="s">${i.used?'used by '+esc(i.usedBy):i.expired?'expired':'open until '+admDate(i.exp)}</div></div><span class="pill ${i.used?'p-up':i.expired?'p-mu':'p-amb'}">${i.used?'Used':i.expired?'Expired':'Open'}</span></div>`).join('')}</div>`:'<div class="sub">No codes made yet.</div>'}`;
+  $('#admNew').onclick=async()=>{try{const j=await authPost('admin_invite',{count:1,days:+$('#admDays').value});$('#admCode').innerHTML=`<div class="codebox">${esc(j.codes[0])}</div><div class="sub" style="margin-top:8px">Shown only now: copy it and send it. It works once and ends in ${j.days} days.</div><div class="c-act"><button class="btn2" id="admCopy">Copy code</button></div>`;
+    $('#admCopy').onclick=()=>{try{navigator.clipboard.writeText(j.codes[0]);toast('Code copied')}catch(e){toast('Select the code and copy it')}};const i=await authGet('admin_invites');S.adm.invites=i.invites}catch(e){$('#admCode').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
+  el.onclick=async e=>{const b=e.target.closest('button[data-adm]');if(!b)return;const [act,id]=b.dataset.adm.split('|'),key=b.dataset.adm,m=$('#admMsg');
+    if(S.admArm!==key){S.admArm=key;b.textContent='Sure? Press again';setTimeout(()=>{if(S.admArm===key){S.admArm='';admDraw()}},4000);return}
+    S.admArm='';try{const j=await authPost('admin_'+act,{id});await admLoad();const mm=$('#admMsg');if(mm)mm.innerHTML=act==='reset'?`<div class="verdict amb"><b>Temporary password for ${esc(j.username)}</b><span>Send it to them. It is shown only now. They must choose their own at the next login.</span><div class="codebox" style="margin-top:8px">${esc(j.temp)}</div></div>`:`<div class="sub">${act==='delete'?'Deleted '+esc(j.deleted)+' and their data.':'Done.'}</div>`}catch(x){m.innerHTML='<div class="err">'+esc(x.message)+'</div>'}}}
+
+/* ============================== RESULTS: your accuracy, the engine's live record, the tested history ==============================
+   Everything here is computed from CLOSED paper trades. Your numbers come only from your own account. */
+let REC=null;
+async function recLoad(){try{const r=await fetch('api.php?record=1',{cache:'no-store'});const j=await r.json();REC=j&&j.record||null}catch(e){REC=null}S.recAt=Date.now();if(S.tab==='res')render()}
+function resStats(h){const n=h.length;if(!n)return{n:0};const w=h.filter(x=>x.pnl>0),l=h.filter(x=>!(x.pnl>0)),gp=w.reduce((a,x)=>a+x.pnl,0),gl=-l.reduce((a,x)=>a+(x.pnl||0),0),
+    ord=h.slice().sort((a,b)=>(a.tC||0)-(b.tC||0));let c=0,pk=0,dd=0;const eq=[0];for(const x of ord){c+=x.pnl||0;eq.push(c);pk=Math.max(pk,c);dd=Math.max(dd,pk-c)}
+  return{n,wins:w.length,win:w.length/n,pf:gl>0?gp/gl:(gp>0?Infinity:0),sum:c,avgRet:h.reduce((a,x)=>a+(+x.ret||0),0)/n,avgWin:w.length?gp/w.length:0,avgLoss:l.length?-gl/l.length:0,dd,t1:h.filter(x=>x.half).length/n,eq}}
+const resKind=k=>k==='intra'?'Intraday':k==='swing'?'NRML':k==='stk'?'Stock (experimental)':String(k||'—');
+function eqSvg(eq){if(eq.length<2)return'';const lo=Math.min(0,...eq),hi=Math.max(0,...eq),sp=(hi-lo)||1,W=300,H=90,X=i=>i/(eq.length-1)*W,Y=v=>6+(hi-v)/sp*(H-12),pts=eq.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' '),up=eq[eq.length-1]>=0;
+  return`<div class="eq"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Equity curve"><line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" style="stroke:var(--line2)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><polyline points="${pts}" fill="none" style="stroke:var(${up?'--up':'--dn'})" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><div class="rail-l num"><span>first trade</span><span>profit and loss after each trade</span><span>latest</span></div></div>`}
+function resGroup(h,keyFn,label){const m={};for(const x of h)(m[keyFn(x)]=m[keyFn(x)]||[]).push(x);const rows=Object.entries(m).map(([k,a])=>({k,s:resStats(a)})).sort((a,b)=>a.k<b.k?(label==='month'?1:-1):(label==='month'?-1:1));
+  return`<table class="tbl num"><tr><th>${label==='month'?'Month':label==='kind'?'Type':'Index'}</th><th class="r">Trades</th><th class="r">Win</th><th class="r">P&amp;L</th></tr>${rows.map(r=>`<tr><td>${esc(label==='kind'?resKind(r.k):label==='ix'?ixName(r.k):r.k)}</td><td class="r">${r.s.n}</td><td class="r">${Math.round(r.s.win*100)}%</td><td class="r ${r.s.sum>=0?'up':'dn'}">${rs(r.s.sum)}</td></tr>`).join('')}</table>`}
+function resBlock(h,empty){const s=resStats(h);if(!s.n)return`<div class="empty" style="padding:18px">${empty}</div>`;
+  const pfT=s.pf===Infinity?'∞':s.pf.toFixed(2),se=Math.sqrt(s.win*(1-s.win)/s.n),lo=Math.max(0,s.win-1.96*se),hi=Math.min(1,s.win+1.96*se);
+  return`<div class="stats"><div class="stat"><span>Trades</span><b>${s.n}</b><i class="mu">${s.wins} won · ${s.n-s.wins} not</i></div>
+    <div class="stat"><span>Win rate</span><b class="${s.win>=.5?'up':''}">${Math.round(s.win*100)}%</b><i class="mu">of closed trades</i></div>
+    <div class="stat"><span>Profit factor</span><b class="${s.pf>=1.1?'up':s.pf<1?'dn':''}">${pfT}</b><i class="mu">gains ÷ losses</i></div>
+    <div class="stat"><span>Total P&amp;L</span><b class="${s.sum>=0?'up':'dn'}">${rs(s.sum)}</b><i class="mu">after fees</i></div>
+    <div class="stat"><span>Avg per trade</span><b class="${s.avgRet>=0?'up':'dn'}">${pct(s.avgRet,1)}</b><i class="mu">of premium paid</i></div>
+    <div class="stat"><span>Worst dip</span><b class="dn">${rs(-s.dd)}</b><i class="mu">peak to trough</i></div></div>
+    <div class="info num" style="border-top:0;padding-top:0">Reached Target 1: <b>${Math.round(s.t1*100)}%</b> · average win <b class="up">${rs(s.avgWin)}</b> · average loss <b class="dn">${rs(s.avgLoss)}</b></div>
+    ${s.n<30?`<div class="verdict amb"><b>Only ${s.n} closed trade${s.n===1?'':'s'}: too few to judge</b><span>Fewer than 30 trades says very little. A lucky or unlucky week can look like skill. Keep going before you trust any of these numbers.</span></div>`
+      :`<div class="sub" style="margin:8px 0 0">With ${s.n} trades, the true win rate is probably between <b style="color:var(--tx)">${Math.round(lo*100)}%</b> and <b style="color:var(--tx)">${Math.round(hi*100)}%</b>.</div>`}
+    ${eqSvg(s.eq)}<h3>By index</h3>${resGroup(h,x=>x.ix,'ix')}<h3>By type</h3>${resGroup(h,x=>x.kind,'kind')}<h3>By month</h3>${resGroup(h,x=>dkey(x.tC||x.t0||Date.now()).slice(0,7),'month')}`}
+function resView(){const mine=(P&&P.hist)||[];
+  const live=IDX.map(ix=>{const a=S.res.intra[ix.id],b=S.res.swing[ix.id],f=(A,k)=>A&&!A.err&&A.bt&&A.bt.n?`<b>${A.bt.n}</b> trades · ${Math.round(A.bt.win*100)}% win · <b class="${A.bt.avg>0?'up':'dn'}">${sgn(A.bt.avg,2)}R</b> avg`:'<span class="mu">not loaded yet</span>';return`<div class="row"><div><div class="n">${ix.name}</div><div class="s num">Intraday: ${f(a)}<br>NRML: ${f(b)}</div></div></div>`}).join('');
+  const rr=(lab,r)=>`<tr><td>${lab}</td><td class="r">${r.n}</td><td class="r">${r.win}%</td><td class="r ${r.pf>=1.1?'up':'amb'}">${r.pf.toFixed(2)}</td></tr>`;
+  const eng=REC&&REC.hist&&REC.hist.length?REC.hist:[];
+  return`<div class="sub" style="margin:0 0 4px">Closed paper trades only. Your numbers come from your own account: nobody else can see or change them.</div>
+  <h3>Your accuracy</h3><div class="card">${resBlock(mine,'<b>No closed paper trades yet</b>Start paper trading in the Paper tab. Valid calls are bought for you while the app is open; every closed trade is counted here.')}</div>
+  <h3>The engine's live record</h3><div class="card"><div class="sub" style="margin:0 0 8px">What the owner's 24/7 server account did with every Valid call since it started${REC&&REC.since?' (from ₹'+f0(REC.since)+' start capital)':''}. The same for everybody, and it keeps running when your app is closed.${REC&&REC.pos&&REC.pos.length?' Open now: '+REC.pos.length+'.':''} <button class="lnk" data-res="refresh">refresh</button></div>
+    ${eng.length?resBlock(eng,''):`<div class="empty" style="padding:18px">${REC===null&&S.recAt?'No engine record is available yet.':REC?'The engine has no closed trades yet.':'Loading…'}</div>`}</div>
+  <h3>Tested on history</h3><div class="card"><div class="sub" style="margin:0 0 8px">The rule replayed on real option prices, Oct 2024 – Nov 2026, after costs. Profit factor above 1.0 means gains beat losses.</div>
+    <table class="tbl num"><tr><th>Setup</th><th class="r">Trades</th><th class="r">Win</th><th class="r">Profit factor</th></tr>${rr('Intraday · Nifty 50',RESEARCH.intra.NIFTY)}${rr('Intraday · Bank Nifty',RESEARCH.intra.BANKNIFTY)}${rr('Intraday · Sensex',RESEARCH.intra.SENSEX)}${rr('NRML · all three',RESEARCH.swing)}</table>
+    <div class="verdict amb"><b>Not proven</b><span>These edges are thin and not statistically proven: about two calls in three lose a little and the gains come from a few trend days. Use paper trading to see for yourself before risking money.</span></div>
+    <h3>The same rule on the recent history loaded in the app</h3><div class="list out">${live}</div><div class="sub" style="margin:8px 0 0">R is the risk taken on a trade: +1R means the index moved one risk unit in your favour. Open the Intraday or NRML tab once to load these.</div></div>`}
+function applyLayout(){const l=LS.get('layout','auto');document.body.classList.toggle('wide',l==='desktop'||(l==='auto'&&innerWidth>=900))}
+addEventListener('resize',applyLayout);
+const theme=()=>LS.get('theme','light')==='dark'?'dark':'light';
+const ICO_MOON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  ICO_SUN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+function applyTheme(){const d=theme()==='dark';document.documentElement.setAttribute('data-theme',d?'dark':'light');
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',d?'#0A0E13':'#FFFFFF');
+  const b=$('#btnTheme');if(b){b.innerHTML=d?ICO_SUN:ICO_MOON;b.title=d?'Switch to light mode':'Switch to dark mode';b.setAttribute('aria-label',b.title)}}
+function setTheme(t){LS.set('theme',t==='dark'?'dark':'light');applyTheme()}
+applyTheme();
+function render(){const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'')+(S.viewer?' · read-only window':'');$('#mDot').classList.toggle('on',mk.open);
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+  const tc=P&&P.on?P.pos.length:0;$('#tCnt').hidden=!tc;$('#tCnt').textContent=tc;
+  $('#tiles').innerHTML=tilesHTML();
+  if(S.tab==='stk'){if(!$('#stkQ'))$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}else if(S.tab==='chk'){if(!$('#chkQ'))$('#view').innerHTML='<div class="pw">'+chkView()+'</div>'}else $('#view').innerHTML=S.tab==='res'?'<div class="pw">'+resView()+'</div>':S.tab==='paper'?'<div class="pw">'+viewerNote()+trdCard()+botCard()+paperView()+'</div>':scanBar(S.tab)+'<div class="grid">'+IDX.map(ix=>indexCard(ix,S.tab)).join('')+'</div>'}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.takeover){svcApi('lease',{id:CID,runner:false,force:true}).then(async j=>{if(j.granted){S.viewer=false;await paperLoad();render();toast('This window now manages the paper account.')}else toast('The 24/7 server is running the account, so it cannot be taken over.')}).catch(e=>toast(e.message));return}
+  if(S.viewer&&(t.dataset.pbuy||t.dataset.pexit||t.id==='pOn'||t.id==='pReset'||t.id==='pAuto'||t.dataset.spb||t.dataset.sauto)){toast(S.viewerBy==='server'?'The 24/7 server account manages paper trades, so this view is read-only.':'Another window manages the paper account, so this one is read-only.');return}
+  if(t.dataset.tab){S.tab=t.dataset.tab;LS.set('tab',S.tab);render();if(S.tab==='stk')stkScan().then(()=>stkCalls());if(!['paper','chk','stk','res'].includes(S.tab)&&!S.at[S.tab])scan(S.tab,true);if((S.tab==='chk'||S.tab==='stk'||S.tab==='res')&&!S.at.intra)scan('intra',true);if(S.tab==='res')recLoad();if(S.tab==='paper'){trdLoad();paperUpdate().then(render)};return}
+  if(t.id==='btnScan')return scan(S.tab);
+  if(t.dataset.ord){const [k,i]=t.dataset.ord.split('|');ordFromCall(k,i);return}
+  if(t.dataset.trdsell){ordFromPos(+t.dataset.trdsell,false);return}
+  if(t.dataset.trdstop){ordFromPos(+t.dataset.trdstop,true);return}
+  if(t.id==='ordGo'){ordSend();return}
+  if(t.dataset.bot){trdApi('autoswitch',null,{on:t.dataset.bot==='resume'}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast(t.dataset.bot==='resume'?'Automatic trading resumed':'Automatic trading paused: no new entries');render()}).catch(e=>toast(e.message));return}
+  if(t.dataset.trd==='refresh'){trdLoad();return}
+  if(t.dataset.trd==='newtoken'){S.trd.paste=true;render();return}
+  if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}
+  if(t.dataset.trd==='login'){trdApi('login').then(j=>{window.open(j.url,'_blank','noopener')}).catch(e=>toast(e.message));return}
+  if(t.dataset.stks){if(t.dataset.stks==='refresh')stkScan(true).then(()=>stkCalls());else{S.stk.sort=t.dataset.stks;if($('#stkQ')){const k=$('#view').scrollTop;$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}}return}
+  if(t.dataset.spb){const c=S.sc.calls.find(x=>x.sid===t.dataset.spb);if(c&&paperBuyStk(c,false))scRender();return}
+  if(t.dataset.sauto){if(!P||!P.on){toast('Start paper trading first (Paper tab)');return}P.autoStk=P.autoStk===false;paperSave();scRender();return}
+  if(t.dataset.stk){S.chk.q=t.dataset.stk.toLowerCase();S.chk.exp='';S.chk.out='';S.tab='chk';LS.set('tab','chk');render();chkRun();scrollTo(0,0);return}
+  if(t.id==='chkGo'){S.chk.exp='';chkRun();return}
+  if(t.dataset.chkq){S.chk.q=t.dataset.chkq;S.chk.exp='';if($('#chkQ'))$('#chkQ').value=S.chk.q;chkRun();return}
+  if(t.dataset.chk){const [id,k,sd,ex]=t.dataset.chk.split('|');S.chk.q=(id==='BANKNIFTY'?'bank nifty':id.toLowerCase())+' '+k+' '+sd;S.chk.exp=ex;if($('#chkQ'))$('#chkQ').value=S.chk.q;chkRun();return}
+  if(t.id==='btnAuto'){S.auto=!S.auto;render();return}
+  if(t.id==='btnSettings')return openSettings();
+  if(t.id==='btnAccount')return accountSheet();
+  if(t.dataset.res==='refresh'){recLoad();return}
+  if(t.id==='btnTheme'){setTheme(theme()==='dark'?'light':'dark');toast(theme()==='dark'?'Dark mode':'Light mode');return}
+  if(t.id==='btnLayout'){const order=['auto','desktop','mobile'],nx=order[(order.indexOf(LS.get('layout','auto'))+1)%3];LS.set('layout',nx);applyLayout();toast('Layout: '+nx[0].toUpperCase()+nx.slice(1));return}
+  if(t.dataset.more){S.more[t.dataset.more]=!S.more[t.dataset.more];render();return}
+  if(t.dataset.pbuy){const [k,ixId]=t.dataset.pbuy.split('|');paperBuy(k,ixId,false);return}
+  if(t.dataset.pexit){const p=P.pos.find(x=>x.id===t.dataset.pexit);if(p){closePos(p,p.ltp,'Exited manually');paperSave();render();toast('Exited @ ₹'+f2(p.exit))}return}
+  if(t.id==='pOn'){const st=Math.max(1000,+$('#pStart').value||50000);P={on:true,auto:true,start:st,cash:st,fee:20,pos:[],hist:[],log:[]};plog('Paper account started with ₹'+f0(st),'mu');paperSave();render();if(!S.at.intra)scan('intra',true);return}
+  if(t.id==='pAuto'){P.auto=!P.auto;plog('Auto-buy '+(P.auto?'turned on':'turned off'),'mu');paperSave();render();return}
+  if(t.id==='pUpd'){scan('intra',true).then(()=>scan('swing',true));return}
+  if(t.id==='pReset'){if(!S.resetArm){S.resetArm=true;render();setTimeout(()=>{S.resetArm=false;render()},3000);return}S.resetArm=false;P={on:false,auto:true,start:50000,cash:50000,fee:20,pos:[],hist:[],log:[]};paperSave();render();return}
+  if(t.dataset.pick){const [k,ixId,tt,st]=t.dataset.pick.split('|');S.pick[k+ixId+tt]=+st;render();return}
+  if(t.dataset.budget)return openSettings();
+  if(t.dataset.chart)return openChart(t.dataset.chart)});
+$('#sheetBg').onclick=closeSheet;
+setInterval(async()=>{if(!market().open||S.demo||S.yahoo||!P||!P.on||P.autoStk===false||(S.sc&&S.sc.busy))return;await stkCalls(true)},120000);
+setInterval(async()=>{if(!market().open||S.scanning)return;if(S.auto||(P&&P.on&&P.auto)){await scan('intra',true);if(P&&P.on&&(P.auto||P.pos.some(p=>p.kind==='swing')))await scan('swing',true)}else if(P&&P.on&&P.pos.length){await paperUpdate();render()}},60000);
+setInterval(()=>{const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'');$('#mDot').classList.toggle('on',mk.open)},30000);
+setInterval(svcCheck,15000);
+if(RUN){S.auto=true;svcApi('lease',{id:CID,runner:true}).catch(()=>{});setInterval(()=>svcApi('lease',{id:CID,runner:true}).catch(()=>{}),15000);setInterval(guardTick,(RUN.guardSeconds||20)*1000);if(RUN.autoTrade)setInterval(botTick,10000)}
+(async function boot(){
+  const ban=t=>{$('#banner').hidden=false;$('#banner').textContent=t};
+  try{const r=await fetch('api.php?ping=1',{cache:'no-store'});const j=await r.json();if(!j.ok)throw 0;S.demo=false;
+    if(j.now>0){const off=j.now-Date.now();if(Math.abs(off)>1500){const n0=Date.now;Date.now=()=>n0.call(Date)+off;S.clockOff=off}}   /* run on exchange time, not the PC clock */
+    S.conn=j;
+    AUTH.mode=(j.auth&&j.auth.mode)||'pin';AUTH.user=(j.auth&&j.auth.user)||null;AUTH.first=!!(j.auth&&j.auth.firstRun);AUTH.setupReady=!!(j.auth&&j.auth.setupReady);AUTH.pinDefault=!!(j.auth&&j.auth.pinDefault);
+    if(AUTH.mode==='users'){if(!AUTH.user||AUTH.user.mustChange){showAuth();return}LS.ns=AUTH.user.id+'_';applyAuthUI()}
+    else if(AUTH.pinDefault)ban('This server still uses the default PIN, so it refuses all requests. Set APP_PIN in auth-local.php (or switch on accounts).');
+    if(!j.configured){S.yahoo=true;ban('Free mode: index prices from Yahoo (can lag a few minutes); option premiums are estimates from India VIX. Add the Upstox token in api.php for real premiums and OI.')}}
+  catch(e){S.demo=true;ban('Demo mode: simulated prices and option chain. Upload to your Hostinger site for live data.')}
+  await svcLease();   /* know whether this window may trade before anything is loaded or scanned */
+  await paperLoad();applyLayout();render();
+  if(RUN&&RUN.startPaper&&!(P&&P.on)){P={on:true,auto:true,start:RUN.startPaper,cash:RUN.startPaper,fee:20,pos:[],hist:[],log:[]};plog('Paper account started on the server with ₹'+f0(RUN.startPaper),'mu');paperSave()}
+  if(!S.demo&&!cfg().pin){openSettings();return}
+  const first=['paper','chk','stk','res'].includes(S.tab)?'intra':S.tab;await scan(first,true);await scan(first==='intra'?'swing':'intra',true);liveTick();trdLoad()})();;
+</script>
+</body>
+</html>

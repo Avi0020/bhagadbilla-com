@@ -1,0 +1,27 @@
+# Index Signals: production rules for Apache / LiteSpeed (Hostinger). Upload this file with the site.
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+</IfModule>
+
+# Files that are only included by api.php, and private settings, are never served directly
+<FilesMatch "^(auth|trade|svc|mail|auth-local|trade-local)(\.example)?\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Folders that must never be browsed
+<IfModule mod_alias.c>
+  RedirectMatch 404 (^|/)(data|cache|service|research|tests|node_modules|tools|dist)(/|$)
+</IfModule>

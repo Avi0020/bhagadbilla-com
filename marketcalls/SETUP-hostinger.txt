@@ -1,0 +1,224 @@
+INDEX SIGNALS (Nifty 50, Bank Nifty, Sensex): setup on Hostinger
+
+==============================================================================================
+GOING LIVE WITH ACCOUNTS: you and the friends you invite
+==============================================================================================
+What a friend gets: a username and password they create once (with an invite code from you), a PRIVATE paper-trading account that nobody
+else can see or change, and a Results tab with their own accuracy, the engine's live record and the tested history.
+What a friend does NOT get: orders, INDstocks, phone alerts. Those exist only for your owner account and your 24/7 runner.
+
+A. Make the upload packages (on your PC, in the project folder)
+   1. node tools/package.js
+      -> dist/signals-site.zip   (the website)        -> dist/signals-runner.zip (the 24/7 runner, only if you use it)
+      They hold no secrets, no tests and no research files.
+   2. Upstox Developer Apps -> Analytics tab -> Generate token (read-only, valid 1 year). Keep it for step 5.
+
+B. Put it on Hostinger
+   3. hPanel -> File Manager -> public_html -> folder "signals". Upload signals-site.zip and Extract it.
+      Keep your old data/ folder if you have one: the old single paper account moves to your owner account (or to the engine
+      record if you use the runner) the first time the owner account is created.
+   4. hPanel -> Security -> SSL -> turn on "Force HTTPS". Logins are only safe over https.
+   5. In the same folder create auth-local.php (copy auth-local.example.php and rename it) and fill in:
+          ADMIN_SETUP_CODE  a long random code only you know. It is used ONCE, to create your owner account.
+          UPSTOX_TOKEN      the analytics token from step 2.
+          RUNNER_KEY        20 or more random characters, only if you use the runner (put the same value in the runner's config.json).
+          DATA_DIR          BEST PRACTICE: a folder OUTSIDE public_html for accounts and paper trades, for example
+                            /home/u123456789/signals-data (create the folder first in File Manager). Then none of it is under the web folder.
+      Never email this file, never commit it, never put it in a shared folder.
+   6. Open https://YOURDOMAIN/signals/ -> Create account -> your username, a strong password, the setup code.
+      The first account is the OWNER. Afterwards REMOVE ADMIN_SETUP_CODE from auth-local.php (or comment it out) so it cannot be used again.
+      (If you ever forget the owner password: put ADMIN_SETUP_CODE back, use "Owner forgot the password?" on the log-in screen, then remove it again.)
+
+C. Invite friends
+   7. Account button (top right) -> Make invite code -> copy it and send it to ONE friend. A code works once and ends in 7, 14 or 30 days.
+      The friend opens the site -> Create account -> username, password, invite code, and ticks the box that says this is a research
+      and paper-trading tool, not advice, with no real orders.
+   8. In the same menu you can see everyone (last visit, number of closed paper trades), switch a friend off, reset a password
+      (you get a temporary one to send; they must choose their own at the next log-in), or delete a friend with their data.
+   9. Everybody can change their password or delete their own account from their account menu.
+
+D. What is private
+   - Each person's paper account is a separate file. The server picks it from their login only: nothing the page sends can name another
+     account, and the copy kept in the browser is stored per account, so two people on one phone never see each other's trades.
+     (Tested: tests/auth.test.js and tests/accounts-ui.test.js.)
+   - As owner you see names, last visit and trade counts. Anyone who can open the server's data folder (you, Hostinger) could read the
+     paper trades in it; it holds no broker logins of friends, ever. Passwords are stored only as hashes.
+   - data/auth-log.php lists sign-ups, log-ins, failures and your admin actions (never passwords or codes).
+
+E. Limits to know before you invite people
+   - ONE Upstox allowance is shared by everybody (about 2000 requests per 30 minutes). The server shares cached answers and prices between
+     people and stops asking Upstox near 1700, serving slightly older prices or a short "paused" message instead of errors. With 30 or more
+     friends active at once you may see pauses. Upstox's rules count the token, not the people.
+   - Sign-up is by invitation and capped (MAX_USERS, default 200). Keep it to people you know. A public service that gives buy/sell calls
+     can need SEBI registration (research analyst); ask a lawyer before you open it wider. The sign-up box and footer already say: research
+     and paper trading only, no real orders for members, not advice.
+   - Back up the data folder now and then (download it in File Manager). It holds the accounts and everyone's paper trades.
+   - The engine's live record needs the 24/7 runner (section below). Without it that block says no record yet.
+   - Real orders for YOU still follow the TRADING and INDSTOCKS sections below, from your owner account, exactly as before.
+
+Old single-PIN mode (AUTH_MODE 'pin' in auth-local.php) still exists for running on your own PC. It refuses the default PIN on a public host.
+Paper trading: each person's virtual account is saved on the server under their own folder, so it is the same on every device they log in from.
+Each refresh uses a few Upstox calls (3 indices x candles + option chain); results are cached and shared by everyone.
+Intraday uses the nearest weekly/monthly expiry but skips an expiry that falls on the same day.
+
+----------------------------------------------------------------------------------------------
+TRADING (OPTIONAL): send orders to your Upstox account from the app. OFF by default.
+----------------------------------------------------------------------------------------------
+Upload trade.php next to api.php (it is safe: it does nothing until you switch it on).
+
+Step 1, dry run first (nothing is sent to Upstox):
+  - In the signals folder on your server create a file trade-local.php (copy trade-local.example.php) containing:
+        <?php
+        define('ORDER_MODE', 'dry');
+  - Open the app > Paper tab. The "Upstox orders" card now says DRY RUN. Every order you confirm is checked by the
+    server and logged (data/orders.log.php) but NOT sent. Practise here for a few days.
+
+Step 2, connect your Upstox account (needed for live orders and to see your funds and positions):
+  - Upstox > Developer Apps > create an app. Note the API key and secret. Set the Redirect URL to
+        https://YOURDOMAIN/signals/api.php?callback=1
+  - Register your VPS's fixed (static) IP address with Upstox for order APIs. Upstox requires orders to come from a
+    registered IP. Changing the IP can sign you out and is limited to once a week, so use the VPS's own fixed address.
+  - Put the three values in trade-local.php (never in index.html, never in a shared file):
+        define('UPSTOX_CLIENT_ID', 'your api key');
+        define('UPSTOX_CLIENT_SECRET', 'your api secret');
+        define('UPSTOX_REDIRECT_URI', 'https://YOURDOMAIN/signals/api.php?callback=1');
+  - Paper tab > Connect Upstox, log in on Upstox's own page. The login lasts until about 3:30 AM next day, then repeat.
+  - Rotate the API secret if it was ever pasted into a chat or email.
+
+Step 3, only when you are ready for real money: change ORDER_MODE to 'live' in trade-local.php.
+  - Start with 1 lot. Limits you can lower in trade-local.php: ORDER_MAX_VALUE (default Rs 50,000 per order),
+    ORDER_MAX_QTY, ORDER_MAX_PER_DAY (default 10), ORDER_GAP_SECONDS.
+  - To switch trading off at any time set ORDER_MODE back to 'off' (takes effect immediately).
+
+What it does and does not do:
+  - Limit and stop-limit orders only. No market orders, no option writing (SELL only closes what you hold),
+    market hours only, one-time reference per order so a double tap cannot send twice.
+  - It never places, moves or cancels anything on its own. You confirm each order on a screen that shows the
+    total outlay, targets and the maximum loss. Stops are NOT placed automatically: after a buy fills, use
+    "Stop -40%" on the position (Paper tab), or place the stop in the Upstox app.
+  - The index exit rule (a 30-minute close through the average) is NOT watched for your real positions yet.
+    That needs an always-on service on the VPS (next step in CLAUDE.md).
+
+----------------------------------------------------------------------------------------------
+24/7 RUNNER (VPS): paper trading, price ticker, phone alerts and position guard, all day, no browser open
+----------------------------------------------------------------------------------------------
+The runner opens the app headlessly on your VPS (jsdom, about 150 MB of memory), so it runs the same code you test in the
+browser: signals every minute, the 10-second price ticker, the paper account, the experimental stock calls, and the guard
+for your real Upstox positions. Orders still go through api.php / trade.php with all their safety rules.
+
+1. Upload dist/signals-runner.zip (made by node tools/package.js) to the VPS and unzip it into a folder, for example ~/signals-runner.
+2. Install Node.js 18 or newer, then:   cd ~/signals-runner && npm install --omit=dev
+3. cp config.example.json config.json   and fill it in (keep it private, chmod 600):
+       baseUrl      the public folder of the app, ending with a slash, for example https://yourdomain.com/signals/
+       runnerKey    the RUNNER_KEY from auth-local.php on the server (20+ random characters). With accounts on, this key is how the runner
+                    logs in: it becomes the "engine" account, whose paper trades are the public engine record every friend can read.
+                    Leave pin empty. (Only a server in old single-PIN mode uses pin = its APP_PIN instead.)
+       startPaper   rupees for the server paper account if none exists yet (50000)
+       autoStop     false (default). true = place a stop-loss order on your real positions automatically (see below)
+       notify       true = send phone alerts
+       guardSeconds how often the guard looks at your positions (20)
+4. Try it by hand:   node runner.js    (a status line appears every minute: mode=upstox, scans, live prices, paper account).
+   Then log in to the app as the owner: the Results tab shows the engine's live record (the runner's paper trades) next to your own.
+5. Keep it running, either way:
+     systemd:  copy signals-runner.service to /etc/systemd/system/, edit the paths and user, then
+               sudo systemctl daemon-reload && sudo systemctl enable --now signals-runner && journalctl -u signals-runner -f
+     or PM2:   npm i -g pm2 && pm2 start runner.js --name signals-runner --time && pm2 save && pm2 startup
+   The runner restarts itself at 02:00 IST every day and if the price ticker stalls for 5 minutes.
+6. Phone alerts (optional, free): install the ntfy app on your phone and subscribe to a long random topic name, then add to
+   trade-local.php on the server:   define('NTFY_TOPIC', 'your-long-random-topic');
+   (Telegram instead: define('TELEGRAM_BOT_TOKEN', '...'); define('TELEGRAM_CHAT_ID', '...');)
+   You get: new calls, paper trades opened and closed, exit-rule warnings, 3:10 PM intraday reminder, login reminders.
+
+How windows and accounts share a paper account: only one writer at a time PER PERSON. A person's second window becomes a read-only
+viewer of the same account (a closed window frees its place after about 45 seconds). The server also refuses a stale save, so an
+old window can never undo an exit. The runner has its own account ("engine"), separate from yours and from every friend's.
+
+The guard for REAL positions (needs ORDER_MODE 'dry' or 'live' and an Upstox login each morning):
+  - Always: alerts for new calls, the index exit rule (a 30-minute close through the average), no stop on a position,
+    the 3:10 PM intraday reminder, and "Upstox login needed" when the daily login has expired.
+  - Only if autoStop is true: for a long option position with no stop order it places ONE stop-limit sell at 60% of your
+    average (limit 5% below the trigger) through trade.php, once per position per day. In 'dry' mode it only checks and alerts.
+  - It never sells on its own because of the exit rule. That stays an alert; you decide.
+  - Upstox logins last until about 3:30 AM. Log in again every morning (Paper tab, Connect Upstox) or the guard is blind.
+  - The runner key (or PIN) is stored in service/config.json on your VPS only.
+
+----------------------------------------------------------------------------------------------
+INDSTOCKS AS THE BROKER (instead of Upstox, for orders). Market data and signals still come from Upstox.
+----------------------------------------------------------------------------------------------
+1. trade-local.php on the server:
+       define('ORDER_MODE', 'dry');          // start with dry
+       define('ORDER_BROKER', 'indstocks');
+2. INDstocks dashboard (indstocks.com/app/api-trading): "Save Static IP" = your VPS's fixed IPv4 address. INDstocks only accepts place,
+   modify and cancel orders from that saved IP. Reading prices, positions and funds works from anywhere. Changing it is limited to once a week.
+3. Every morning (tokens reset at 7:00 AM): generate an access token at indstocks.com/app/api-trading/access-tokens and paste it in the app,
+   Paper tab > INDstocks orders > Save token. It is checked with one read-only request and kept only on the server.
+   The app itself never needs your MPIN or TOTP setup key. Only the OPTIONAL automatic token (see "AUTOMATIC DAILY TOKEN" below) reads them, from
+   service/config.json on your VPS, which you fill in yourself. Otherwise do not store them anywhere in this project.
+4. Practise in dry mode: INDstocks has NO sandbox, every call it receives is live. Dry mode runs every check but sends nothing.
+5. Then ORDER_MODE 'live'. Start with 1 lot. Brokerage is Rs 10 per order (+ GST), API access is free.
+
+What differs from Upstox:
+  - Orders are LIMIT only (same as Upstox here). Intraday = INTRADAY, overnight = MARGIN. Quantity is units (a lot multiple, checked).
+  - A buy must carry the contract (underlying, expiry, strike, CE/PE); the server looks it up at INDstocks and refuses on any mismatch.
+    Only Nifty, Bank Nifty and Sensex options. Sensex goes to BSE.
+  - NO stop-loss orders from this app: INDstocks' API only offers stops attached to a NEW order (smart orders), not for an open position.
+    The "Stop -40%" button is hidden and the runner's autoStop does nothing for INDstocks; it alerts "place the stop in the INDstocks app" instead.
+    Place your stop in the INDstocks app as soon as a buy fills.
+  - Last prices on positions come from INDstocks quotes; if a quote is refused (Sensex/BSE), P&L shows 0 until you refresh.
+  - The runner alerts when no valid token is present during market hours.
+
+----------------------------------------------------------------------------------------------
+AUTOMATIC TRADING (OPTIONAL, INDstocks only): the runner buys a Valid intraday call by itself
+----------------------------------------------------------------------------------------------
+What it does: when the app shows a Valid INTRADAY Nifty or Bank Nifty call, the runner sends ONE INDstocks smart order: the buy with the
+stop-loss (-40%) and the target (+80%) already attached, so the protection sits at INDstocks from the first second, even if your VPS goes down.
+After the fill it trails the stop: once the price is 30% above your entry the stop follows 25% below the highest price, never below your entry.
+An entry that has not filled in 60 seconds is cancelled together with its stop and target. At 3:10 PM whatever is still open is closed (the
+stop and target are cancelled first, so nothing can sell twice). Every action sends a phone alert.
+What it does NOT do: Sensex (INDstocks does not document smart orders for BSE), NRML / overnight (a smart order lasts one day), stock options,
+anything while the runner is down or no INDstocks token is pasted (open trades then keep their stop and target at INDstocks, but stop trailing).
+
+Switch it on in this order (do not skip the shadow period):
+1. Runner and INDstocks in DRY mode working (the two sections above).
+2. trade-local.php:   define('ORDER_AUTO', true);        (ORDER_MODE stays 'dry')
+3. service/config.json:   "autoTrade": true     then restart the runner.
+4. Watch the "Automatic trading" card (Paper tab) for 1-2 weeks. In dry mode every step runs as a SHADOW on real prices and nothing is sent;
+   the card keeps the would-have results after estimated costs. Judge it before risking money.
+5. Only then ORDER_MODE 'live'. Keep the defaults for the first weeks: 1 lot, 1 open position, 2 automatic buys a day, entries until 2:00 PM.
+   Watch the first live trades in the INDstocks app as well.
+Every morning before 9:15: paste the INDstocks token (Paper tab), OR switch on the automatic token below. Without a token the runner cannot buy and alerts you.
+
+AUTOMATIC DAILY TOKEN (OPTIONAL): no morning pasting. INDstocks documents an endpoint for this (POST /generate/token with your Client ID, MPIN and a TOTP code).
+  You fill in three values yourself, on the VPS only, in service/config.json (never in the Hostinger web folder, never in git; on Linux: chmod 600 service/config.json):
+      "indstocksLogin": { "enabled": true, "clientId": "...", "mpin": "...", "totpSecret": "..." }
+    - clientId: the Client ID shown on indstocks.com/app/api-trading/access-tokens after TOTP setup (it is sent as the x-api-key header).
+    - mpin: your INDstocks MPIN.
+    - totpSecret: the TOTP SETUP KEY that was shown once when you enabled TOTP (the text under the QR code). If you did not keep it, disable and enable TOTP
+      again on that page to get a new key (this also revokes the current token). Add the same key to your phone's authenticator if you still want codes there.
+  Then restart the runner. Each weekday from 8:30 AM (and whenever there is no valid token) the runner makes ONE call, hands the new token to the app
+  (checked with one read-only request, as for a pasted token) and sends you a "token refreshed" alert. Only the runner ever sees the MPIN and the key.
+  Why it is careful (INDstocks locks the account 15 minutes after 5 wrong codes, 1 hour after 3 such lockouts, and allows 1 token a minute):
+    - the code is computed on the exchange clock, never on a drifting VPS clock, and never sent in the last 3.5 seconds of its 30-second window
+    - at most 4 attempts a day, 75 seconds apart; a network error or HTTP 429/5xx is retried after 2 and then 15 minutes
+    - ANY other refusal (wrong MPIN or code, a lockout) stops automatic attempts for the day and alerts you: it never retries a wrong value
+    - the MPIN, key, Client ID and token are never logged or sent in an alert
+  Know the trade-off: anyone who can read service/config.json can log in to your INDstocks account, because it holds the MPIN and the key that make up
+  the login. Orders still need your VPS's saved static IP, but protect that file like a password and use a VPS login that only you control.
+  A new generated token replaces the previous one (INDstocks keeps one live token), so do not also generate tokens by hand on the dashboard while this is on.
+  The INDstocks docs do not publish the exact reply or error codes of this endpoint; the app accepts a "token" field (or data.token) and treats every
+  non-success answer as a refusal. This has been tested against a fake only. The first morning, watch the runner log and your phone alerts.
+
+Limits (all also enforced by trade.php; change in trade-local.php if you must):
+   AUTO_LOTS 1, AUTO_MAX_OPEN 1, AUTO_MAX_PER_DAY 2, AUTO_SL 0.40, AUTO_TARGET 0.80, AUTO_TRAIL_START 0.30, AUTO_TRAIL_GIVE 0.25,
+   AUTO_ENTRY_UNTIL '14:00', AUTO_ENTRY_BUFFER 0.01 (entry limit 1% above the price so it fills), AUTO_ENTRY_WAIT 60, AUTO_SQUAREOFF '15:10'.
+   Also ORDER_MAX_VALUE / ORDER_MAX_QTY / ORDER_MAX_PER_DAY as for manual orders.
+Pause: the "Pause automatic trading" button in the card stops NEW entries at once. A trade already open keeps its stop and target and is
+still managed until it closes. To stop everything, also set ORDER_MODE 'off' (or ORDER_AUTO false) and close open positions in the INDstocks app.
+
+The honest limits:
+  - The exit design (stop 40%, target +80%, trail) scored profit factor 1.15 on 434 real option price paths vs 1.09 for the tested plan: not
+    worse, but a thin edge that is NOT statistically proven (2025 was flat). Expect losing streaks. One lot loses roughly Rs 5-6k when stopped.
+  - INDstocks has no sandbox. The live path is tested only against a fake that follows the documented shapes. The first real trades may show
+    differences (order status names, which id a stop change needs). The app tries both ids and alerts on any failure, but watch the first ones.
+  - A stop-limit can gap: a fast fall can fill below the stop price, or not fill at all.
+  - Upstox was compared: its GTT has a built-in trailing stop (beta), but its docs only show equities and say nothing about index options.

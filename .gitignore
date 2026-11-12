@@ -1,3 +1,9 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# marketcalls runtime and secrets
+marketcalls/auth-local.php
+marketcalls/trade-local.php
+marketcalls/data/
+marketcalls/cache/
