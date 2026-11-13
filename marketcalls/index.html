@@ -909,7 +909,12 @@ async function trdApi(action,params,body,method){const qs=new URLSearchParams({t
   const r=await fetch('api.php?'+qs,{method:method||(body?'POST':'GET'),headers:{'X-App-Pin':cfg().pin,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});
   let j;try{j=await r.json()}catch(e){throw new Error('Bad response ('+r.status+')')}if(!r.ok||j.status==='error')throw new Error(j.message||('HTTP '+r.status));return j}
 async function trdLoad(){if(S.demo||S.yahoo||!cfg().pin||!canTrade())return;const c=S.trd;if(c.busy)return;c.busy=true;c.err='';
-  try{c.status=await trdApi('status');if(!RUN&&c.status.auto&&c.status.auto.configured)botLoad(true).then(()=>{if(S.tab==='paper')render()});
+  try{c.status=await trdApi('status');
+    if(!c.status.connected&&c.status.indAuto&&c.status.indAuto.configured&&c.status.mode!=='off'&&!S.trdAutoGenerating){
+      S.trdAutoGenerating=true;
+      try{await trdApi('ind_generate',null,{});c.status=await trdApi('status')}catch(e){console.warn('Auto-generate token attempt:',e.message)}finally{S.trdAutoGenerating=false}
+    }
+    if(!RUN&&c.status.auto&&c.status.auto.configured)botLoad(true).then(()=>{if(S.tab==='paper')render()});
     if(c.status.mode!=='off'&&c.status.connected){const [f,p,o]=await Promise.all([trdApi('funds').catch(()=>null),trdApi('positions').catch(()=>({data:[]})),trdApi('orders').catch(()=>({data:[]}))]);c.funds=f&&f.data;c.pos=p.data||[];c.orders=o.data||[]}
     else{c.funds=null;c.pos=[];c.orders=[]}}
   catch(e){c.err=e.message}
@@ -923,7 +928,33 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>${s.connected?'Connected'+(s.user?' as '+esc(s.user):''):'Not connected today'}</span><span>· ${s.sentToday}/${s.limits.perDay} orders today</span></div></div><span class="pill ${s.mode==='live'?'p-dn':'p-amb'}">${s.mode==='live'?'Live':'Dry run'}</span></div>${trdBanner()}`;
   if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
-  const pasteBox=()=>`<div class="sub" style="margin:0 0 10px">Paste today's INDstocks access token (indstocks.com/app/api-trading/access-tokens). Tokens reset every day at 7:00 AM. It is sent to your server only and never shown again.</div><div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div><div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button>${s.indAuto&&s.indAuto.configured?'<button class="btn2 on" id="btnIndAutoGenerate" style="margin-left:6px;font-weight:bold">⚡ Auto-Generate Token</button>':''}<button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
+  const pasteBox=()=>{
+    const autoCfg=s.indAuto&&s.indAuto.configured;
+    if(autoCfg){
+      return `<div style="background:rgba(46,125,50,0.1);border:1px solid rgba(46,125,50,0.3);border-radius:8px;padding:12px;margin:0 0 12px">
+        <div style="font-weight:600;font-size:14px;color:var(--up,#4caf50);margin-bottom:4px">⚡ Auto-Login Configured</div>
+        <div class="sub" style="margin:0 0 10px">Your INDstocks credentials are saved. Click below to generate today's token now, or let your daily cron job refresh it at 8:30 AM automatically.</div>
+        <div class="c-act">
+          <button class="btn2 on" id="btnIndAutoGenerate" style="font-weight:bold">⚡ Generate Today's Token Now</button>
+          <button class="btn2" data-trd="refresh">Refresh</button>
+          <button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button>
+        </div>
+      </div>
+      <details style="margin:8px 0 10px;font-size:12px">
+        <summary style="cursor:pointer;color:var(--tx-mu)">Or paste token manually</summary>
+        <div class="fld" style="margin:8px 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div>
+        <div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button></div>
+      </details>`;
+    }
+    return `<div style="background:rgba(25,118,210,0.08);border:1px solid rgba(25,118,210,0.3);border-radius:8px;padding:12px;margin:0 0 12px">
+      <div style="font-weight:600;font-size:14px;color:var(--tx,#fff);margin-bottom:4px">⚡ Setup 1-Time Auto-Login (No more daily tokens)</div>
+      <div class="sub" style="margin:0 0 10px">To stop pasting tokens every morning, enter your INDstocks Client ID, MPIN &amp; TOTP Secret Key in Admin settings. Once saved, your server auto-generates your daily token every morning!</div>
+      <div class="c-act"><button class="btn2 on" onclick="accountSheet()">⚡ Setup Auto-Login in Admin</button></div>
+    </div>
+    <div class="sub" style="margin:0 0 10px">Or paste today's INDstocks access token manually (indstocks.com/app/api-trading/access-tokens):</div>
+    <div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div>
+    <div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button><button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
+  };
   if(s.tokenMode==='paste'&&(!s.connected||c.paste))h+=pasteBox();
   else if(!s.connected)h+=`<div class="sub" style="margin:0 0 10px">${s.configured?'Log in to Upstox once each day (the login lasts until about 3:30 AM). Your password is typed on Upstox, never here.':'Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in trade.php on your server first.'}</div><div class="c-act">${s.configured?'<button class="btn2 on" data-trd="login">Connect Upstox</button>':''}<button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Test Buy Order (Dry-Run)</button></div>`;
   else{h+=`<div class="info num" style="border-top:0;padding-top:0">Available to trade: <b>${isFinite(+f)?'₹'+f0(+f):'—'}</b> · ${s.tokenMode==='paste'?'token':'login'} valid until ${esc(exp)} · caps: ₹${f0(s.limits.maxValue)} per order${s.tokenMode==='paste'?' · <button class="lnk" data-trd="newtoken">change token</button>':''}</div>`;
