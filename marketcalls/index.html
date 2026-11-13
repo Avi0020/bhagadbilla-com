@@ -923,7 +923,7 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>${s.connected?'Connected'+(s.user?' as '+esc(s.user):''):'Not connected today'}</span><span>· ${s.sentToday}/${s.limits.perDay} orders today</span></div></div><span class="pill ${s.mode==='live'?'p-dn':'p-amb'}">${s.mode==='live'?'Live':'Dry run'}</span></div>${trdBanner()}`;
   if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
-  const pasteBox=()=>`<div class="sub" style="margin:0 0 10px">Paste today's INDstocks access token (indstocks.com/app/api-trading/access-tokens). Tokens reset every day at 7:00 AM. It is sent to your server only and never shown again.</div><div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div><div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button><button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
+  const pasteBox=()=>`<div class="sub" style="margin:0 0 10px">Paste today's INDstocks access token (indstocks.com/app/api-trading/access-tokens). Tokens reset every day at 7:00 AM. It is sent to your server only and never shown again.</div><div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div><div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button>${s.indAuto&&s.indAuto.configured?'<button class="btn2 on" id="btnIndAutoGenerate" style="margin-left:6px;font-weight:bold">⚡ Auto-Generate Token</button>':''}<button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
   if(s.tokenMode==='paste'&&(!s.connected||c.paste))h+=pasteBox();
   else if(!s.connected)h+=`<div class="sub" style="margin:0 0 10px">${s.configured?'Log in to Upstox once each day (the login lasts until about 3:30 AM). Your password is typed on Upstox, never here.':'Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in trade.php on your server first.'}</div><div class="c-act">${s.configured?'<button class="btn2 on" data-trd="login">Connect Upstox</button>':''}<button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Test Buy Order (Dry-Run)</button></div>`;
   else{h+=`<div class="info num" style="border-top:0;padding-top:0">Available to trade: <b>${isFinite(+f)?'₹'+f0(+f):'—'}</b> · ${s.tokenMode==='paste'?'token':'login'} valid until ${esc(exp)} · caps: ₹${f0(s.limits.maxValue)} per order${s.tokenMode==='paste'?' · <button class="lnk" data-trd="newtoken">change token</button>':''}</div>`;
@@ -1142,7 +1142,8 @@ async function botScan(s,au,mk){
     if(s.mode==='live'){let f=null;try{const d=(await trdApi('funds')).data;f=d&&d.available_to_trade&&d.available_to_trade.total}catch(e){}
       if(!(f>=leg.lotCost*au.lots*1.02+100)){if(!S.bot.warn['f'+sid]){S.bot.warn['f'+sid]=1;botSay('Auto buy skipped: funds',`${ix.name} ${f0(leg.strike)} ${leg.type} needs about ₹${f0(leg.lotCost*au.lots)}. Available to trade: ${isFinite(f)?'₹'+f0(f):'unknown'}.`,'dn')}continue}}
     await botEnter({ix,A,leg,sid},au,s)}}
-async function botTick(){if(!RUN||!RUN.autoTrade||S.bot.busy||S.demo||S.yahoo||!cfg().pin)return;const mk=market();if(!RUN.anytime&&!mk.open)return;
+const canAutoRun=()=>(RUN&&RUN.autoTrade)||(canTrade()&&LS.get('browserBot',true));
+async function botTick(){if(!canAutoRun()||S.bot.busy||S.demo||S.yahoo||!cfg().pin)return;const mk=market();if(!RUN&&!mk.open&&!S.at.intra)return;if(RUN&&!RUN.anytime&&!mk.open)return;
   S.bot.busy=true;
   try{
     if(!S.bot.st&&!(await botLoad()))return;
@@ -1309,10 +1310,11 @@ function accountSheet(){const u=AUTH.user;if(!u)return;
   if(u.role==='admin')admLoad()}
 /* ---- owner: invites and people ---- */
 const admDate=ts=>ts?new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'never';
-async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i,tm]=await Promise.all([authGet('admin_users'),authGet('admin_invites'),authGet('admin_trade_status').catch(()=>null)]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats,trade:tm};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i,tm,ic,ac]=await Promise.all([authGet('admin_users'),authGet('admin_invites'),authGet('admin_trade_status').catch(()=>null),trdApi('ind_creds').catch(()=>null),trdApi('autoconfig').catch(()=>null)]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats,trade:tm,indCreds:ic,autoConfig:ac&&ac.auto};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUTH.user.id;
   const st=A.stats||{totalOnboarded:A.users.length,activeTrials:0,expiredTrials:0,inactiveOver15Days:0,unlimitedCount:0};
   const trd=A.trade||{mode:'off',broker:'upstox',hasEmail:false,emailMasked:''};
+  const ic=A.indCreds,ac=A.autoConfig;
   const isLive=trd.mode==='live',isDry=trd.mode==='dry';
   el.innerHTML=`<h3>Real Trading Account Mode (Live Orders)</h3>
   <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
@@ -1355,6 +1357,93 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
       </div>
     </div>
     <div id="admTrdMsg" style="margin-top:8px"></div>
+  </div>
+
+  <h3>⚡ Automation: Daily Token &amp; Automatic Trading</h3>
+  <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:600">1. INDstocks Automated Daily Token</div>
+      <span class="pill ${ic&&ic.configured?(ic.connected?'p-up':'p-amb'):'p-mu'}">${ic&&ic.configured?(ic.connected?'Active':'Token Expired/Needed'):'Not Configured'}</span>
+    </div>
+    <div class="sub" style="margin:4px 0 10px">
+      Automatically generates and renews your daily INDstocks access token using RFC 6238 TOTP. Never copy-paste tokens manually every morning.
+    </div>
+
+    ${ic&&ic.configured?`
+      <div class="sub" style="margin:0 0 10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--brd)">
+        <div>Client ID: <b>${esc(ic.clientId)}</b> · MPIN: <b>••••</b> · TOTP Key: <b>••••••••</b></div>
+        <div style="margin-top:4px">Today's Token: <b>${ic.connected?'✓ Connected (valid until '+new Date(ic.tokenExpires*1000).toLocaleTimeString('en-IN')+')':'⚠️ Not connected / Expired today'}</b></div>
+      </div>
+    `:''}
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:10px">
+      <div class="fld"><label>Client ID</label><input id="admIndCid" type="text" placeholder="e.g. 10029384" value=""></div>
+      <div class="fld"><label>INDstocks MPIN</label><input id="admIndMpin" type="password" placeholder="4 or 6 digit MPIN" value=""></div>
+      <div class="fld"><label>TOTP Secret Key (Base32)</label><input id="admIndTotp" type="password" placeholder="Key from INDstocks TOTP setup" value=""></div>
+    </div>
+
+    <div class="c-act" style="margin:0 0 10px">
+      <button class="btn2 on" id="btnSaveIndCreds">Save Auto-Login Credentials</button>
+      <button class="btn2" id="btnIndGenerate" style="font-weight:bold">⚡ Generate Token Now</button>
+    </div>
+
+    ${ic&&ic.cronKey?`
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--brd)">
+        <div style="font-size:12px;font-weight:600;color:var(--tx)">Hostinger Daily Cron Job URL (8:30 AM Mon–Fri):</div>
+        <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+          <input type="text" readonly value="${location.origin}/api.php?cron=ind_token&amp;key=${ic.cronKey}" style="font-size:11px;padding:6px;font-family:monospace;width:100%" id="cronUrlInput">
+          <button class="btn2" onclick="navigator.clipboard.writeText($('#cronUrlInput').value);toast('Cron URL copied!')">Copy</button>
+        </div>
+        <div class="sub" style="font-size:11px;margin-top:4px">Add this URL in Hostinger hPanel &gt; Advanced &gt; Cron Jobs to execute curl at 8:30 AM every morning automatically.</div>
+      </div>
+    `:''}
+    <div id="admIndMsg" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:600">2. Automatic Signal Trading (Algo Bot)</div>
+      <span class="pill ${ac&&ac.configured?(ac.enabled?'p-up':'p-amb'):'p-mu'}">${ac&&ac.configured?(ac.enabled?'Active':'Paused'):'Switched Off'}</span>
+    </div>
+    <div class="sub" style="margin:4px 0 10px">
+      Automatically executes smart bracket orders (entry + stop-loss + target) on INDstocks when high-probability signals occur, and trails the stop.
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px">
+      <div class="fld">
+        <label>Auto-Trading Status</label>
+        <select id="admAutoEnabled">
+          <option value="1" ${ac&&ac.configured?'selected':''}>Enabled (ON)</option>
+          <option value="0" ${!ac||!ac.configured?'selected':''}>Disabled (OFF)</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Lots per Trade</label>
+        <input id="admAutoLots" type="number" min="1" max="10" value="${ac?ac.lots:1}">
+      </div>
+      <div class="fld">
+        <label>Max Open Trades</label>
+        <input id="admAutoMaxOpen" type="number" min="1" max="5" value="${ac?ac.maxOpen:1}">
+      </div>
+      <div class="fld">
+        <label>Max Orders / Day</label>
+        <input id="admAutoMaxPerDay" type="number" min="1" max="20" value="${ac?ac.maxPerDay:2}">
+      </div>
+    </div>
+
+    <div class="sub" style="margin:0 0 10px">
+      Rules: SL at −40%, Target at +80%, Trailing starts at +30% profit and trails 25% behind peak. Auto square-off at 3:10 PM.
+    </div>
+
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0 12px">
+      <input type="checkbox" id="chkBrowserBot" ${LS.get('browserBot',true)?'checked':''}>
+      <span>Run Auto-Trader continuously in this browser tab while open</span>
+    </label>
+
+    <div class="c-act" style="margin:0">
+      <button class="btn2 on" id="btnSaveAutoConfig">Save Auto-Trading Settings</button>
+    </div>
+    <div id="admAutoMsg" style="margin-top:6px"></div>
   </div>
   <h3>Onboarding &amp; Trial Overview</h3>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:8px 0 16px">
@@ -1477,6 +1566,52 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
       bBInd.disabled=false;
     }
   };
+  const bSaveInd=$('#btnSaveIndCreds'),bGenInd=$('#btnIndGenerate');
+  if(bSaveInd)bSaveInd.onclick=async()=>{
+    const cid=($('#admIndCid')||{}).value.trim(),mpin=($('#admIndMpin')||{}).value.trim(),totp=($('#admIndTotp')||{}).value.trim();
+    if(!cid||!mpin||!totp){toast('Fill Client ID, MPIN, and TOTP key');return}
+    bSaveInd.disabled=true;
+    try{
+      const res=await trdApi('ind_creds',null,{clientId:cid,mpin,totpSecret:totp});
+      toast(res.message||'Credentials saved');
+      await admLoad();trdLoad();
+    }catch(err){
+      const m=$('#admIndMsg');if(m)m.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bSaveInd.disabled=false;
+    }
+  };
+  if(bGenInd)bGenInd.onclick=async()=>{
+    bGenInd.disabled=true;bGenInd.textContent='⚡ Generating…';
+    try{
+      const res=await trdApi('ind_generate',null,{});
+      toast(res.message||'Token generated successfully');
+      await admLoad();trdLoad();
+    }catch(err){
+      const m=$('#admIndMsg');if(m)m.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bGenInd.disabled=false;bGenInd.textContent='⚡ Generate Token Now';
+    }
+  };
+  const bAutoCfg=$('#btnSaveAutoConfig');
+  if(bAutoCfg)bAutoCfg.onclick=async()=>{
+    const en=+$('#admAutoEnabled').value===1;
+    const lots=+$('#admAutoLots').value||1;
+    const maxOpen=+$('#admAutoMaxOpen').value||1;
+    const maxPerDay=+$('#admAutoMaxPerDay').value||2;
+    bAutoCfg.disabled=true;
+    try{
+      await trdApi('autoconfig',null,{enabled:en,lots,maxOpen,maxPerDay});
+      toast('Auto-trading settings saved');
+      await admLoad();trdLoad();
+    }catch(err){
+      const m=$('#admAutoMsg');if(m)m.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bAutoCfg.disabled=false;
+    }
+  };
+  const chkBot=$('#chkBrowserBot');
+  if(chkBot)chkBot.onchange=()=>{
+    LS.set('browserBot',chkBot.checked);
+    toast(chkBot.checked?'Browser Auto-Trader active in this tab':'Browser Auto-Trader disabled in this tab');
+  };
   $('#admNew').onclick=async()=>{try{const j=await authPost('admin_invite',{count:1,days:+$('#admDays').value});$('#admCode').innerHTML=`<div class="codebox">${esc(j.codes[0])}</div><div class="sub" style="margin-top:8px">Shown only now: copy it and send it. It works once and ends in ${j.days} days.</div><div class="c-act"><button class="btn2" id="admCopy">Copy code</button></div>`;
     $('#admCopy').onclick=()=>{try{navigator.clipboard.writeText(j.codes[0]);toast('Code copied')}catch(e){toast('Select the code and copy it')}};const i=await authGet('admin_invites');S.adm.invites=i.invites}catch(e){$('#admCode').innerHTML='<div class="err">'+esc(e.message)+'</div>'}};
   el.onclick=async e=>{const b=e.target.closest('button[data-adm]');if(!b)return;const [act,id]=b.dataset.adm.split('|'),key=b.dataset.adm,m=$('#admMsg');
@@ -1561,6 +1696,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.trd==='refresh'){trdLoad();return}
   if(t.dataset.trd==='newtoken'){S.trd.paste=true;render();return}
   if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}
+  if(t.id==='btnIndAutoGenerate'){t.disabled=true;t.textContent='⚡ Generating…';trdApi('ind_generate',null,{}).then(j=>{toast(j.message||'Token generated successfully');trdLoad()}).catch(e=>{toast(e.message);t.disabled=false;t.textContent='⚡ Auto-Generate Token'});return}
   if(t.dataset.trd==='login'){trdApi('login').then(j=>{window.open(j.url,'_blank','noopener')}).catch(e=>toast(e.message));return}
   if(t.dataset.stks){if(t.dataset.stks==='refresh')stkScan(true).then(()=>stkCalls());else{S.stk.sort=t.dataset.stks;if($('#stkQ')){const k=$('#view').scrollTop;$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}}return}
   if(t.dataset.spb){const c=S.sc.calls.find(x=>x.sid===t.dataset.spb);if(c&&paperBuyStk(c,false))scRender();return}
@@ -1591,6 +1727,7 @@ setInterval(async()=>{if(!market().open||S.scanning)return;if(S.auto||(P&&P.on&&
 setInterval(()=>{const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'');$('#mDot').classList.toggle('on',mk.open)},30000);
 setInterval(svcCheck,15000);
 if(RUN){S.auto=true;svcApi('lease',{id:CID,runner:true}).catch(()=>{});setInterval(()=>svcApi('lease',{id:CID,runner:true}).catch(()=>{}),15000);setInterval(guardTick,(RUN.guardSeconds||20)*1000);if(RUN.autoTrade)setInterval(botTick,10000)}
+setInterval(()=>{if(!RUN&&canAutoRun())botTick()},10000);
 (async function boot(){
   const ban=t=>{$('#banner').hidden=false;$('#banner').textContent=t};
   try{const r=await fetch('api.php?ping=1',{cache:'no-store'});const j=await r.json();if(!j.ok)throw 0;S.demo=false;

@@ -30,6 +30,7 @@ if (isset($_GET['ping'])) {
 
 /* optional Upstox order connection (trade.php, OFF by default). The login redirect comes back without the PIN header, so it is checked by a one-time state instead. */
 if (isset($_GET['callback'])) { require __DIR__ . '/trade.php'; trade_callback(); exit; }
+if (isset($_GET['cron'])) { require __DIR__ . '/trade.php'; trade_cron((string)$_GET['cron']); exit; }
 
 /* sign-up, log-in, log-out, password, owner admin */
 if (isset($_GET['auth'])) { auth_handle((string)$_GET['auth']); exit; }

@@ -91,7 +91,140 @@ function t_read($f, $d = []) { if (!is_file($f)) return $d; $raw = (string)file_
 function t_write($f, $v) { file_put_contents($f, T_HEAD . json_encode($v), LOCK_EX); @chmod($f, 0600); }
 function t_ist() { return new DateTime('now', new DateTimeZone('Asia/Kolkata')); }
 function t_log($c, $arr) { $arr['t'] = t_ist()->format('c'); $f = t_dir($c) . '/orders.log.php'; if (!is_file($f)) @file_put_contents($f, T_HEAD, LOCK_EX); @file_put_contents($f, json_encode($arr) . "\n", FILE_APPEND | LOCK_EX); @chmod($f, 0600); }
-function t_token($c) { $t = t_read(t_dir($c) . ($c['broker'] === 'indstocks' ? '/order-token-ind.php' : '/order-token.php')); return (!empty($t['token']) && ($t['exp'] ?? 0) > time()) ? $t : null; }
+
+/* Pure PHP RFC 6238 TOTP generator for automated broker token renewal */
+function t_b32_decode($s) {
+    $a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    $s = strtoupper(preg_replace('/[\s=-]/', '', (string)$s));
+    $bits = '';
+    for ($i = 0; $i < strlen($s); $i++) {
+        $val = strpos($a, $s[$i]);
+        if ($val === false) return false;
+        $bits .= str_pad(decbin($val), 5, '0', STR_PAD_LEFT);
+    }
+    $bytes = [];
+    for ($i = 0; $i + 8 <= strlen($bits); $i += 8) {
+        $bytes[] = chr(bindec(substr($bits, $i, 8)));
+    }
+    return implode('', $bytes);
+}
+
+function t_totp($secret, $timeSec = null, $step = 30, $digits = 6) {
+    $key = t_b32_decode($secret);
+    if ($key === false || strlen($key) === 0) return false;
+    $t = (int)floor(($timeSec ?? time()) / $step);
+    $data = pack('J', $t);
+    $hash = hash_hmac('sha1', $data, $key, true);
+    $offset = ord($hash[strlen($hash) - 1]) & 0x0F;
+    $binary = ((ord($hash[$offset]) & 0x7F) << 24)
+            | ((ord($hash[$offset + 1]) & 0xFF) << 16)
+            | ((ord($hash[$offset + 2]) & 0xFF) << 8)
+            | (ord($hash[$offset + 3]) & 0xFF);
+    return str_pad((string)($binary % (10 ** $digits)), $digits, '0', STR_PAD_LEFT);
+}
+
+function t_ind_get_creds($dir) {
+    $f = $dir . '/ind-creds.php';
+    if (!is_file($f)) return null;
+    $c = t_read($f);
+    if (empty($c['clientId']) || empty($c['mpin']) || empty($c['totpSecret'])) return null;
+    return $c;
+}
+
+function t_cron_key($dir) {
+    $f = $dir . '/cron-key.php';
+    $k = t_read($f);
+    if (!empty($k['key'])) return $k['key'];
+    $key = bin2hex(random_bytes(16));
+    t_write($f, ['key' => $key, 'created' => time()]);
+    return $key;
+}
+
+function t_ind_auto_generate($c, $dir, $force = false) {
+    $creds = t_ind_get_creds($dir);
+    if (!$creds) return ['ok' => false, 'message' => 'INDstocks auto-login credentials not configured. Save your Client ID, MPIN and TOTP secret in Admin settings first.'];
+
+    $f = $dir . '/order-token-ind.php';
+    $cur = t_read($f);
+    if (!$force && !empty($cur['token']) && ($cur['exp'] ?? 0) > time() + 1800) {
+        return ['ok' => true, 'token' => $cur['token'], 'expires' => (int)$cur['exp'], 'message' => 'Token already active and valid until ' . date('h:i A', (int)$cur['exp']) . ' IST.'];
+    }
+
+    $lf = $dir . '/ind-last-gen.php';
+    $last = t_read($lf);
+    $now = time();
+    if ($now - (int)($last['at'] ?? 0) < 60) {
+        $wait = 60 - ($now - (int)$last['at']);
+        return ['ok' => false, 'message' => "Please wait {$wait}s before requesting a new token (INDstocks rate limit)."];
+    }
+
+    $rem = $now % 30;
+    if ($rem >= 27) {
+        sleep(4);
+        $now = time();
+    }
+
+    $code = t_totp($creds['totpSecret'], $now);
+    if (!$code) return ['ok' => false, 'message' => 'Could not compute TOTP code. Please check your TOTP Secret Key format.'];
+
+    $url = $c['ind'] . '/generate/token';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'x-api-key: ' . $creds['clientId'],
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'mpin' => (string)$creds['mpin'],
+            'totp' => (string)$code
+        ])
+    ]);
+    $raw = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+
+    t_write($lf, ['at' => $now]);
+
+    $j = json_decode((string)$raw, true);
+    if ($httpCode !== 200 || empty($j['token'])) {
+        $msg = $j['message'] ?? (isset($j['errors'][0]['message']) ? $j['errors'][0]['message'] : ($err ?: "HTTP {$httpCode}"));
+        t_log($c, ['ev' => 'ind-auto-generate-failed', 'http' => $httpCode, 'reply' => $j]);
+        return ['ok' => false, 'message' => 'INDstocks refused token generation: ' . $msg];
+    }
+
+    $tok = trim((string)$j['token']);
+    [$fcode, $fj] = t_icall($c, 'GET', '/funds', $tok);
+    if ($fcode !== 200) {
+        t_log($c, ['ev' => 'ind-auto-generate-funds-failed', 'http' => $fcode, 'reply' => $fj]);
+        return ['ok' => false, 'message' => 'INDstocks generated a token but funds check failed (' . t_err($fj, "HTTP {$fcode}") . ').'];
+    }
+
+    $exp = $now + 23 * 3600;
+    t_write($f, ['token' => $tok, 'exp' => $exp, 'user' => '', 'at' => $now, 'auto' => true]);
+    t_log($c, ['ev' => 'ind-auto-token-saved', 'exp' => $exp]);
+    return ['ok' => true, 'token' => $tok, 'expires' => $exp, 'message' => 'INDstocks token generated and verified successfully!'];
+}
+
+function t_token($c) {
+    $dir = t_dir($c);
+    $ind = $c['broker'] === 'indstocks';
+    $f = $dir . ($ind ? '/order-token-ind.php' : '/order-token.php');
+    $t = t_read($f);
+    if (!empty($t['token']) && ($t['exp'] ?? 0) > time()) return $t;
+    if ($ind && $c['mode'] !== 'off' && t_ind_get_creds($dir)) {
+        $res = t_ind_auto_generate($c, $dir, false);
+        if ($res['ok']) {
+            $t = t_read($f);
+            if (!empty($t['token']) && ($t['exp'] ?? 0) > time()) return $t;
+        }
+    }
+    return null;
+}
 function t_call($method, $url, $token, $body = null, $extra = []) {
     $ch = curl_init($url);
     $h = ['Accept: application/json', 'Authorization: Bearer ' . $token];
@@ -189,9 +322,20 @@ function t_ind_verify($c, $tk, $inst, $ct, $qty, &$lotOut = 0) {
     return '';
 }
 function t_auto_status($c, $dir, $ind, $mode) {
+    $cfg = t_read($dir . '/auto-config.php');
+    $configured = isset($cfg['enabled']) ? (bool)$cfg['enabled'] : (bool)ORDER_AUTO;
+    $lots = isset($cfg['lots']) ? max(1, (int)$cfg['lots']) : AUTO_LOTS;
+    $maxOpen = isset($cfg['maxOpen']) ? max(1, (int)$cfg['maxOpen']) : AUTO_MAX_OPEN;
+    $maxPerDay = isset($cfg['maxPerDay']) ? max(1, (int)$cfg['maxPerDay']) : AUTO_MAX_PER_DAY;
+    $sl = isset($cfg['sl']) ? (float)$cfg['sl'] : AUTO_SL;
+    $target = isset($cfg['target']) ? (float)$cfg['target'] : AUTO_TARGET;
+    $trailStart = isset($cfg['trailStart']) ? (float)$cfg['trailStart'] : AUTO_TRAIL_START;
+    $trailGive = isset($cfg['trailGive']) ? (float)$cfg['trailGive'] : AUTO_TRAIL_GIVE;
     $killed = !empty(t_read($dir . '/auto-off.php')['off']);
-    return ['configured' => (bool)ORDER_AUTO, 'killed' => $killed, 'enabled' => (bool)ORDER_AUTO && $ind && $mode !== 'off' && !$killed, 'lots' => AUTO_LOTS, 'maxOpen' => AUTO_MAX_OPEN, 'maxPerDay' => AUTO_MAX_PER_DAY,
-            'sl' => AUTO_SL, 'target' => AUTO_TARGET, 'trailStart' => AUTO_TRAIL_START, 'trailGive' => AUTO_TRAIL_GIVE, 'entryUntil' => AUTO_ENTRY_UNTIL, 'entryBuffer' => AUTO_ENTRY_BUFFER, 'entryWait' => AUTO_ENTRY_WAIT, 'squareOff' => AUTO_SQUAREOFF];
+    return ['configured' => $configured, 'killed' => $killed, 'enabled' => $configured && $ind && $mode !== 'off' && !$killed,
+            'lots' => $lots, 'maxOpen' => $maxOpen, 'maxPerDay' => $maxPerDay,
+            'sl' => $sl, 'target' => $target, 'trailStart' => $trailStart, 'trailGive' => $trailGive,
+            'entryUntil' => AUTO_ENTRY_UNTIL, 'entryBuffer' => AUTO_ENTRY_BUFFER, 'entryWait' => AUTO_ENTRY_WAIT, 'squareOff' => AUTO_SQUAREOFF];
 }
 function t_hm($s) { $p = explode(':', (string)$s); return (int)$p[0] * 60 + (int)($p[1] ?? 0); }
 function t_err($j, $dflt) { return $j['errors'][0]['message'] ?? $j['message'] ?? $dflt; }
@@ -235,8 +379,58 @@ function trade_handle($action) {
     if ($action === 'status') {
         $lg = t_read($dir . '/order-log.php'); $today = t_ist()->format('Y-m-d');
         out(200, ['status' => 'success', 'mode' => $mode, 'broker' => $c['broker'], 'tokenMode' => $ind ? 'paste' : 'login', 'configured' => $configured, 'connected' => (bool)$tk, 'user' => $tk['user'] ?? '', 'expires' => $tk['exp'] ?? 0,
-                  'auto' => t_auto_status($c, $dir, $ind, $mode), 'limits' => $lim, 'sentToday' => ($lg['day'] ?? '') === $today ? (int)($lg['count'] ?? 0) : 0, 'marketOpen' => t_market_open($c)]);
+                  'auto' => t_auto_status($c, $dir, $ind, $mode), 'limits' => $lim, 'sentToday' => ($lg['day'] ?? '') === $today ? (int)($lg['count'] ?? 0) : 0, 'marketOpen' => t_market_open($c),
+                  'indAuto' => ['configured' => (bool)t_ind_get_creds($dir), 'cronKey' => t_cron_key($dir)]]);
     }
+
+    if ($action === 'ind_creds') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $in = json_decode((string)file_get_contents('php://input'), true);
+            $cid = trim((string)($in['clientId'] ?? ''));
+            $mpin = trim((string)($in['mpin'] ?? ''));
+            $totpSecret = trim((string)($in['totpSecret'] ?? ''));
+            if ($cid === '' || $mpin === '' || $totpSecret === '') out(422, ['status' => 'error', 'message' => 'Client ID, MPIN, and TOTP Secret Key are required.']);
+            $testCode = t_totp($totpSecret);
+            if (!$testCode) out(422, ['status' => 'error', 'message' => 'Invalid TOTP Secret Key format: must be base32 (letters A-Z and digits 2-7).']);
+            t_write($dir . '/ind-creds.php', ['clientId' => $cid, 'mpin' => $mpin, 'totpSecret' => $totpSecret, 'updated' => time()]);
+            t_log($c, ['ev' => 'ind-creds-saved']);
+            out(200, ['status' => 'success', 'message' => 'INDstocks auto-login credentials saved securely.']);
+        }
+        $creds = t_ind_get_creds($dir);
+        $cidMasked = $creds ? substr($creds['clientId'], 0, 3) . '***' . substr($creds['clientId'], -3) : '';
+        out(200, [
+            'status' => 'success',
+            'configured' => (bool)$creds,
+            'clientId' => $cidMasked,
+            'hasMpin' => !empty($creds['mpin']),
+            'hasTotp' => !empty($creds['totpSecret']),
+            'cronKey' => t_cron_key($dir),
+            'connected' => (bool)$tk,
+            'tokenExpires' => $tk['exp'] ?? 0
+        ]);
+    }
+    if ($action === 'ind_generate') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['status' => 'error', 'message' => 'POST required']);
+        $res = t_ind_auto_generate($c, $dir, true);
+        out($res['ok'] ? 200 : 422, $res + ['status' => $res['ok'] ? 'success' : 'error']);
+    }
+    if ($action === 'autoconfig') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $in = json_decode((string)file_get_contents('php://input'), true);
+            $cfg = t_read($dir . '/auto-config.php');
+            if (isset($in['enabled'])) $cfg['enabled'] = (bool)$in['enabled'];
+            if (isset($in['lots'])) $cfg['lots'] = max(1, min(10, (int)$in['lots']));
+            if (isset($in['maxOpen'])) $cfg['maxOpen'] = max(1, min(5, (int)$in['maxOpen']));
+            if (isset($in['maxPerDay'])) $cfg['maxPerDay'] = max(1, min(20, (int)$in['maxPerDay']));
+            if (isset($in['sl'])) $cfg['sl'] = round((float)$in['sl'], 2);
+            if (isset($in['target'])) $cfg['target'] = round((float)$in['target'], 2);
+            t_write($dir . '/auto-config.php', $cfg);
+            t_log($c, ['ev' => 'auto-config-saved', 'cfg' => $cfg]);
+            out(200, ['status' => 'success', 'auto' => t_auto_status($c, $dir, $ind, $mode)]);
+        }
+        out(200, ['status' => 'success', 'auto' => t_auto_status($c, $dir, $ind, $mode)]);
+    }
+
     if ($mode === 'off') out(403, ['status' => 'error', 'message' => 'Trading is switched off. Set ORDER_MODE in trade.php on the server to use it.']);
 
     if ($action === 'settoken') {   // INDstocks: the daily token is pasted in the app, checked with one harmless read, and kept only on the server
@@ -368,9 +562,9 @@ function trade_handle($action) {
     if ($isAuto) {   // limits for orders the runner places by itself
         $AU = t_auto_status($c, $dir, $ind, $mode); if (!$AU['enabled']) $reject('Automatic trading is switched off (ORDER_AUTO in trade-local.php, or the kill switch).');
         $n2 = t_ist(); $hm = (int)$n2->format('G') * 60 + (int)$n2->format('i'); if (!$c['anytime'] && ($hm < 585 || $hm > t_hm(AUTO_ENTRY_UNTIL))) $reject('Automatic entries are allowed only between 9:45 AM and ' . AUTO_ENTRY_UNTIL . '.');
-        if ((int)($lg['autoCount'] ?? 0) >= AUTO_MAX_PER_DAY) $reject('Automatic trading daily limit reached (' . AUTO_MAX_PER_DAY . ').');
-        if ($lot > 0 && $qty > $lot * AUTO_LOTS) $reject('Automatic orders are limited to ' . AUTO_LOTS . ' lot(s).');
-        if ($tk) { $pp = t_ind_positions($c, $tk); if ($pp === null) $reject('Could not read your positions to check the open-position limit.'); $open = 0; foreach ($pp as $p) if ($p['quantity'] > 0 && $p['product'] === 'I') $open++; if ($open >= AUTO_MAX_OPEN) $reject('Automatic trading already has ' . $open . ' open position(s) (limit ' . AUTO_MAX_OPEN . ').'); }
+        if ((int)($lg['autoCount'] ?? 0) >= $AU['maxPerDay']) $reject('Automatic trading daily limit reached (' . $AU['maxPerDay'] . ').');
+        if ($lot > 0 && $qty > $lot * $AU['lots']) $reject('Automatic orders are limited to ' . $AU['lots'] . ' lot(s).');
+        if ($tk) { $pp = t_ind_positions($c, $tk); if ($pp === null) $reject('Could not read your positions to check the open-position limit.'); $open = 0; foreach ($pp as $p) if ($p['quantity'] > 0 && $p['product'] === 'I') $open++; if ($open >= $AU['maxOpen']) $reject('Automatic trading already has ' . $open . ' open position(s) (limit ' . $AU['maxOpen'] . ').'); }
         elseif ($mode === 'live') $reject('Position check unavailable.');
     }
     if ($side === 'SELL') {   // only to close what you hold
@@ -411,4 +605,18 @@ function t_positions($c, $tk) {
         if ($q !== 0 && preg_match('/^(NSE_FO|BSE_FO)\|/', $it)) $o[] = ['instrument_token' => $it, 'trading_symbol' => (string)($p['trading_symbol'] ?? ''), 'quantity' => $q, 'average_price' => (float)($p['average_price'] ?? 0), 'last_price' => (float)($p['last_price'] ?? 0), 'pnl' => (float)($p['pnl'] ?? 0), 'product' => (string)($p['product'] ?? '')];
     }
     return $o;
+}
+function trade_cron($action) {
+    $c = t_conf();
+    $dir = t_dir($c);
+    $key = (string)($_GET['key'] ?? '');
+    $expected = t_cron_key($dir);
+    if ($key === '' || !hash_equals($expected, $key)) {
+        out(403, ['status' => 'error', 'message' => 'Invalid or missing cron key']);
+    }
+    if ($action === 'ind_token') {
+        $res = t_ind_auto_generate($c, $dir, true);
+        out($res['ok'] ? 200 : 502, $res + ['status' => $res['ok'] ? 'success' : 'error']);
+    }
+    out(400, ['status' => 'error', 'message' => 'Unknown cron action']);
 }
