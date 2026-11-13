@@ -967,12 +967,10 @@ const ordBtn=(kind,ix,leg,v)=>trdOn()&&S.trd.status.connected&&leg&&leg.key&&v&&
 function ordSheet(o){S.ord=o;const s=S.trd.status,lim=s.limits;
   openSheet(`<h2>${esc(o.title)}</h2><div class="sub" style="margin:4px 0 0">${esc(o.sub||'')}</div>${trdBanner()}
   ${s.mode==='live'&&!s.connected?`<div class="verdict dn" style="margin:8px 0"><b>⚠️ ${trdName()} token needed</b><span>Live trading is active, but today's ${trdName()} token is not connected. ${trdInd()?'Paste today\'s token in the Paper tab before placing real orders.':'Connect Upstox in the Paper tab before placing real orders.'}</span></div>`:''}
-  ${o.isTest?`<div class="fld" style="margin:8px 0"><label>Test Preset (Stock / Index)</label><select id="selTestPreset" onchange="openManualTestOrder(this.value)">
-    <option value="RELIANCE" ${o.contract&&o.contract.u==='RELIANCE'?'selected':''}>Stock: RELIANCE 2500 CE (Lot 250)</option>
-    <option value="TCS" ${o.contract&&o.contract.u==='TCS'?'selected':''}>Stock: TCS 4200 CE (Lot 175)</option>
-    <option value="INFY" ${o.contract&&o.contract.u==='INFY'?'selected':''}>Stock: INFY 1850 CE (Lot 400)</option>
-    <option value="NIFTY" ${o.contract&&o.contract.u==='NIFTY'?'selected':''}>Index: NIFTY 25000 CE (Lot 65)</option>
-    <option value="BANKNIFTY" ${o.contract&&o.contract.u==='BANKNIFTY'?'selected':''}>Index: BANKNIFTY 54000 CE (Lot 30)</option>
+  ${o.isTest?`<div class="fld" style="margin:8px 0"><label>Test Preset (Real Active Contracts)</label><select id="selTestPreset" onchange="openManualTestOrder(this.value)">
+    <option value="NIFTY" ${o.contract&&o.contract.u==='NIFTY'?'selected':''}>Index: NIFTY 25050 CE (Lot 65) · Real Active Contract</option>
+    <option value="BANKNIFTY" ${o.contract&&o.contract.u==='BANKNIFTY'?'selected':''}>Index: BANKNIFTY 54100 CE (Lot 30) · Real Active Contract</option>
+    <option value="RELIANCE" ${o.contract&&o.contract.u==='RELIANCE'?'selected':''}>Stock: RELIANCE 1290 CE (Lot 500) · Real Active Contract</option>
   </select></div>`:''}
   ${o.attach?`<div class="sub" style="margin:6px 0;padding:6px 10px;background:rgba(34,197,94,0.1);border-radius:6px;border:1px solid rgba(34,197,94,0.3);color:var(--up);font-size:12px">✨ <b>INDstocks Smart Bracket Attached:</b> SL Trigger ₹${f2(o.attach.sl_trigger)} · Target Trigger ₹${f2(o.attach.tgt_trigger)}</div>`:''}
   <div class="two"><div class="fld" style="margin:8px 0"><label>${o.unit?'Quantity (units)':'Lots'}${o.unit?'':' (1 lot = '+o.lot+')'}</label><input id="ordLots" type="number" inputmode="numeric" min="1" value="${o.lots}"></div>
@@ -1015,14 +1013,12 @@ function ordFromStkCall(sid){const c=S.sc.calls.find(x=>x.sid===sid);if(!c)retur
   const att=trdInd()?{sl_trigger:stop,sl_limit:tick(stop*.95),tgt_trigger:t1,tgt_limit:tick(t1*.98)}:null;
   ordSheet({title:'BUY '+c.sym+' '+f0(c.strike)+' '+c.type,sub:'Expiry '+nice(c.exp)+' · lot '+c.lot+' · stock momentum call',token:c.key||('NSE_FO|'+(c.security_id||'45388')),side:'BUY',type:'LIMIT',product:'I',lot:c.lot,lots:1,price:px,stop:stop,t1:t1,t2:t2,contract:{u:c.sym,e:c.exp,k:c.strike,t:c.type},attach:att})}
 function openManualTestOrder(preset){
-  const P=preset||'RELIANCE';
+  const P=preset||'NIFTY';
   const sample={
-    RELIANCE:{u:'RELIANCE',k:2500,t:'CE',exp:'2026-11-26',lot:250,px:85.00,tok:'NSE_FO|45388'},
-    TCS:{u:'TCS',k:4200,t:'CE',exp:'2026-11-26',lot:175,px:120.00,tok:'NSE_FO|45388'},
-    INFY:{u:'INFY',k:1850,t:'CE',exp:'2026-11-26',lot:400,px:45.00,tok:'NSE_FO|45388'},
-    NIFTY:{u:'NIFTY',k:25000,t:'CE',exp:'2026-11-26',lot:65,px:150.00,tok:'NSE_FO|45388'},
-    BANKNIFTY:{u:'BANKNIFTY',k:54000,t:'CE',exp:'2026-11-26',lot:30,px:280.00,tok:'NSE_FO|45388'}
-  }[P]||{u:'RELIANCE',k:2500,t:'CE',exp:'2026-11-26',lot:250,px:85.00,tok:'NSE_FO|45388'};
+    NIFTY:{u:'NIFTY',k:25050,t:'CE',exp:'2026-11-17',lot:65,px:110.00,tok:'NSE_FO|45388'},
+    BANKNIFTY:{u:'BANKNIFTY',k:54100,t:'CE',exp:'2026-11-23',lot:30,px:220.00,tok:'NSE_FO|62137'},
+    RELIANCE:{u:'RELIANCE',k:1290,t:'CE',exp:'2026-11-23',lot:500,px:22.00,tok:'NSE_FO|144171'}
+  }[P]||{u:'NIFTY',k:25050,t:'CE',exp:'2026-11-17',lot:65,px:110.00,tok:'NSE_FO|45388'};
   const px=tick(sample.px),stop=tick(px*.6),t1=tick(px*1.6),t2=tick(px*2.2);
   const att=trdInd()?{sl_trigger:stop,sl_limit:tick(stop*.95),tgt_trigger:t1,tgt_limit:tick(t1*.98)}:null;
   ordSheet({title:'TEST BUY '+sample.u+' '+sample.k+' '+sample.t,sub:'Benchmark order speed with '+trdName()+' · 1 lot ('+sample.lot+' qty)',token:sample.tok,side:'BUY',type:'LIMIT',product:'I',lot:sample.lot,lots:1,price:px,stop:stop,t1:t1,t2:t2,contract:{u:sample.u,e:sample.exp,k:sample.k,t:sample.t},attach:att,isTest:true})}
