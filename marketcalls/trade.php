@@ -279,14 +279,14 @@ function trade_handle($action) {
             $mods[$oid] = ['n' => $m['n'] + 1, 't' => time()]; $lg['mods'] = $mods; t_write($lf, $lg);
             t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-modify' : 'smart-modify', 'mode' => $mode, 'order_id' => $oid] + $v);
             if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to INDstocks.']);
-            if (!$tk) out(401, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
+            if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
             [$code, $j] = t_icall($c, 'POST', '/smart/order/modify', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE', 'algo_id' => '99999', 'sl_trigger_price' => $v['sl_trigger'], 'sl_limit_price' => $v['sl_limit'], 'tgt_trigger_price' => $v['tgt_trigger'], 'tgt_limit_price' => $v['tgt_limit']]);
             t_log($c, ['ev' => 'smart-modify-reply', 'http' => $code, 'reply' => $j]);
             out($code === 200 && ($j['status'] ?? '') !== 'error' ? 200 : 502, $code === 200 && ($j['status'] ?? '') !== 'error' ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'INDstocks refused the change (HTTP ' . $code . ').')]);
         }
         t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-cancel' : 'smart-cancel', 'mode' => $mode, 'order_id' => $oid]);
         if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to INDstocks.']);
-        if (!$tk) out(401, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
+        if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
         [$code, $j] = t_icall($c, 'POST', '/smart/order/cancel', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE']);
         out($code === 200 ? 200 : 502, $code === 200 ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]);
     }
@@ -319,7 +319,7 @@ function trade_handle($action) {
         $id = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_GET['order_id'] ?? '')); if ($id === '') out(400, ['status' => 'error', 'message' => 'order_id missing']);
         t_log($c, ['ev' => 'cancel', 'mode' => $mode, 'order_id' => $id]);
         if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'data' => ['order_id' => $id], 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
-        if (!$tk) out(401, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in again.')]);
+        if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in again.')]);
         if ($ind) { [$code, $j] = t_icall($c, 'POST', '/order/cancel', $tk['token'], ['order_id' => $id, 'segment' => 'DERIVATIVE']); out($code === 200 ? 200 : 502, $code === 200 ? ['status' => 'success', 'mode' => 'live', 'data' => ['order_id' => $id]] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]); }
         [$code, $j] = t_call('DELETE', $c['hft'] . '/v3/order/cancel?order_id=' . $id, $tk['token']);
         out($code === 200 ? 200 : 502, $code === 200 ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]);
@@ -363,7 +363,7 @@ function trade_handle($action) {
     if (isset($lg['refs'][$ref])) $reject('This order was already sent. Create a new one if you want another.');
     if (time() - (int)($lg['last'] ?? 0) < ORDER_GAP_SECONDS) $reject('Wait a few seconds between orders.');
     if ((int)$lg['count'] >= ORDER_MAX_PER_DAY) $reject('Daily order limit of ' . ORDER_MAX_PER_DAY . ' reached (set in trade.php).');
-    if ($mode === 'live' && !$tk) out(401, ['status' => 'error', 'message' => 'Not connected to ' . $bn . ' today. ' . ($ind ? 'Paste today\'s token in the Paper tab.' : 'Log in from the Paper tab.')]);
+    if ($mode === 'live' && !$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . ' today. ' . ($ind ? 'Paste today\'s token in the Paper tab.' : 'Log in from the Paper tab.')]);
     if ($ind && $side === 'BUY') { $why = t_ind_verify($c, $tk, $inst, $in['contract'] ?? null, $qty, $lot); if ($why !== '') $reject($why); }
     if ($isAuto) {   // limits for orders the runner places by itself
         $AU = t_auto_status($c, $dir, $ind, $mode); if (!$AU['enabled']) $reject('Automatic trading is switched off (ORDER_AUTO in trade-local.php, or the kill switch).');

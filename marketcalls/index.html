@@ -217,7 +217,7 @@ const AUTH={mode:'pin',user:null,first:false,setupReady:false,pinDefault:false};
 /* every request to api.php carries the app's own header (the server's defence against other sites) and the login cookie; a 401 means the session ended */
 (function(){const f0=window.fetch&&window.fetch.bind(window);if(!f0)return;window.fetch=function(u,o){o=o||{};const s=typeof u==='string'?u:(u&&u.url)||'',mine=/^(\.\/)?api\.php/.test(s);
   if(mine){o.headers=Object.assign({'X-IX':'1'},o.headers||{});o.credentials='same-origin'}
-  const p=f0(u,o);return mine?p.then(r=>{if(r.status===401&&AUTH.mode==='users'&&!/[?&](auth=(login|signup)|ping)/.test(s))authExpired();return r}):p}})();
+  const p=f0(u,o);return mine?p.then(r=>{if(r.status===401&&AUTH.mode==='users'&&!/[?&](auth=(login|signup)|ping|trade=)/.test(s)){r.clone().json().then(j=>{if(j&&j.auth==='login')authExpired()}).catch(()=>{authExpired()})}return r}):p}})();
 const IDX=[
   {id:'NIFTY',name:'Nifty 50',key:'NSE_INDEX|Nifty 50',demo:25800,step:50,lot:65,yh:'NIFTY',iv:.12},
   {id:'BANKNIFTY',name:'Bank Nifty',key:'NSE_INDEX|Nifty Bank',demo:58200,step:100,lot:30,yh:'BANKNIFTY',iv:.14},
@@ -935,6 +935,7 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
 const ordBtn=(kind,ix,leg,v)=>trdOn()&&S.trd.status.connected&&leg&&leg.key&&v&&v.ok?`<button class="sbtn" data-ord="${kind}|${ix.id}">${trdName()} order</button>`:'';
 function ordSheet(o){S.ord=o;const s=S.trd.status,lim=s.limits;
   openSheet(`<h2>${esc(o.title)}</h2><div class="sub" style="margin:4px 0 0">${esc(o.sub||'')}</div>${trdBanner()}
+  ${s.mode==='live'&&!s.connected?`<div class="verdict dn" style="margin:8px 0"><b>⚠️ ${trdName()} token needed</b><span>Live trading is active, but today's ${trdName()} token is not connected. ${trdInd()?'Paste today\'s token in the Paper tab before placing real orders.':'Connect Upstox in the Paper tab before placing real orders.'}</span></div>`:''}
   ${o.isTest?`<div class="fld" style="margin:8px 0"><label>Test Preset (Stock / Index)</label><select id="selTestPreset" onchange="openManualTestOrder(this.value)">
     <option value="RELIANCE" ${o.contract&&o.contract.u==='RELIANCE'?'selected':''}>Stock: RELIANCE 2500 CE (Lot 250)</option>
     <option value="TCS" ${o.contract&&o.contract.u==='TCS'?'selected':''}>Stock: TCS 4200 CE (Lot 175)</option>
