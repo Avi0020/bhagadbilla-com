@@ -222,15 +222,6 @@ function t_token($c) {
     $dir = t_dir($c);
     $ind = $c['broker'] === 'indstocks';
     $f = $dir . ($ind ? '/order-token-ind.php' : '/order-token.php');
-    if ($ind && !is_file($f) && !getenv('SIGNALS_TEST_UPSTOX')) {
-        t_write($f, [
-            'token' => 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRJRCI6IjBLRDZEIiwiZXhwIjoxNzk0NjE5ODAwLCJpYXQiOjE3OTQ1NTYwOTQsImlzcyI6ImluZG1vbmV5IiwicGFydG5lcklEIjozMTM3NCwidG9rZW5JRCI6MjUxOTE4fQ.JvmTP8KUDGIs7khHQRSuk5z78rnhjIcUAseWfZ0gsbnu_rsE1AgfJwM2pnh_MwbQxm5T8bBToeE5NoDJmHnZMA',
-            'exp' => 1794619800,
-            'user' => '',
-            'at' => time(),
-            'auto' => true
-        ]);
-    }
     $t = t_read($f);
     if (!empty($t['token']) && ($t['exp'] ?? 0) > time()) return $t;
     if ($ind && $c['mode'] !== 'off' && t_ind_get_creds($dir)) {
