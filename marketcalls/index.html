@@ -567,11 +567,44 @@ function sellPart(p,q,px,why){const pnl=(px-p.entry)*q-P.fee;p.open-=q;p.booked+
 function closePos(p,px,why,t){if(/Stop/.test(why))p.lo=Math.max(p.lo,Math.min(px,p.entry));if(p.open>0)sellPart(p,p.open,px,why);
   Object.assign(p,{exit:px,why,tC:t||Date.now(),pnl:p.booked,ret:p.booked/(p.entry*p.qty),peak:p.hi/p.entry-1,trough:p.lo/p.entry-1});
   P.pos=P.pos.filter(x=>x!==p);P.hist.unshift(p);if(P.hist.length>500)P.hist.length=500}
+/* calculates trailing stop and profit locking level for paper positions */
+function calcPaperTrail(p){
+  if(!p||!(p.entry>0)||!(p.hi>0))return p.slNow||p.sl;
+  const gain=(p.hi-p.entry)/p.entry;
+  if(gain<0.12)return p.slNow||p.sl;
+  let trail=p.entry; // at least cost / breakeven once gain reaches >= 12%
+  if(gain>=0.15){
+    const giveRatio=gain>=0.40?0.12:0.15;
+    trail=Math.max(trail,p.hi*(1-giveRatio));
+    if(gain>=0.20)trail=Math.max(trail,p.entry*1.08); // lock at least +8% profit
+    if(gain>=0.30)trail=Math.max(trail,p.entry*1.15); // lock at least +15% profit
+    if(gain>=0.50)trail=Math.max(trail,p.entry*1.30); // lock at least +30% profit
+  }
+  if(p.t1&&p.hi>=p.t1){
+    trail=Math.max(trail,p.t1*0.92,p.entry*1.25);
+  }
+  return tick(Math.max(p.slNow||p.sl,trail));
+}
 /* one price bar against the position; returns true when the position closed */
 function stepPos(p,b,live){if(!live&&b.t<p.lastT)return false;
   p.hi=Math.max(p.hi,b.h);p.lo=Math.min(p.lo,b.l);
-  if(b.l<=p.slNow){closePos(p,live?b.c:p.slNow,'Stop-loss hit (premium −40%)',b.t);return true}
-  if(!p.half&&b.h>=p.t1){p.half=true;plog(`Target 1 reached on ${ixName(p.ix)} ${f0(p.strike)} ${p.type} — holding with the trailing exit`,'up')}
+  const newSl=calcPaperTrail(p);
+  if(newSl>p.slNow){
+    const was=p.slNow;p.slNow=newSl;
+    if(newSl>=p.entry&&was<p.entry){
+      plog(`Risk-free: Stop moved to cost (₹${f2(newSl)}) on ${ixName(p.ix)} ${f0(p.strike)} ${p.type} — cannot lose`,'up');
+    } else if(newSl>p.entry&&(!p.tMod||Date.now()-p.tMod>45000)){
+      p.tMod=Date.now();const lk=Math.round((newSl/p.entry-1)*100);
+      plog(`Trailing profit: Stop moved up to ₹${f2(newSl)} (+${lk}% locked, peak ₹${f2(p.hi)}) on ${ixName(p.ix)} ${f0(p.strike)} ${p.type}`,'up');
+    }
+  }
+  if(b.l<=p.slNow){
+    const exitPx=live?b.c:p.slNow;
+    const why=p.slNow>p.entry?`Trailing stop hit (+${Math.round((p.slNow/p.entry-1)*100)}% profit locked)`:p.slNow===p.entry?'Cost protection hit (breakeven)':'Stop-loss hit (premium −40%)';
+    closePos(p,exitPx,why,b.t);
+    return true;
+  }
+  if(!p.half&&b.h>=p.t1){p.half=true;p.slNow=Math.max(p.slNow,p.entry);plog(`Target 1 reached on ${ixName(p.ix)} ${f0(p.strike)} ${p.type} — trailing exit active`,'up')}
   if(p.kind!=='swing'&&istMin(b.t)>=915){closePos(p,b.c,'Square-off 3:15 PM',b.t);return true}
   if(!live)p.lastT=b.t;p.ltp=b.c;return false}
 async function optBars(p){
@@ -622,10 +655,10 @@ function paperView(){
     return`<div class="card"><div class="c-top"><div><div class="iname" style="font-size:16px"><span class="${p.dir>0?'up':'dn'}">${f0(p.strike)} ${p.type}</span> · ${ixName(p.ix)}</div>
       <div class="meta"><span class="tag">${p.kind==='intra'?'Intraday':p.kind==='stk'?'Stock · experimental':'Swing'}</span>${p.auto?'<span class="tag">Auto</span>':''}<span class="num">${p.lots} lot${p.lots>1?'s':''} · ${p.open}/${p.qty} qty</span></div></div>
       <div style="text-align:right"><b class="num ${u>=0?'up':'dn'}" style="font-size:17px">${rs(u)}</b><div class="sm num ${r>=0?'up':'dn'}" style="font-size:12px">${pct(r,1)}</div></div></div>
-      <div class="info num" style="border-top:0;padding-top:0">Bought ₹${f2(p.entry)} at ${hhmm(p.t0)}${p.entry!==p.callPx?` (call ₹${f2(p.callPx)})`:''} · LTP <b>₹${f2(p.ltp)}</b> · peak ${pct(p.hi/p.entry-1,1)}</div>
+      <div class="info num" style="border-top:0;padding-top:0">Bought ₹${f2(p.entry)} at ${hhmm(p.t0)}${p.entry!==p.callPx?` (call ₹${f2(p.callPx)})`:''} · LTP <b>₹${f2(p.ltp)}</b> · peak ${pct(p.hi/p.entry-1,1)}${p.slNow>=p.entry?` · <b class="up">Trailing SL ₹${f2(p.slNow)}${p.slNow>p.entry?' (+'+pct(p.slNow/p.entry-1,0)+' locked)':' (breakeven)'}</b>`:''}</div>
       ${posPlan(p)}
       ${p.kind==='stk'?'':track({psl:p.slNow<p.entry?p.sl:p.slNow,p0:p.entry,pt1:p.t1,pt2:p.t2,ltp:p.ltp})}
-      <div class="c-act"><span class="qty">${p.kind==='stk'?'SL ₹'+f2(p.slNow)+' · exit by 3:15 PM':p.half?'<span class="pill p-up">T1 reached · trailing exit</span>':'SL ₹'+f2(p.slNow)+' · T1 ₹'+f2(p.t1)+' · T2 ₹'+f2(p.t2)}</span><button class="sbtn" data-pexit="${p.id}">Exit now</button></div></div>`}).join(''):`<div class="empty">No open positions.${P.auto?' The next Valid call will be bought automatically.':''}</div>`);
+      <div class="c-act"><span class="qty">${p.kind==='stk'?'SL ₹'+f2(p.slNow)+' · exit by 3:15 PM':p.slNow>=p.entry?`<span class="pill p-up">Trailing SL ₹${f2(p.slNow)}${p.slNow>p.entry?' (+'+pct(p.slNow/p.entry-1,0)+' locked)':' (cost)'}</span>`:'SL ₹'+f2(p.slNow)+' · T1 ₹'+f2(p.t1)+' · T2 ₹'+f2(p.t2)}</span><button class="sbtn" data-pexit="${p.id}">Exit now</button></div></div>`}).join(''):`<div class="empty">No open positions.${P.auto?' The next Valid call will be bought automatically.':''}</div>`);
   if(C.length){const t1=C.filter(p=>p.half).length,sl=C.filter(p=>/Stop-loss/.test(p.why)).length,pk=C.reduce((a,p)=>a+p.peak,0)/C.length,dd=C.reduce((a,p)=>a+p.trough,0)/C.length;
     h+=`<h3>Did the calls have potential?</h3><div class="list out">
       <div class="row"><div><div class="n">Average peak after entry</div><div class="s">How high the premium went before exit</div></div><b class="num up">${pct(pk,1)}</b></div>
@@ -1004,6 +1037,10 @@ async function ordSend(){const o=S.ord,r=ordRead(),res=$('#ordRes'),go=$('#ordGo
     const ms=Math.round(performance.now()-t0);
     const secs=(ms/1000).toFixed(2);
     res.innerHTML=`<div class="verdict ${j.mode==='live'?'up':'amb'}" style="margin-top:12px"><b>${j.mode==='live'?'✓ Live order placed with '+trdName()+' in '+secs+'s ('+ms+' ms)':'✓ Dry-run simulated with '+trdName()+' in '+secs+'s ('+ms+' ms)'}</b><span>${id?'Order ID: '+esc(id)+'. ':''}${esc(j.note||'')}</span><div style="margin-top:4px;font-size:12px">⚡ Round-trip latency: <b>${ms} ms (${secs}s)</b></div><span id="ordSt"></span></div>`;
+    if(j.mode==='live'&&id&&body.attach&&S.bot&&S.bot.st){
+      const t={id:'m'+Date.now().toString(36),sid:'manual|'+body.instrument_token+'|'+Date.now(),day:dkey(Date.now()),ix:(o.contract&&o.contract.u)||'IND',name:o.title,key:body.instrument_token,strike:(o.contract&&o.contract.k)||0,type:(o.contract&&o.contract.t)||'CE',exp:(o.contract&&o.contract.e)||'',lot:o.lot||1,qty:r.qty,t0:Date.now(),callPx:r.price,px:r.price,stop:body.attach.sl_trigger,slLim:body.attach.sl_limit,tgt:body.attach.tgt_trigger,tgtLim:body.attach.tgt_limit,peak:r.price,last:r.price,mods:0,state:'entry',mode:'live',fill:0,parent:id,child:(j.data&&j.data.child_id)||''};
+      S.bot.st.trades.push(t);S.bot.dirty=true;botSave();
+    }
     if(j.mode==='live'&&id)for(let k=0;k<8;k++){await new Promise(z=>setTimeout(z,2500));try{const d=(await trdApi('order',{order_id:id})).data||{};const st=$('#ordSt');if(st)st.textContent=' Status: '+(d.status||'?')+(d.filled_quantity?' · filled '+d.filled_quantity+(d.average_price?' @ ₹'+f2(+d.average_price):''):'');if(/complete|reject|cancel/i.test(d.status||''))break}catch(e){break}}
     trdLoad()}
   catch(e){
@@ -1012,7 +1049,9 @@ async function ordSend(){const o=S.ord,r=ordRead(),res=$('#ordRes'),go=$('#ordGo
     res.innerHTML=`<div class="verdict dn" style="margin-top:12px"><b>✕ Order failed after ${secs}s (${ms} ms)</b><span>${esc(e.message)}</span></div>`}
   S.ordBusy=false;if(go)go.disabled=true}
 function ordFromCall(kind,ixId){const ix=IDX.find(i=>i.id===ixId),A=S.res[kind][ixId],leg=A&&pickLeg(A,kind,ix);if(!trdOn()||!leg||!leg.key)return;
-  ordSheet({title:'BUY '+ix.name+' '+f0(leg.strike)+' '+leg.type,sub:'Expiry '+nice(A.opt.exp)+' · lot '+leg.lot+' · '+(kind==='intra'?'intraday call':'NRML call'),token:leg.key,side:'BUY',type:'LIMIT',product:kind==='intra'?'I':'D',lot:leg.lot,lots:1,price:tick(leg.ltp),stop:leg.psl,t1:leg.pt1,t2:leg.pt2,contract:{u:ix.id,e:A.opt.exp,k:leg.strike,t:leg.type}})}
+  const stop=leg.psl,t1=leg.pt1,t2=leg.pt2;
+  const att=trdInd()&&kind==='intra'?{sl_trigger:stop,sl_limit:tick(stop*.95),tgt_trigger:t1,tgt_limit:tick(t1*.98)}:null;
+  ordSheet({title:'BUY '+ix.name+' '+f0(leg.strike)+' '+leg.type,sub:'Expiry '+nice(A.opt.exp)+' · lot '+leg.lot+' · '+(kind==='intra'?'intraday call':'NRML call'),token:leg.key,side:'BUY',type:'LIMIT',product:kind==='intra'?'I':'D',lot:leg.lot,lots:1,price:tick(leg.ltp),stop,t1,t2,contract:{u:ix.id,e:A.opt.exp,k:leg.strike,t:leg.type},attach:att})}
 function ordFromStkCall(sid){const c=S.sc.calls.find(x=>x.sid===sid);if(!c)return;
   const p0=c.p0||c.ltp,stop=tick(p0*.6),t1=tick(p0*1.6),t2=tick(p0*2.2);
   const px=tick(c.ltp);
@@ -1196,8 +1235,8 @@ async function botTick(){if(!canAutoRun()||S.bot.busy||S.demo||S.yahoo||!cfg().p
 function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.broker!=='indstocks'||s.mode==='off'||!s.auto)return'';const au=s.auto,st=S.bot.st,today=dkey(Date.now()),all=st?st.trades.concat(st.hist||[]):[],fin=all.filter(t=>t.state==='closed'),tod=st?st.trades.filter(t=>t.day===today||t.state==='open'||t.state==='entry'):[];
   const sum=a=>a.reduce((x,t)=>x+(t.pnl||0),0),sh=fin.filter(t=>t.mode==='dry'),lv=fin.filter(t=>t.mode!=='dry'),pc=x=>Math.round(x*100)+'%';
   const pill=!au.configured?['Not set up','p-mu']:au.killed?['Paused','p-amb']:s.mode==='live'?['Live','p-dn']:['Shadow · dry run','p-amb'];
-  let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">Automatic trading</div><div class="meta"><span>INDstocks · intraday Nifty and Bank Nifty options</span></div></div><span class="pill ${pill[1]}">${pill[0]}</span></div>`;
-  if(!au.configured)return h+`<div class="sub" style="margin:8px 0 0">Switched off. The 24/7 runner can buy a Valid intraday call by itself with the stop-loss and target attached, and trail the stop. To turn it on, set <b style="color:var(--tx)">ORDER_AUTO</b> to true in <b style="color:var(--tx)">trade-local.php</b> and <b style="color:var(--tx)">"autoTrade": true</b> in the runner's config.json (SETUP-hostinger.txt). Start with ORDER_MODE <b style="color:var(--tx)">dry</b>: it then only shadows the trades on real prices and sends nothing.</div></div>`;
+  let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">Automatic trading & Profit trailing</div><div class="meta"><span>INDstocks · intraday Nifty and Bank Nifty options</span></div></div><span class="pill ${pill[1]}">${pill[0]}</span></div>`;
+  if(!au.configured)return h+`<div class="sub" style="margin:8px 0 0">Switched off. When turned on, valid intraday calls are bought with stop-loss and target attached, and profit trailing moves the stop-loss up as the trade rises to lock in gains.</div><div class="c-act" style="margin-top:10px"><button class="btn2 on" data-bot="enable">⚡ Turn ON Automatic Trading & Profit Trailing</button></div></div>`;
   h+=s.mode==='live'?`<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>The runner buys by itself when a Valid call appears. Check your INDstocks app often, especially for the first trades.</span></div>`:`<div class="verdict amb" style="margin:10px 0"><b>SHADOW — nothing is sent to INDstocks</b><span>Every step (entry, stop, target, trailing, square-off) runs on real prices and is recorded below, so you can judge it before any real order.</span></div>`;
   h+=`<div class="sub" style="margin:0 0 8px">Rules: buys a Valid call with stop −${pc(au.sl)} and target +${pc(au.target)} attached; once the price is +${pc(au.trailStart)} the stop follows ${pc(au.trailGive)} below the highest price, never below your entry; ${au.lots} lot, ${au.maxOpen} open at a time, ${au.maxPerDay} a day, entries until ${esc(au.entryUntil)}, closed by ${esc(au.squareOff)}. Nifty and Bank Nifty only.</div>`;
   if(sh.length)h+=`<div class="info num" style="border-top:0;padding-top:0">Shadow results: <b>${sh.length}</b> trade${sh.length>1?'s':''} · <b>${sh.filter(t=>t.pnl>0).length}</b> won · <b class="${sum(sh)>=0?'up':'dn'}">${rs(sum(sh))}</b> after estimated costs</div>`;
@@ -1205,7 +1244,7 @@ function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.bro
   const row=t=>`<div class="row"><div style="min-width:0"><div class="n">${esc(botNm(t))} <span class="tag">${t.mode==='dry'?'Shadow':'Live'}</span></div><div class="s num">${t.qty} qty · in ₹${f2(t.fill||t.px)} · stop ₹${f2(t.stop)} · target ₹${f2(t.tgt)}${t.state==='closed'?' · out ₹'+f2(t.exit)+' · '+esc(t.why):t.state==='open'?' · now ₹'+f2(t.last):t.state==='entry'?' · waiting for the fill':' · '+esc(t.why||'')}</div></div><span class="pill ${t.state==='closed'?(t.pnl>=0?'p-up':'p-dn'):t.state==='dead'?'p-mu':'p-amb'}">${t.state==='closed'?rs(t.pnl):t.state==='open'?'Open':t.state==='entry'?'Entry':'Not filled'}</span></div>`;
   h+=`<h3 style="margin-top:12px">Today</h3>`+(tod.length?`<div class="list out">${tod.slice().reverse().map(row).join('')}</div>`:'<div class="empty" style="padding:14px">No automatic trade yet today.</div>');
   const lg=st&&st.log&&st.log.slice(0,6);if(lg&&lg.length)h+=`<div class="sub" style="margin:10px 0 0">${lg.map(l=>`<div>${hhmm(l.t)} · ${esc(l.txt)}</div>`).join('')}</div>`;
-  h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 ${au.killed?'on':''}" data-bot="${au.killed?'resume':'pause'}">${au.killed?'Resume automatic trading':'Pause automatic trading'}</button></div><div class="sub" style="margin:8px 0 0">Pausing stops new entries at once. A trade that is already open keeps its stop and target at INDstocks and is still managed until it closes.</div>`;
+  h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 ${au.killed?'on':''}" data-bot="${au.killed?'resume':'pause'}">${au.killed?'Resume automatic trading':'Pause automatic trading'}</button><button class="btn2 ${au.trailStart<=0.15?'on':''}" data-bot="${au.trailStart<=0.15?'classic':'tight'}" style="margin-left:6px">${au.trailStart<=0.15?'✓ Trailing from +15% profit':'Trail from +15% profit'}</button><button class="btn2" data-bot="disable" style="margin-left:6px">Turn off</button></div><div class="sub" style="margin:8px 0 0">Pausing stops new entries at once. A trade that is already open keeps its stop and target at INDstocks and is still managed until it closes.</div>`;
   return h+'</div>'}
 /* ============================== ACCOUNTS: sign up, log in, account menu, owner admin ==============================
    With accounts on (AUTH.mode 'users') everyone logs in first. The account id is decided by the login session on the server; this page never sends or chooses one.
@@ -1725,7 +1764,27 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.trdsell){ordFromPos(+t.dataset.trdsell,false);return}
   if(t.dataset.trdstop){ordFromPos(+t.dataset.trdstop,true);return}
   if(t.id==='ordGo'){ordSend();return}
-  if(t.dataset.bot){trdApi('autoswitch',null,{on:t.dataset.bot==='resume'}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast(t.dataset.bot==='resume'?'Automatic trading resumed':'Automatic trading paused: no new entries');render()}).catch(e=>toast(e.message));return}
+  if(t.dataset.bot){
+    const b=t.dataset.bot;
+    if(b==='enable'){
+      trdApi('autoconfig',null,{enabled:true,trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Automatic trading & profit trailing enabled (+15% trail)');render()}).catch(e=>toast(e.message));
+      return;
+    }
+    if(b==='disable'){
+      trdApi('autoconfig',null,{enabled:false}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Automatic trading turned off');render()}).catch(e=>toast(e.message));
+      return;
+    }
+    if(b==='tight'){
+      trdApi('autoconfig',null,{trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Trailing stop set: starts trailing at +15% profit');render()}).catch(e=>toast(e.message));
+      return;
+    }
+    if(b==='classic'){
+      trdApi('autoconfig',null,{trailStart:0.30,trailGive:0.25}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Trailing stop set to classic (+30% start, 25% follow)');render()}).catch(e=>toast(e.message));
+      return;
+    }
+    trdApi('autoswitch',null,{on:b==='resume'}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast(b==='resume'?'Automatic trading resumed':'Automatic trading paused: no new entries');render()}).catch(e=>toast(e.message));
+    return;
+  }
   if(t.dataset.trd==='refresh'){trdLoad();return}
   if(t.dataset.trd==='newtoken'){S.trd.paste=true;render();return}
   if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}

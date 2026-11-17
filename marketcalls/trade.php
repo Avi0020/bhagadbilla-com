@@ -432,6 +432,8 @@ function trade_handle($action) {
             if (isset($in['maxPerDay'])) $cfg['maxPerDay'] = max(1, min(20, (int)$in['maxPerDay']));
             if (isset($in['sl'])) $cfg['sl'] = round((float)$in['sl'], 2);
             if (isset($in['target'])) $cfg['target'] = round((float)$in['target'], 2);
+            if (isset($in['trailStart'])) $cfg['trailStart'] = max(0.05, min(0.50, round((float)$in['trailStart'], 2)));
+            if (isset($in['trailGive'])) $cfg['trailGive'] = max(0.05, min(0.50, round((float)$in['trailGive'], 2)));
             t_write($dir . '/auto-config.php', $cfg);
             t_log($c, ['ev' => 'auto-config-saved', 'cfg' => $cfg]);
             out(200, ['status' => 'success', 'auto' => t_auto_status($c, $dir, $ind, $mode)]);
