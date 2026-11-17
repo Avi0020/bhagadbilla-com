@@ -566,6 +566,13 @@ function trade_handle($action) {
     if ($type === 'SL') { if (!t_tick_ok($trig)) $reject('The trigger price must be above 0 and a multiple of 0.05.'); if ($side === 'SELL' && $price > $trig) $reject('For a sell stop the limit price cannot be above the trigger.'); if ($side === 'BUY' && $price < $trig) $reject('For a buy stop the limit price cannot be below the trigger.'); }
     else $trig = 0;
     if ($qty * $price > ORDER_MAX_VALUE) $reject('This order is worth Rs ' . number_format($qty * $price) . ', above the limit of Rs ' . number_format(ORDER_MAX_VALUE) . ' set in trade.php.');
+    if ($mode === 'live' && $ind && $tk && $side === 'BUY') {
+        $funds = t_ind_funds($c, $tk);
+        $avl = (float)($funds['available_to_trade']['total'] ?? 0);
+        if ($avl > 0 && ($qty * $price) > $avl) {
+            $reject('Order outlay of Rs ' . number_format($qty * $price) . ' exceeds your available funds of Rs ' . number_format($avl) . '.');
+        }
+    }
     if (strlen($ref) < 8) $reject('Missing order reference.');
     if ($mode === 'live' && !t_market_open($c)) $reject('Live orders are accepted only during market hours (9:15 AM to 3:30 PM, Monday to Friday). Switch to Dry Run to test anytime.');
     $lf = $dir . '/order-log.php'; $lg = t_read($lf); $today = t_ist()->format('Y-m-d');
