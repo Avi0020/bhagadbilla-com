@@ -957,9 +957,37 @@ const trdInd=()=>S.trd.status&&S.trd.status.broker==='indstocks';
 const trdOn=()=>S.trd.status&&S.trd.status.mode&&S.trd.status.mode!=='off';
 const trdBanner=()=>{const m=S.trd.status.mode;return m==='live'?'<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>Orders go to your '+trdName()+' account. Check the contract, quantity and price every time.</span></div>':'<div class="verdict amb" style="margin:10px 0"><b>DRY RUN — nothing is sent</b><span>Orders are checked and logged exactly as in live mode, but they are not sent to '+trdName()+'.</span></div>'};
 function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="err">${esc(c.err)}</div></div>`:'';
-  if(s.mode==='off')return`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>Switched off</span></div></div><span class="pill p-mu">Off</span></div><div class="sub" style="margin:8px 0 0">Real trading is currently switched off.${canTrade()?' As admin, you can activate real trading with Email OTP in the Account admin panel.':''}</div>${canTrade()?'<div class="c-act" style="margin-top:10px"><button class="btn2 on" onclick="accountSheet()">Open Admin Trading Switch</button></div>':''}</div>`;
+  const isUpstox = !trdInd();
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-  let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="meta"><span>${s.connected?'Connected'+(s.user?' as '+esc(s.user):''):'Not connected today'}</span><span>· ${s.sentToday}/${s.limits.perDay} orders today</span></div></div><span class="pill ${s.mode==='live'?'p-dn':'p-amb'}">${s.mode==='live'?'Live':'Dry run'}</span></div>${trdBanner()}`;
+  const maxCap=(s.mode==='live'&&isFinite(+f)&&+f>0)?Math.min(s.limits.maxValue,+f):s.limits.maxValue;
+
+  let h=`<div class="card" style="margin-top:14px">
+    <div class="c-top" style="align-items:flex-start">
+      <div>
+        <div class="iname" style="font-size:16px">${trdName()} Auto-Execution &amp; Orders</div>
+        <div class="meta" style="margin-top:2px">
+          <span>${s.connected?'✓ Connected'+(s.user?' as <b>'+esc(s.user)+'</b>':''):'⚠️ Not connected today'}</span>
+          <span>· ${s.sentToday}/${s.limits.perDay} orders today</span>
+          ${s.connected?`<span>· <button class="lnk" data-trd="disconnect" style="color:var(--dn);font-size:12px">Disconnect</button></span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="pill ${s.mode==='live'?'p-dn':s.mode==='dry'?'p-amb':'p-mu'}">${s.mode==='live'?'Live':'Dry run'}</span>
+      </div>
+    </div>
+    <div style="margin:8px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:6px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)">
+      <div style="display:flex;gap:4px;align-items:center">
+        <span style="font-size:12px;color:var(--tx-mu)">Broker:</span>
+        <button class="sbtn ${isUpstox?'on':''}" data-trdbroker="upstox" style="padding:2px 8px;font-size:11px">⚡ Upstox (1-Click)</button>
+        <button class="sbtn ${!isUpstox?'on':''}" data-trdbroker="indstocks" style="padding:2px 8px;font-size:11px">INDstocks</button>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <span style="font-size:12px;color:var(--tx-mu)">Mode:</span>
+        <button class="sbtn ${s.mode==='dry'?'on':''}" data-trdmode="dry" style="padding:2px 8px;font-size:11px">🟡 Dry Run</button>
+        <button class="sbtn ${s.mode==='live'?'on':''}" data-trdmode="live" style="padding:2px 8px;font-size:11px">🔴 Live Orders</button>
+      </div>
+    </div>
+    ${trdBanner()}`;
   if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
   const pasteBox=()=>{
     const autoCfg=s.indAuto&&s.indAuto.configured;
@@ -988,15 +1016,27 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
     <div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div>
     <div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button><button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
   };
-  if(s.tokenMode==='paste'&&(!s.connected||c.paste))h+=pasteBox();
-  else if(!s.connected)h+=`<div class="sub" style="margin:0 0 10px">${s.configured?'Log in to Upstox once each day (the login lasts until about 3:30 AM). Your password is typed on Upstox, never here.':'Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in trade.php on your server first.'}</div><div class="c-act">${s.configured?'<button class="btn2 on" data-trd="login">Connect Upstox</button>':''}<button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Test Buy Order (Dry-Run)</button></div>`;
-  else{
-    const maxCap=(s.mode==='live'&&isFinite(+f)&&+f>0)?Math.min(s.limits.maxValue,+f):s.limits.maxValue;
+  if(!s.connected){
+    if(isUpstox){
+      h+=`<div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.25);border-radius:8px;padding:14px;margin:10px 0">
+        <div style="font-weight:600;font-size:15px;color:var(--tx,#fff);margin-bottom:4px">⚡ 1-Click Upstox Login</div>
+        <div class="sub" style="margin:0 0 12px">No developer credentials or API keys needed. Authorize once per day on Upstox's official login dialog. Once connected, your personal buy/sell calls, stop-loss protection and profit trailing execute directly in your Upstox account.</div>
+        <div class="c-act">
+          <button class="btn2 on" data-trd="login" style="font-weight:bold;padding:8px 16px">⚡ 1-Click Connect Upstox</button>
+          <button class="btn2" data-trd="refresh">Refresh Status</button>
+          <button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Test Order / Benchmark</button>
+        </div>
+      </div>`;
+    }else{
+      h+=pasteBox();
+    }
+  }else{
     h+=`<div class="info num" style="border-top:0;padding-top:0">Available to trade: <b>${isFinite(+f)?'₹'+f0(+f):'—'}</b> · ${s.tokenMode==='paste'?'token':'login'} valid until ${esc(exp)} · max outlay: <b>₹${f0(maxCap)}</b>${s.tokenMode==='paste'?' · <button class="lnk" data-trd="newtoken">change token</button>':''}</div>`;
     if(trdInd())h+=`<div class="sub" style="margin:0 0 6px">INDstocks has no stop order for an open position in its API. Place your stop-loss in the INDstocks app as soon as a buy fills.</div>`;
     h+=`<h3 style="margin-top:12px">Your option positions</h3>`+(c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(p.trading_symbol||p.instrument_token)} <span class="tag">${p.product==='I'?'Intraday':'Overnight'}</span></div><div class="s num">${p.quantity} qty · avg ₹${f2(p.average_price)} · now ₹${f2(p.last_price)} · <span class="${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</span></div>${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}</div></div>`).join('')}</div>`:'<div class="empty" style="padding:14px">No open option positions on '+trdName()+'.</div>');
     if(c.orders.length)h+=`<h3>Recent orders</h3><div class="list out">${c.orders.slice(0,5).map(o=>`<div class="row"><div><div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div><div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div></div><span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span></div>`).join('')}</div>`;
-    h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 on" id="btnManualTestOrder">⚡ Test Buy Order & Speed Benchmark</button><button class="btn2" data-trd="refresh">Refresh</button><span class="qty" style="font-size:12px">Place a manual order and benchmark execution latency</span></div>`}
+    h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 on" id="btnManualTestOrder">⚡ Test Buy Order & Speed Benchmark</button><button class="btn2" data-trd="refresh">Refresh</button><span class="qty" style="font-size:12px">Place a manual order and benchmark execution latency</span></div>`;
+  }
   return h+'</div>'}
 const ordBtn=(kind,ix,leg,v)=>trdOn()&&S.trd.status.connected&&leg&&leg.key&&v&&v.ok?`<button class="sbtn" data-ord="${kind}|${ix.id}">${trdName()} order</button>`:'';
 function ordSheet(o){S.ord=o;const s=S.trd.status,lim=s.limits;
@@ -1252,7 +1292,7 @@ function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.bro
 const authPost=async(action,body)=>{const r=await fetch('api.php?auth='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{}),cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){if(j.auth==='trial_expired')toast(j.message||'Trial expired');const e=new Error(j.message||('HTTP '+r.status));e.code=r.status;throw e}return j};
 const authGet=async a=>{const r=await fetch('api.php?auth='+a,{cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.status==='error'){if(j.auth==='trial_expired')toast(j.message||'Trial expired');throw new Error(j.message||('HTTP '+r.status))}return j};
 function authExpired(){if(RUN||S.authShown)return;S.authShown=true;showAuth('Your session ended. Please log in again.')}
-const canTrade=()=>AUTH.mode!=='users'||(AUTH.user&&(AUTH.user.role==='admin'||AUTH.user.role==='runner'));
+const canTrade=()=>AUTH.mode!=='users'||!!AUTH.user;
 function applyAuthUI(){
   const b=$('#btnAccount');if(b){b.hidden=!(AUTH.mode==='users'&&AUTH.user&&AUTH.user.role!=='runner');if(AUTH.user)b.title='Account: '+AUTH.user.username}
   const tb=$('#trialBadge');
@@ -1382,11 +1422,11 @@ function accountSheet(){const u=AUTH.user;if(!u)return;
   if(u.role==='admin')admLoad()}
 /* ---- owner: invites and people ---- */
 const admDate=ts=>ts?new Date(ts*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'never';
-async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i,tm,ic,ac]=await Promise.all([authGet('admin_users'),authGet('admin_invites'),authGet('admin_trade_status').catch(()=>null),trdApi('ind_creds').catch(()=>null),trdApi('autoconfig').catch(()=>null)]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats,trade:tm,indCreds:ic,autoConfig:ac&&ac.auto};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
+async function admLoad(){const el=$('#adm');if(!el)return;try{const [u,i,tm,ic,ac,um]=await Promise.all([authGet('admin_users'),authGet('admin_invites'),authGet('admin_trade_status').catch(()=>null),trdApi('ind_creds').catch(()=>null),trdApi('autoconfig').catch(()=>null),trdApi('upstox_master').catch(()=>null)]);S.adm={users:u.users,invites:i.invites,max:u.max,stats:u.stats,trade:tm,indCreds:ic,autoConfig:ac&&ac.auto,upstoxMaster:um};admDraw()}catch(e){el.innerHTML='<div class="err">'+esc(e.message)+'</div>'}}
 function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUTH.user.id;
   const st=A.stats||{totalOnboarded:A.users.length,activeTrials:0,expiredTrials:0,inactiveOver15Days:0,unlimitedCount:0};
   const trd=A.trade||{mode:'off',broker:'upstox',hasEmail:false,emailMasked:''};
-  const ic=A.indCreds,ac=A.autoConfig;
+  const ic=A.indCreds,ac=A.autoConfig,um=A.upstoxMaster;
   const isLive=trd.mode==='live',isDry=trd.mode==='dry';
   el.innerHTML=`<h3>Real Trading Account Mode (Live Orders)</h3>
   <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
@@ -1429,6 +1469,33 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
       </div>
     </div>
     <div id="admTrdMsg" style="margin-top:8px"></div>
+  </div>
+
+  <h3>⚡ Master Upstox Developer App (1-Click Login for All Users)</h3>
+  <div class="card" style="margin:8px 0 16px;background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:15px;font-weight:600">Central Master App Credentials</div>
+      <span class="pill ${um&&um.configured?'p-up':'p-mu'}">${um&&um.configured?'Active · Configured':'Not Configured'}</span>
+    </div>
+    <div class="sub" style="margin:4px 0 10px">
+      This single Master App enables any registered user to connect their own Upstox account with 1 click without needing developer credentials.
+      Create an app on <a href="https://account.upstox.com/developer/apps" target="_blank" rel="noopener" style="color:var(--up);text-decoration:underline">Upstox Developer Console</a> and set the Redirect URL to:
+      <b style="color:var(--tx);display:inline-block;word-break:break-all">${location.origin}/api.php?callback=1</b>
+    </div>
+    ${um&&um.configured?`
+      <div class="sub" style="margin:0 0 10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--brd)">
+        <div>Client ID: <b>${esc(um.clientId)}</b> · Secret: <b>••••••••</b> · Redirect: <b>${esc(um.redirectUri)}</b></div>
+      </div>
+    `:''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:10px">
+      <div class="fld"><label>Upstox API Key / Client ID</label><input id="admUpstoxCid" type="text" placeholder="Paste API Key / Client ID" value=""></div>
+      <div class="fld"><label>Upstox API Secret</label><input id="admUpstoxSecret" type="password" placeholder="Paste API Secret" value=""></div>
+      <div class="fld"><label>Redirect URI</label><input id="admUpstoxRedirect" type="text" value="${(um&&um.redirectUri)||location.origin+'/api.php?callback=1'}"></div>
+    </div>
+    <div class="c-act" style="margin:0 0 10px">
+      <button class="btn2 on" id="btnSaveUpstoxMaster">Save Master App Credentials</button>
+    </div>
+    <div id="admUpstoxMsg" style="margin-top:6px"></div>
   </div>
 
   <h3>⚡ Automation: Daily Token &amp; Automatic Trading</h3>
@@ -1638,6 +1705,20 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
       bBInd.disabled=false;
     }
   };
+  const bSaveUpstox=$('#btnSaveUpstoxMaster');
+  if(bSaveUpstox)bSaveUpstox.onclick=async()=>{
+    const cid=($('#admUpstoxCid')||{}).value.trim(),secret=($('#admUpstoxSecret')||{}).value.trim(),redirect=($('#admUpstoxRedirect')||{}).value.trim();
+    if(!cid||!secret||!redirect){toast('Fill Client ID, Secret, and Redirect URI');return}
+    bSaveUpstox.disabled=true;bSaveUpstox.textContent='Saving…';
+    try{
+      const res=await trdApi('upstox_master',null,{clientId:cid,clientSecret:secret,redirectUri:redirect});
+      toast(res.message||'Master Upstox App configured!');
+      await admLoad();trdLoad();
+    }catch(err){
+      const m=$('#admUpstoxMsg');if(m)m.innerHTML='<div class="err">'+esc(err.message)+'</div>';
+      bSaveUpstox.disabled=false;bSaveUpstox.textContent='Save Master App Credentials';
+    }
+  };
   const bSaveInd=$('#btnSaveIndCreds'),bGenInd=$('#btnIndGenerate');
   if(bSaveInd)bSaveInd.onclick=async()=>{
     const cid=($('#admIndCid')||{}).value.trim(),mpin=($('#admIndMpin')||{}).value.trim(),totp=($('#admIndTotp')||{}).value.trim();
@@ -1790,6 +1871,19 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}
   if(t.id==='btnIndAutoGenerate'){t.disabled=true;t.textContent='⚡ Generating…';trdApi('ind_generate',null,{}).then(j=>{toast(j.message||'Token generated successfully');trdLoad()}).catch(e=>{toast(e.message);t.disabled=false;t.textContent='⚡ Auto-Generate Token'});return}
   if(t.dataset.trd==='login'){trdApi('login').then(j=>{window.open(j.url,'_blank','noopener')}).catch(e=>toast(e.message));return}
+  if(t.dataset.trd==='disconnect'){
+    if(!confirm('Disconnect your '+trdName()+' trading account?'))return;
+    trdApi('disconnect').then(()=>{toast(trdName()+' disconnected');trdLoad()}).catch(e=>toast(e.message));return;
+  }
+  if(t.dataset.trdmode){
+    const m=t.dataset.trdmode;
+    if(m==='live'&&!confirm('Switch to LIVE order execution with real money in your connected broker account?'))return;
+    trdApi('setmode',null,{mode:m}).then(()=>{toast(m==='live'?'🔴 Live Trading Active':'🟡 Dry Run Mode Active');trdLoad()}).catch(e=>toast(e.message));return;
+  }
+  if(t.dataset.trdbroker){
+    const b=t.dataset.trdbroker;
+    trdApi('setmode',null,{broker:b}).then(()=>{toast('Active broker switched to '+(b==='upstox'?'Upstox':'INDstocks'));trdLoad()}).catch(e=>toast(e.message));return;
+  }
   if(t.dataset.stks){if(t.dataset.stks==='refresh')stkScan(true).then(()=>stkCalls());else{S.stk.sort=t.dataset.stks;if($('#stkQ')){const k=$('#view').scrollTop;$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}}return}
   if(t.dataset.spb){const c=S.sc.calls.find(x=>x.sid===t.dataset.spb);if(c&&paperBuyStk(c,false))scRender();return}
   if(t.dataset.sauto){if(!P||!P.on){toast('Start paper trading first (Paper tab)');return}P.autoStk=P.autoStk===false;paperSave();scRender();return}

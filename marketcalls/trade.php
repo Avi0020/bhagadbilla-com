@@ -52,8 +52,29 @@ defined('ORDER_MAX_PER_DAY') || define('ORDER_MAX_PER_DAY', 10);    // orders se
 defined('TEST_NOGAP') || define('TEST_NOGAP', (getenv('SIGNALS_TEST_UPSTOX') && getenv('SIGNALS_TEST_NOGAP')) ? true : false);   // automated tests only: no waiting between orders
 defined('ORDER_GAP_SECONDS') || define('ORDER_GAP_SECONDS', TEST_NOGAP ? 0 : 3);     // minimum seconds between orders
 
+function t_adopt_legacy($uid) {
+    if ($uid !== 'owner' || !function_exists('a_udir') || !function_exists('ix_data_dir')) return;
+    $d = a_udir('owner');
+    $g = ix_data_dir();
+    $files = ['order-token.php', 'order-token-ind.php', 'ind-creds.php', 'trade-mode.php', 'auto-config.php'];
+    foreach ($files as $f) {
+        if (!is_file($d . '/' . $f) && is_file($g . '/' . $f)) {
+            @copy($g . '/' . $f, $d . '/' . $f);
+            @chmod($d . '/' . $f, 0600);
+        }
+    }
+}
+
 function t_conf() {
-    $mf = ix_data_dir() . '/trade-mode.php';
+    $gdir = ix_data_dir();
+    $masterFile = $gdir . '/upstox-master.php';
+    $master = is_file($masterFile) ? t_read($masterFile) : [];
+
+    // Per-user trade mode, fallback to global trade-mode.php, fallback to constant
+    $uid = $GLOBALS['IX_ME']['id'] ?? null;
+    $userDir = (!getenv('SIGNALS_TEST_UPSTOX') && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) ? a_udir($uid) : $gdir;
+    $mf = is_file($userDir . '/trade-mode.php') ? ($userDir . '/trade-mode.php') : ($gdir . '/trade-mode.php');
+
     $dynMode = null;
     $dynBroker = null;
     if (is_file($mf)) {
@@ -70,17 +91,27 @@ function t_conf() {
         $mode = $dynMode ?? (getenv('SIGNALS_TEST_MODE') ?: 'dry');
         $broker = $dynBroker ?? (getenv('SIGNALS_TEST_BROKER') ?: 'upstox');
         return ['mode' => $mode, 'api' => $test, 'hft' => $test,
-                'data' => ix_data_dir(),
+                'data' => $gdir,
                 'cid' => 'test-id', 'secret' => 'test-secret', 'redirect' => 'http://localhost/api.php?callback=1', 'anytime' => true,
                 'broker' => $broker, 'ind' => $test];
     }
+    $cid = !empty($master['cid']) ? $master['cid'] : UPSTOX_CLIENT_ID;
+    $secret = !empty($master['secret']) ? $master['secret'] : UPSTOX_CLIENT_SECRET;
+    $redirect = !empty($master['redirect']) ? $master['redirect'] : UPSTOX_REDIRECT_URI;
+
     $mode = $dynMode ?? ORDER_MODE;
     $broker = $dynBroker ?? ORDER_BROKER;
-    return ['mode' => $mode, 'api' => 'https://api.upstox.com', 'hft' => 'https://api-hft.upstox.com', 'data' => ix_data_dir(),
-            'cid' => UPSTOX_CLIENT_ID, 'secret' => UPSTOX_CLIENT_SECRET, 'redirect' => UPSTOX_REDIRECT_URI, 'anytime' => false,
+    return ['mode' => $mode, 'api' => 'https://api.upstox.com', 'hft' => 'https://api-hft.upstox.com', 'data' => $gdir,
+            'cid' => $cid, 'secret' => $secret, 'redirect' => $redirect, 'anytime' => false,
             'broker' => $broker, 'ind' => 'https://api.indstocks.com'];
 }
-function t_dir($c) {
+function t_dir($c, $uid = null) {
+    if ($uid === null && !empty($GLOBALS['IX_ME']['id'])) {
+        $uid = $GLOBALS['IX_ME']['id'];
+    }
+    if (!getenv('SIGNALS_TEST_UPSTOX') && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) {
+        return a_udir($uid);
+    }
     if (!is_dir($c['data'])) @mkdir($c['data'], 0755, true);
     if (!is_file($c['data'] . '/.htaccess')) @file_put_contents($c['data'] . '/.htaccess', "Require all denied\nDeny from all\n");
     return $c['data'];
@@ -358,22 +389,63 @@ function t_tick_ok($p) { return $p > 0 && abs(round($p * 100) - $p * 100) < 1e-6
 function trade_callback() {
     $c = t_conf();
     header('Content-Type: text/html; charset=utf-8');
-    $page = function ($title, $msg) { echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui;background:#0A0E13;color:#E7ECF1;padding:28px;max-width:520px;margin:auto"><h2>' . htmlspecialchars($title) . '</h2><p>' . htmlspecialchars($msg) . '</p>'; exit; };
+    $page = function ($title, $msg, $success = false) {
+        $color = $success ? '#10B981' : '#EF4444';
+        echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
+        echo '<body style="font-family:system-ui,-apple-system,sans-serif;background:#0A0E13;color:#E7ECF1;padding:28px;max-width:520px;margin:40px auto;line-height:1.5">';
+        echo '<div style="background:#141C24;border:1px solid #23303D;border-radius:12px;padding:24px">';
+        echo '<h2 style="color:' . $color . ';margin-top:0">' . htmlspecialchars($title) . '</h2>';
+        echo '<p style="color:#A0AEC0">' . htmlspecialchars($msg) . '</p>';
+        echo '<p style="margin-top:24px"><a href="/" style="display:inline-block;background:#2563EB;color:#FFF;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Return to Market Calls</a></p>';
+        echo '</div></body>';
+        exit;
+    };
     if ($c['mode'] === 'off') $page('Trading is switched off', 'ORDER_MODE is off in trade.php.');
     if ($c['broker'] === 'indstocks') $page('Not used', 'INDstocks uses a daily token that you paste in the app, so there is no login page.');
-    $dir = t_dir($c); $sf = $dir . '/oauth-state.php'; $st = t_read($sf);
-    $state = (string)($_GET['state'] ?? ''); $code = (string)($_GET['code'] ?? '');
-    if ($state === '' || $code === '' || empty($st['state']) || !hash_equals($st['state'], $state) || ($st['exp'] ?? 0) < time()) $page('Login not accepted', 'This login link is not valid or has expired. Start again from the Paper tab.');
-    t_write($sf, []);   // one use only
+
+    $state = (string)($_GET['state'] ?? '');
+    $code = (string)($_GET['code'] ?? '');
+    if ($state === '' || $code === '') $page('Login not accepted', 'Missing state or code parameter from Upstox.');
+
+    // 1. Look up state in central oauth-states.php or local oauth-state.php
+    $sfGlobal = ix_data_dir() . '/oauth-states.php';
+    $allStates = t_read($sfGlobal, ['states' => []]);
+    $stGlobal = $allStates['states'][$state] ?? null;
+    $targetUid = null;
+
+    $dir = t_dir($c);
+    $sfLocal = $dir . '/oauth-state.php';
+    $stLocal = t_read($sfLocal);
+
+    if ($stGlobal && ($stGlobal['exp'] ?? 0) >= time()) {
+        $targetUid = $stGlobal['uid'] ?? null;
+        unset($allStates['states'][$state]);
+        t_write($sfGlobal, $allStates);
+        t_write($sfLocal, []);
+    } elseif (!empty($stLocal['state']) && hash_equals($stLocal['state'], $state) && ($stLocal['exp'] ?? 0) >= time()) {
+        $targetUid = $stLocal['uid'] ?? 'owner';
+        t_write($sfLocal, []);
+    }
+
+    if (!$targetUid) $page('Login not accepted', 'This login link is not valid or has expired. Start again from the Paper / Trading tab.');
+
     $ch = curl_init($c['api'] . '/v2/login/authorization/token');
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_POST => true, CURLOPT_HTTPHEADER => ['Accept: application/json', 'Content-Type: application/x-www-form-urlencoded'],
         CURLOPT_POSTFIELDS => http_build_query(['code' => $code, 'client_id' => $c['cid'], 'client_secret' => $c['secret'], 'redirect_uri' => $c['redirect'], 'grant_type' => 'authorization_code'])]);
     $raw = curl_exec($ch); curl_close($ch); $j = json_decode((string)$raw, true);
-    if (empty($j['access_token'])) { t_log($c, ['ev' => 'login-failed']); $page('Upstox did not give a token', t_err((array)$j, 'Check the API key, secret and redirect URL.')); }
+    if (empty($j['access_token'])) { t_log($c, ['ev' => 'login-failed', 'reply' => $j, 'uid' => $targetUid]); $page('Upstox did not give a token', t_err((array)$j, 'Check the API key, secret and redirect URL.')); }
     $n = t_ist(); $exp = clone $n; $exp->setTime(3, 30, 0); if ($exp <= $n) $exp->modify('+1 day');   // tokens last until 3:30 AM the next day
-    t_write($dir . '/order-token.php', ['token' => $j['access_token'], 'exp' => $exp->getTimestamp(), 'user' => $j['user_name'] ?? '', 'at' => time()]);
-    t_log($c, ['ev' => 'login-ok', 'user' => $j['user_name'] ?? '']);
-    $page('Connected to Upstox', 'You can close this tab and go back to the app. The connection lasts until about 3:30 AM tomorrow, then you log in again.');
+    $tokData = ['token' => $j['access_token'], 'exp' => $exp->getTimestamp(), 'user' => $j['user_name'] ?? '', 'at' => time()];
+
+    if ($targetUid !== 'pin' && function_exists('a_udir')) {
+        $targetDir = a_udir($targetUid);
+        t_write($targetDir . '/order-token.php', $tokData);
+    }
+    if ($targetUid === 'pin' || $targetUid === 'owner' || getenv('SIGNALS_TEST_UPSTOX')) {
+        t_write($dir . '/order-token.php', $tokData);
+    }
+    t_log($c, ['ev' => 'login-ok', 'user' => $j['user_name'] ?? '', 'uid' => $targetUid]);
+    $page('Connected to Upstox', 'You can close this tab and go back to the app. The connection lasts until about 3:30 AM tomorrow, then you log in again.', true);
 }
 
 function trade_handle($action) {
@@ -388,7 +460,71 @@ function trade_handle($action) {
         $lg = t_read($dir . '/order-log.php'); $today = t_ist()->format('Y-m-d');
         out(200, ['status' => 'success', 'mode' => $mode, 'broker' => $c['broker'], 'tokenMode' => $ind ? 'paste' : 'login', 'configured' => $configured, 'connected' => (bool)$tk, 'user' => $tk['user'] ?? '', 'expires' => $tk['exp'] ?? 0,
                   'auto' => t_auto_status($c, $dir, $ind, $mode), 'limits' => $lim, 'sentToday' => ($lg['day'] ?? '') === $today ? (int)($lg['count'] ?? 0) : 0, 'marketOpen' => t_market_open($c),
-                  'indAuto' => ['configured' => (bool)t_ind_get_creds($dir), 'cronKey' => t_cron_key($dir)]]);
+                  'indAuto' => ['configured' => (bool)t_ind_get_creds($dir), 'cronKey' => t_cron_key($dir)],
+                  'isMaster' => !empty($c['cid']) && $c['cid'] !== UPSTOX_CLIENT_ID]);
+    }
+
+    if ($action === 'setmode') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['status' => 'error', 'message' => 'POST required']);
+        $in = json_decode((string)file_get_contents('php://input'), true);
+        $newMode = strtolower(trim((string)($in['mode'] ?? '')));
+        $newBroker = strtolower(trim((string)($in['broker'] ?? '')));
+        $mf = $dir . '/trade-mode.php';
+        $cur = t_read($mf, []);
+        if ($newMode !== '') {
+            if (!in_array($newMode, ['off', 'dry', 'live'], true)) out(422, ['status' => 'error', 'message' => 'Mode must be off, dry, or live.']);
+            $cur['mode'] = $newMode;
+        }
+        if ($newBroker !== '') {
+            if (!in_array($newBroker, ['upstox', 'indstocks'], true)) out(422, ['status' => 'error', 'message' => 'Broker must be upstox or indstocks.']);
+            $cur['broker'] = $newBroker;
+        }
+        $cur['updated'] = time();
+        $cur['by'] = $GLOBALS['IX_ME']['username'] ?? 'user';
+        t_write($mf, $cur);
+        out(200, ['status' => 'success', 'mode' => $cur['mode'] ?? $mode, 'broker' => $cur['broker'] ?? $c['broker']]);
+    }
+    if ($action === 'disconnect') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['status' => 'error', 'message' => 'POST required']);
+        @unlink($dir . '/order-token.php');
+        @unlink($dir . '/order-token-ind.php');
+        t_log($c, ['ev' => 'broker-disconnected']);
+        out(200, ['status' => 'success', 'message' => 'Broker disconnected successfully.']);
+    }
+    if ($action === 'upstox_master') {
+        if (($GLOBALS['IX_ME']['role'] ?? '') !== 'admin') {
+            out(403, ['status' => 'error', 'message' => 'Admin privileges required to configure Master Upstox Developer App.']);
+        }
+        $mf = ix_data_dir() . '/upstox-master.php';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $in = json_decode((string)file_get_contents('php://input'), true);
+            $cid = trim((string)($in['clientId'] ?? ''));
+            $secret = trim((string)($in['clientSecret'] ?? ''));
+            $redirect = trim((string)($in['redirectUri'] ?? ''));
+            if ($cid === '' || $secret === '' || $redirect === '') {
+                out(422, ['status' => 'error', 'message' => 'Client ID, Secret and Redirect URI are required.']);
+            }
+            t_write($mf, [
+                'cid' => $cid,
+                'secret' => $secret,
+                'redirect' => $redirect,
+                'updated' => time(),
+                'by' => $GLOBALS['IX_ME']['username'] ?? 'admin'
+            ]);
+            t_log($c, ['ev' => 'upstox-master-saved']);
+            out(200, ['status' => 'success', 'message' => 'Central Master Upstox Developer App configured! All members can now 1-click connect.']);
+        }
+        $m = is_file($mf) ? t_read($mf) : [];
+        $cid = !empty($m['cid']) ? $m['cid'] : UPSTOX_CLIENT_ID;
+        $hasSecret = !empty($m['secret']) || UPSTOX_CLIENT_SECRET !== '';
+        $redirect = !empty($m['redirect']) ? $m['redirect'] : UPSTOX_REDIRECT_URI;
+        out(200, [
+            'status' => 'success',
+            'configured' => $cid !== '' && $hasSecret && $redirect !== '',
+            'clientId' => $cid ? (strlen($cid) > 8 ? substr($cid, 0, 4) . '***' . substr($cid, -4) : '***') : '',
+            'redirectUri' => $redirect,
+            'hasSecret' => $hasSecret
+        ]);
     }
 
     if ($action === 'ind_creds') {
@@ -496,8 +632,22 @@ function trade_handle($action) {
     }
     if ($action === 'login') {
         if ($ind) out(400, ['status' => 'error', 'message' => 'INDstocks uses a daily token: paste it in the Paper tab.']);
-        if (!$configured) out(400, ['status' => 'error', 'message' => 'Fill UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in trade.php first.']);
-        $state = bin2hex(random_bytes(16)); t_write($dir . '/oauth-state.php', ['state' => $state, 'exp' => time() + 600]);
+        if (!$configured) out(400, ['status' => 'error', 'message' => 'Upstox Master App is not yet configured. Admin can set up the Master App in Admin Settings.']);
+        $state = bin2hex(random_bytes(16));
+        $uid = $GLOBALS['IX_ME']['id'] ?? 'owner';
+        $now = time();
+
+        $sfGlobal = ix_data_dir() . '/oauth-states.php';
+        $all = t_read($sfGlobal, ['states' => []]);
+        $clean = [];
+        foreach ((array)($all['states'] ?? []) as $k => $v) {
+            if (($v['exp'] ?? 0) > $now) $clean[$k] = $v;
+        }
+        $clean[$state] = ['uid' => $uid, 'exp' => $now + 600];
+        $all['states'] = $clean;
+        t_write($sfGlobal, $all);
+
+        t_write($dir . '/oauth-state.php', ['state' => $state, 'exp' => $now + 600, 'uid' => $uid]);
         out(200, ['status' => 'success', 'url' => $c['api'] . '/v2/login/authorization/dialog?' . http_build_query(['response_type' => 'code', 'client_id' => $c['cid'], 'redirect_uri' => $c['redirect'], 'state' => $state])]);
     }
     /* reads */

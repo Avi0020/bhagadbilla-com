@@ -37,7 +37,7 @@ if (isset($_GET['auth'])) { auth_handle((string)$_GET['auth']); exit; }
 
 /* from here on a person must be logged in (or be the owner's runner) */
 $me = auth_gate(); $GLOBALS['IX_ME'] = $me;
-if (isset($_GET['trade'])) { auth_gate(['admin', 'runner']); require __DIR__ . '/trade.php'; trade_handle((string)$_GET['trade']); exit; }   // real orders: the owner and the owner's runner only
+if (isset($_GET['trade'])) { require __DIR__ . '/trade.php'; trade_handle((string)$_GET['trade']); exit; }   // real & paper trading: per-user isolated account
 if (isset($_GET['svc'])) { require __DIR__ . '/svc.php'; svc_handle((string)$_GET['svc']); exit; }
 /* paper-trading account: one PRIVATE account per person, chosen by the login session only (nothing the page sends can name another account) */
 if (isset($_GET['store'])) {
