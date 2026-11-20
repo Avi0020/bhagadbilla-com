@@ -152,7 +152,7 @@ function a_pub($u) {
     $isAdmin = $role === 'admin' || $role === 'runner';
     $plan = $u['plan'] ?? ($isAdmin ? 'unlimited' : 'trial');
     $created = (int)($u['created'] ?? $now);
-    $trialExp = (int)($u['trial_exp'] ?? ($created + 10 * 86400));
+    $trialExp = (int)($u['trial_exp'] ?? ($created + 1 * 86400));
     $daysLeft = $isAdmin || $plan === 'unlimited' ? null : max(0, (int)ceil(($trialExp - $now) / 86400));
     $expired = !$isAdmin && $plan === 'trial' && ($trialExp < $now);
     $inactiveDays = $expired ? (int)floor(($now - $trialExp) / 86400) : 0;
@@ -205,7 +205,7 @@ function auth_gate($roles = null) {
             out(403, [
                 'status' => 'error',
                 'auth' => 'trial_expired',
-                'message' => 'Your 10-day trial has ended. Contact admin to extend your access.',
+                'message' => 'Your 1-day trial has ended. Contact admin to extend your access.',
                 'inactiveDays' => $u['inactiveDays'] ?? 0
             ]);
         }
@@ -394,7 +394,7 @@ function auth_handle($action) {
             }
             $id = bin2hex(random_bytes(8));
             $plan = $first ? 'unlimited' : 'trial';
-            $trialExp = $first ? null : (time() + 10 * 86400);
+            $trialExp = $first ? null : (time() + 1 * 86400);
             $rec = ['id' => $id, 'username' => $name, 'email' => $email, 'hash' => a_hash($pw), 'role' => $role, 'plan' => $plan, 'trial_exp' => $trialExp, 'created' => time(), 'last' => time(), 'pwv' => 1, 'accepted' => time()];
             $d['users'][$id] = $rec; a_save_users($d);
             if (!$first && $hit !== null) { $inv['list'][$hit]['used'] = true; $inv['list'][$hit]['usedBy'] = $name; $inv['list'][$hit]['usedAt'] = time(); a_save_invites($inv); }
@@ -542,16 +542,16 @@ function auth_handle($action) {
                 }
                 $rec['plan'] = $p;
                 if ($p === 'trial') {
-                    $rec['trial_exp'] = time() + (10 * 86400);
+                    $rec['trial_exp'] = time() + (1 * 86400);
                 } else {
                     $rec['trial_exp'] = null;
                 }
                 $extra['plan'] = $p;
             }
             elseif ($action === 'admin_extend_trial') {
-                $days = max(1, min(365, (int)($in['days'] ?? 10)));
+                $days = max(1, min(365, (int)($in['days'] ?? 1)));
                 $now = time();
-                $currExp = isset($rec['trial_exp']) && $rec['trial_exp'] !== null ? (int)$rec['trial_exp'] : ((int)($rec['created'] ?? $now) + 10 * 86400);
+                $currExp = isset($rec['trial_exp']) && $rec['trial_exp'] !== null ? (int)$rec['trial_exp'] : ((int)($rec['created'] ?? $now) + 1 * 86400);
                 $base = max($now, $currExp);
                 $rec['trial_exp'] = $base + ($days * 86400);
                 $rec['plan'] = 'trial';
