@@ -212,3 +212,9 @@ h1{font-size:clamp(36px,4.5vw,66px)}
 .plan-lead{font-size:clamp(26px,3vw,40px);line-height:1.1}
 @media (max-width:980px){.markets{grid-template-columns:repeat(2,1fr)}.markets div{border-bottom:1px solid var(--rule)}.markets div:nth-child(2n){border-right:0}.markets div:last-child{grid-column:1/-1;border-bottom:0}}
 @media (prefers-reduced-motion:reduce){.hook{transition:none}}
+
+/* WhatsApp CTA Button */
+.btn.wa{background:#25D366 !important;color:#ffffff !important;border-color:#128C7E !important;box-shadow:4px 4px 0 #075E54 !important}
+.btn.wa:hover{background:#20ba5a !important;transform:translate(-2px,-2px) !important;box-shadow:6px 6px 0 #075E54 !important}
+:root[data-theme="dark"] .btn.wa{background:#25D366 !important;color:#ffffff !important;border-color:#128C7E !important;box-shadow:4px 4px 0 #000000 !important}
+
