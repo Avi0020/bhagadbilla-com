@@ -378,9 +378,32 @@ function t_auto_status($c, $dir, $ind, $mode) {
 }
 function t_hm($s) { $p = explode(':', (string)$s); return (int)$p[0] * 60 + (int)($p[1] ?? 0); }
 function t_err($j, $dflt) { return $j['errors'][0]['message'] ?? $j['message'] ?? $dflt; }
+function t_is_holiday($ymd) {
+    static $h = [
+        '2024-01-26'=>'Republic Day','2024-03-08'=>'Mahashivratri','2024-03-25'=>'Holi','2024-03-29'=>'Good Friday',
+        '2024-04-11'=>'Id-Ul-Fitr','2024-04-17'=>'Shri Ram Navami','2024-05-01'=>'Maharashtra Day','2024-05-20'=>'Elections',
+        '2024-06-17'=>'Bakri Id','2024-07-17'=>'Moharram','2024-08-15'=>'Independence Day','2024-10-02'=>'Mahatma Gandhi Jayanti',
+        '2024-11-01'=>'Diwali Laxmi Pujan','2024-11-15'=>'Guru Nanak Jayanti','2024-11-20'=>'Maharashtra Election','2024-12-25'=>'Christmas',
+        '2025-02-26'=>'Mahashivratri','2025-03-14'=>'Holi','2025-03-31'=>'Id-Ul-Fitr','2025-04-10'=>'Shri Mahavir Jayanti',
+        '2025-04-14'=>'Dr. Ambedkar Jayanti','2025-04-18'=>'Good Friday','2025-05-01'=>'Maharashtra Day','2025-08-15'=>'Independence Day',
+        '2025-08-27'=>'Ganesh Chaturthi','2025-10-02'=>'Mahatma Gandhi Jayanti','2025-10-21'=>'Diwali Laxmi Pujan','2025-10-22'=>'Diwali-Balipratipada',
+        '2025-11-05'=>'Guru Nanak Jayanti','2025-12-25'=>'Christmas',
+        '2026-01-15'=>'Municipal Election','2026-01-26'=>'Republic Day','2026-03-03'=>'Holi','2026-03-26'=>'Shri Ram Navami',
+        '2026-03-31'=>'Shri Mahavir Jayanti','2026-04-03'=>'Good Friday','2026-04-14'=>'Dr. Ambedkar Jayanti','2026-05-01'=>'Maharashtra Day',
+        '2026-05-28'=>'Bakri Id','2026-06-26'=>'Moharram','2026-09-14'=>'Ganesh Chaturthi','2026-10-02'=>'Mahatma Gandhi Jayanti',
+        '2026-10-20'=>'Dussehra','2026-11-08'=>'Diwali Laxmi Pujan','2026-11-10'=>'Diwali-Balipratipada','2026-11-24'=>'Guru Nanak Jayanti',
+        '2026-12-25'=>'Christmas',
+        '2027-01-26'=>'Republic Day','2027-03-22'=>'Holi','2027-03-26'=>'Good Friday','2027-04-14'=>'Dr. Ambedkar Jayanti',
+        '2027-05-01'=>'Maharashtra Day','2027-08-15'=>'Independence Day','2027-10-02'=>'Mahatma Gandhi Jayanti','2027-12-25'=>'Christmas'
+    ];
+    return $h[$ymd] ?? null;
+}
 function t_market_open($c) {
     if ($c['anytime']) return true;
-    $n = t_ist(); $d = (int)$n->format('N'); $m = (int)$n->format('G') * 60 + (int)$n->format('i');
+    $n = t_ist();
+    $ymd = $n->format('Y-m-d');
+    if (t_is_holiday($ymd)) return false;
+    $d = (int)$n->format('N'); $m = (int)$n->format('G') * 60 + (int)$n->format('i');
     return $d <= 5 && $m >= 555 && $m < 930;
 }
 function t_tick_ok($p) { return $p > 0 && abs(round($p * 100) - $p * 100) < 1e-6 && ((int)round($p * 100)) % 5 === 0; }

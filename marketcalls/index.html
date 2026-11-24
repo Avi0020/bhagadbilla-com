@@ -264,7 +264,26 @@ const dkey=t=>new Date(t+IST).toISOString().slice(0,10);
 const istMin=t=>{const d=new Date(t+IST);return d.getUTCHours()*60+d.getUTCMinutes()};
 const hhmm=t=>{const m=istMin(t);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
 const nice=k=>new Date(k+'T00:00:00Z').toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'UTC'});
+const HOLIDAYS={
+  '2024-01-26':'Republic Day','2024-03-08':'Mahashivratri','2024-03-25':'Holi','2024-03-29':'Good Friday',
+  '2024-04-11':'Id-Ul-Fitr','2024-04-17':'Shri Ram Navami','2024-05-01':'Maharashtra Day','2024-05-20':'Elections',
+  '2024-06-17':'Bakri Id','2024-07-17':'Moharram','2024-08-15':'Independence Day','2024-10-02':'Mahatma Gandhi Jayanti',
+  '2024-11-01':'Diwali Laxmi Pujan','2024-11-15':'Guru Nanak Jayanti','2024-11-20':'Maharashtra Election','2024-12-25':'Christmas',
+  '2025-02-26':'Mahashivratri','2025-03-14':'Holi','2025-03-31':'Id-Ul-Fitr','2025-04-10':'Shri Mahavir Jayanti',
+  '2025-04-14':'Dr. Ambedkar Jayanti','2025-04-18':'Good Friday','2025-05-01':'Maharashtra Day','2025-08-15':'Independence Day',
+  '2025-08-27':'Ganesh Chaturthi','2025-10-02':'Mahatma Gandhi Jayanti','2025-10-21':'Diwali Laxmi Pujan','2025-10-22':'Diwali-Balipratipada',
+  '2025-11-05':'Guru Nanak Jayanti','2025-12-25':'Christmas',
+  '2026-01-15':'Municipal Election','2026-01-26':'Republic Day','2026-03-03':'Holi','2026-03-26':'Shri Ram Navami',
+  '2026-03-31':'Shri Mahavir Jayanti','2026-04-03':'Good Friday','2026-04-14':'Dr. Ambedkar Jayanti','2026-05-01':'Maharashtra Day',
+  '2026-05-28':'Bakri Id','2026-06-26':'Moharram','2026-09-14':'Ganesh Chaturthi','2026-10-02':'Mahatma Gandhi Jayanti',
+  '2026-10-20':'Dussehra','2026-11-08':'Diwali Laxmi Pujan','2026-11-10':'Diwali-Balipratipada','2026-11-24':'Guru Nanak Jayanti',
+  '2026-12-25':'Christmas',
+  '2027-01-26':'Republic Day','2027-03-22':'Holi','2027-03-26':'Good Friday','2027-04-14':'Dr. Ambedkar Jayanti',
+  '2027-05-01':'Maharashtra Day','2027-08-15':'Independence Day','2027-10-02':'Mahatma Gandhi Jayanti','2027-12-25':'Christmas'
+};
 function market(){const d=new Date(Date.now()+IST),wd=d.getUTCDay(),m=d.getUTCHours()*60+d.getUTCMinutes();
+  const k=dkey(Date.now()),hol=HOLIDAYS[k];
+  if(hol)return{open:false,m,wd,holiday:hol,label:'Market closed · '+hol};
   if(wd===0||wd===6)return{open:false,m,wd,label:'Market closed · weekend'};
   if(m<555)return{open:false,m,wd,label:'Opens 9:15 AM'};
   if(m<930)return{open:true,m,wd,label:'Market open'};
