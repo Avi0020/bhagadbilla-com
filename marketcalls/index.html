@@ -775,6 +775,15 @@ function openSettings(){const c=cfg();
   <div class="fld"><label>Budget per trade (₹)</label><input id="sBud" type="number" inputmode="numeric" value="${c.budget}"><div class="hint">Strikes whose 1-lot cost fits this are marked, and the best one is shown first. ₹8–9k suits most small accounts.</div></div>
   <div class="fld"><label>Layout</label><div class="seg" id="sLay">${['auto','desktop','mobile'].map(m=>`<button data-m="${m}" class="${LS.get('layout','auto')===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><div class="hint">Auto switches to the desktop layout on wide screens.</div></div>
   <div class="fld"><label>Theme</label><div class="seg" id="sTheme">${['light','dark'].map(m=>`<button data-m="${m}" class="${theme()===m?'on':''}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div><div class="hint">Light is the default. The choice is remembered on this device. The sun / moon button at the top switches it too.</div></div>
+  <div class="fld"><label>Broker Auto-Execution Account</label>
+    <div style="background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--tx)">${S.trd&&S.trd.status&&S.trd.status.connected?'✓ Connected: '+(S.trd.status.broker==='indstocks'?'INDstocks':'Upstox'):'⚡ Broker Not Connected'}</div>
+        <div style="font-size:12px;color:var(--mu);margin-top:2px">${S.trd&&S.trd.status&&S.trd.status.connected?'Auto-execution & trailing stop-loss ready':'Connect Upstox in 1-click for auto-execution'}</div>
+      </div>
+      <button class="btn2 on" id="sGoBroker" style="font-size:12px;padding:6px 14px">${S.trd&&S.trd.status&&S.trd.status.connected?'Manage':'Connect'}</button>
+    </div>
+  </div>
   <div class="bar"><button class="btn" id="sSave">Save</button></div>
   <h3>How the engine decides</h3><div class="how">
   <p><b>One rule, tested on 3.75 years of 5-minute data.</b> Every 30 minutes from 9:45 AM to 2:30 PM the engine compares the index with its usual distance from the open at that time of day (average of the last 14 sessions). A close beyond that range, in the direction of the daily trend (previous close against the daily 20 EMA), is a call: CE above, PE below.</p>
@@ -786,6 +795,7 @@ function openSettings(){const c=cfg();
   <p><b>PCR and OI:</b> put/call OI ratio, plus the strikes with the highest put OI (support) and call OI (resistance) in that expiry.</p>
   <p><b>Backtest line:</b> the same rule replayed on the recent 5-minute history loaded in the app, in multiples of the initial risk (R). The line under it is the longer test on real option prices.</p></div>`);
   $('#sTheme').onclick=e=>{const b=e.target.closest('button');if(!b)return;setTheme(b.dataset.m);[...$('#sTheme').children].forEach(x=>x.classList.toggle('on',x===b))};
+  if($('#sGoBroker'))$('#sGoBroker').onclick=()=>{closeSheet();S.tab='paper';LS.set('tab','paper');render();scrollTo(0,0)};
   $('#sLay').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sLay').children].forEach(x=>x.classList.toggle('on',x===b))};
   $('#sMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sMode').children].forEach(x=>x.classList.toggle('on',x===b))};
   $('#sSave').onclick=()=>{if($('#sPin'))LS.set('pin',$('#sPin').value.trim());const m=$('#sMode .on');if(m)LS.set('mode',m.dataset.m);
@@ -1041,88 +1051,181 @@ const trdName=()=>S.trd.status&&S.trd.status.broker==='indstocks'?'INDstocks':'U
 const trdInd=()=>S.trd.status&&S.trd.status.broker==='indstocks';
 const trdOn=()=>S.trd.status&&S.trd.status.mode&&S.trd.status.mode!=='off';
 const trdBanner=()=>{const m=S.trd.status.mode;return m==='live'?'<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>Orders go to your '+trdName()+' account. Check the contract, quantity and price every time.</span></div>':'<div class="verdict amb" style="margin:10px 0"><b>DRY RUN — nothing is sent</b><span>Orders are checked and logged exactly as in live mode, but they are not sent to '+trdName()+'.</span></div>'};
-function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="err">${esc(c.err)}</div></div>`:'';
+function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()}</div><div class="err">${esc(c.err)}</div></div>`:'';
   const isUpstox = !trdInd();
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   const maxCap=(s.mode==='live'&&isFinite(+f)&&+f>0)?Math.min(s.limits.maxValue,+f):s.limits.maxValue;
 
-  let h=`<div class="card" style="margin-top:14px">
-    <div class="c-top" style="align-items:flex-start">
-      <div>
-        <div class="iname" style="font-size:16px">${trdName()} Auto-Execution &amp; Orders</div>
-        <div class="meta" style="margin-top:2px">
-          <span>${s.connected?'✓ Connected'+(s.user?' as <b>'+esc(s.user)+'</b>':''):'⚠️ Not connected today'}</span>
-          <span>· ${s.sentToday}/${s.limits.perDay} orders today</span>
-          ${s.connected?`<span>· <button class="lnk" data-trd="disconnect" style="color:var(--dn);font-size:12px">Disconnect</button></span>`:''}
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <span class="pill ${s.mode==='live'?'p-dn':s.mode==='dry'?'p-amb':'p-mu'}">${s.mode==='live'?'Live':'Dry run'}</span>
-      </div>
-    </div>
-    <div style="margin:8px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:6px 0;border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)">
-      <div style="display:flex;gap:4px;align-items:center">
-        <span style="font-size:12px;color:var(--tx-mu)">Broker:</span>
-        <button class="sbtn ${isUpstox?'on':''}" data-trdbroker="upstox" style="padding:2px 8px;font-size:11px">⚡ Upstox (1-Click)</button>
-        <button class="sbtn ${!isUpstox?'on':''}" data-trdbroker="indstocks" style="padding:2px 8px;font-size:11px">INDstocks</button>
-      </div>
-      <div style="display:flex;gap:4px;align-items:center">
-        <span style="font-size:12px;color:var(--tx-mu)">Mode:</span>
-        <button class="sbtn ${s.mode==='dry'?'on':''}" data-trdmode="dry" style="padding:2px 8px;font-size:11px">🟡 Dry Run</button>
-        <button class="sbtn ${s.mode==='live'?'on':''}" data-trdmode="live" style="padding:2px 8px;font-size:11px">🔴 Live Orders</button>
-      </div>
-    </div>
-    ${trdBanner()}`;
-  if(c.err)h+=`<div class="err">${esc(c.err)}</div>`;
-  const pasteBox=()=>{
-    const autoCfg=s.indAuto&&s.indAuto.configured;
-    if(autoCfg){
-      return `<div style="background:rgba(46,125,50,0.1);border:1px solid rgba(46,125,50,0.3);border-radius:8px;padding:12px;margin:0 0 12px">
-        <div style="font-weight:600;font-size:14px;color:var(--up,#4caf50);margin-bottom:4px">⚡ Auto-Login Configured</div>
-        <div class="sub" style="margin:0 0 10px">Your INDstocks credentials are saved. Click below to generate today's token now, or let your daily cron job refresh it at 8:30 AM automatically.</div>
-        <div class="c-act">
-          <button class="btn2 on" id="btnIndAutoGenerate" style="font-weight:bold">⚡ Generate Today's Token Now</button>
-          <button class="btn2" data-trd="refresh">Refresh</button>
-          <button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button>
-        </div>
-      </div>
-      <details style="margin:8px 0 10px;font-size:12px">
-        <summary style="cursor:pointer;color:var(--tx-mu)">Or paste token manually</summary>
-        <div class="fld" style="margin:8px 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div>
-        <div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button></div>
-      </details>`;
-    }
-    return `<div style="background:rgba(25,118,210,0.08);border:1px solid rgba(25,118,210,0.3);border-radius:8px;padding:12px;margin:0 0 12px">
-      <div style="font-weight:600;font-size:14px;color:var(--tx,#fff);margin-bottom:4px">⚡ Setup 1-Time Auto-Login (No more daily tokens)</div>
-      <div class="sub" style="margin:0 0 10px">To stop pasting tokens every morning, enter your INDstocks Client ID, MPIN &amp; TOTP Secret Key in Admin settings. Once saved, your server auto-generates your daily token every morning!</div>
-      <div class="c-act"><button class="btn2 on" onclick="accountSheet()">⚡ Setup Auto-Login in Admin</button></div>
-    </div>
-    <div class="sub" style="margin:0 0 10px">Or paste today's INDstocks access token manually (indstocks.com/app/api-trading/access-tokens):</div>
-    <div class="fld" style="margin:0 0 10px"><input id="trdTok" type="password" autocomplete="off" placeholder="Access token"></div>
-    <div class="c-act"><button class="btn2 on" data-trd="settoken">Save token</button><button class="btn2" data-trd="refresh">Refresh</button><button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Manual Test Order / Speed Test</button></div>`;
-  };
+  let h=`<div class="card" style="margin-top:14px;border-radius:14px;overflow:hidden;padding:0;background:var(--s1);border:1px solid var(--line2)">`;
+
   if(!s.connected){
+    h+=`
+    <div style="padding:14px 16px;background:var(--s2);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-weight:700;font-size:16px;color:var(--tx)">⚡ Connect Broker Account</div>
+        <div style="font-size:12px;color:var(--mu);margin-top:2px">Connect once to execute calls automatically with Trailing Stop-Loss</div>
+      </div>
+      <span class="pill p-amb" style="font-size:11px">⚠️ Not Connected Today</span>
+    </div>
+
+    <div style="padding:14px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">1. Choose Your Broker</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div data-trdbroker="upstox" style="cursor:pointer;border:2px solid ${isUpstox?'var(--acc)':'var(--line)'};background:${isUpstox?'rgba(37,99,235,0.06)':'var(--bg)'};border-radius:12px;padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:700;font-size:14.5px;color:var(--tx)">⚡ Upstox</span>
+            <span class="tag" style="background:${isUpstox?'var(--acc)':'var(--line2)'};color:${isUpstox?'#fff':'var(--mu)'};font-size:10px;font-weight:700">RECOMMENDED</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--mu);margin-top:6px;line-height:1.35">1-Click direct login with OTP.<br>Zero API key setup needed.</div>
+        </div>
+
+        <div data-trdbroker="indstocks" style="cursor:pointer;border:2px solid ${!isUpstox?'var(--acc)':'var(--line)'};background:${!isUpstox?'rgba(37,99,235,0.06)':'var(--bg)'};border-radius:12px;padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:700;font-size:14.5px;color:var(--tx)">INDstocks</span>
+            <span class="tag" style="background:${!isUpstox?'var(--acc)':'var(--line2)'};color:${!isUpstox?'#fff':'var(--mu)'};font-size:10px;font-weight:700">TOKEN / MPIN</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--mu);margin-top:6px;line-height:1.35">Connect via saved MPIN<br>or paste daily token.</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">2. Connect Account</div>`;
+
     if(isUpstox){
-      h+=`<div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.25);border-radius:8px;padding:14px;margin:10px 0">
-        <div style="font-weight:600;font-size:15px;color:var(--tx,#fff);margin-bottom:4px">⚡ 1-Click Upstox Login</div>
-        <div class="sub" style="margin:0 0 12px">No developer credentials or API keys needed. Authorize once per day on Upstox's official login dialog. Once connected, your personal buy/sell calls, stop-loss protection and profit trailing execute directly in your Upstox account.</div>
-        <div class="c-act">
-          <button class="btn2 on" data-trd="login" style="font-weight:bold;padding:8px 16px">⚡ 1-Click Connect Upstox</button>
-          <button class="btn2" data-trd="refresh">Refresh Status</button>
-          <button class="btn2" id="btnManualTestOrder" style="margin-left:6px">⚡ Test Order / Benchmark</button>
+      h+=`
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center">
+        <div style="font-size:14.5px;font-weight:600;color:var(--tx);margin-bottom:4px">1-Click Upstox Login</div>
+        <div style="font-size:12.5px;color:var(--mu);max-width:440px;margin:0 auto 14px;line-height:1.5">
+          Tap below to securely authorize with your registered Upstox mobile number &amp; OTP. Valid calls will auto-execute with trailing profit &amp; stop-loss.
+        </div>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+          <button class="btn2 on" data-trd="login" style="font-weight:700;font-size:14px;padding:10px 22px;border-radius:10px">
+            ⚡ Connect Upstox Now
+          </button>
+          <button class="btn2" data-trd="refresh" style="padding:10px 14px">↻ Refresh Status</button>
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:center;gap:16px;font-size:11.5px;color:var(--mu);flex-wrap:wrap">
+          <span>🔒 Official Upstox Login</span>
+          <span>⚡ No API Keys Needed</span>
+          <span>🛡️ Auto Trailing SL &amp; Profit</span>
         </div>
       </div>`;
     }else{
-      h+=pasteBox();
+      const autoCfg=s.indAuto&&s.indAuto.configured;
+      if(autoCfg){
+        h+=`
+        <div style="background:rgba(46,125,50,0.06);border:1px solid rgba(46,125,50,0.25);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-weight:700;font-size:14.5px;color:var(--up);margin-bottom:4px">✓ Auto-Login Configured</div>
+          <div style="font-size:12px;color:var(--mu);margin-bottom:14px">Your INDstocks credentials are saved. Generate today's token in 1 tap:</div>
+          <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+            <button class="btn2 on" id="btnIndAutoGenerate" style="font-weight:700;font-size:13.5px;padding:10px 20px">⚡ Generate Today's Token</button>
+            <button class="btn2" data-trd="refresh" style="padding:10px 14px">↻ Refresh</button>
+          </div>
+        </div>`;
+      }else{
+        h+=`
+        <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px">
+          <div style="font-size:13.5px;font-weight:600;margin-bottom:8px">Paste today's INDstocks token:</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="trdTok" type="password" autocomplete="off" placeholder="Paste INDstocks access token" style="flex:1">
+            <button class="btn2 on" data-trd="settoken" style="font-weight:600;padding:10px 16px">Save Token</button>
+          </div>
+          <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--mu);flex-wrap:wrap;gap:6px">
+            <a href="https://indstocks.com/app/api-trading/access-tokens" target="_blank" style="color:var(--acc);text-decoration:none">Get token from INDstocks ↗</a>
+            <span onclick="accountSheet()" style="cursor:pointer;color:var(--tx);font-weight:600">⚡ Setup 1-time auto login in Admin</span>
+          </div>
+        </div>`;
+      }
     }
+
+    h+=`
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--mu)">Trading Mode: <b>${s.mode==='live'?'🔴 Live Real Orders':'🟡 Safe Dry Run'}</b></div>
+        <div style="display:flex;gap:6px">
+          <button class="sbtn ${s.mode==='dry'?'on':''}" data-trdmode="dry" style="font-size:11px;padding:4px 8px">🟡 Dry Run</button>
+          <button class="sbtn ${s.mode==='live'?'on':''}" data-trdmode="live" style="font-size:11px;padding:4px 8px">🔴 Live Orders</button>
+        </div>
+      </div>
+    </div>`;
   }else{
-    h+=`<div class="info num" style="border-top:0;padding-top:0">Available to trade: <b>${isFinite(+f)?'₹'+f0(+f):'—'}</b> · ${s.tokenMode==='paste'?'token':'login'} valid until ${esc(exp)} · max outlay: <b>₹${f0(maxCap)}</b>${s.tokenMode==='paste'?' · <button class="lnk" data-trd="newtoken">change token</button>':''}</div>`;
-    if(trdInd())h+=`<div class="sub" style="margin:0 0 6px">INDstocks has no stop order for an open position in its API. Place your stop-loss in the INDstocks app as soon as a buy fills.</div>`;
-    h+=`<h3 style="margin-top:12px">Your option positions</h3>`+(c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`<div class="row" style="align-items:flex-start"><div style="min-width:0"><div class="n">${esc(p.trading_symbol||p.instrument_token)} <span class="tag">${p.product==='I'?'Intraday':'Overnight'}</span></div><div class="s num">${p.quantity} qty · avg ₹${f2(p.average_price)} · now ₹${f2(p.last_price)} · <span class="${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</span></div>${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}</div></div>`).join('')}</div>`:'<div class="empty" style="padding:14px">No open option positions on '+trdName()+'.</div>');
-    if(c.orders.length)h+=`<h3>Recent orders</h3><div class="list out">${c.orders.slice(0,5).map(o=>`<div class="row"><div><div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div><div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div></div><span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span></div>`).join('')}</div>`;
-    h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 on" id="btnManualTestOrder">⚡ Test Buy Order & Speed Benchmark</button><button class="btn2" data-trd="refresh">Refresh</button><span class="qty" style="font-size:12px">Place a manual order and benchmark execution latency</span></div>`;
+    h+=`
+    <div style="padding:14px 16px;background:var(--upbg);border-bottom:1px solid var(--upbd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--up);color:#fff;display:grid;place-items:center;font-weight:700;font-size:16px">✓</div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--tx)">${trdName()} Connected</div>
+          <div style="font-size:11.5px;color:var(--mu)">${s.user?'Account: <b>'+esc(s.user)+'</b> · ':''}Session valid until ${esc(exp)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="pill ${s.mode==='live'?'p-dn':'p-amb'}" style="font-size:11px">${s.mode==='live'?'🔴 Live Trading':'🟡 Dry Run'}</span>
+        <button class="sbtn" data-trd="disconnect" style="color:var(--dn);font-size:11px;padding:5px 9px">Disconnect</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px;background:var(--bg)">
+      <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Available Funds</div>
+        <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">${isFinite(+f)?'₹'+f0(+f):'—'}</div>
+      </div>
+      <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Max Cap / Trade</div>
+        <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">₹${f0(maxCap)}</div>
+      </div>
+      <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
+        <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Orders Today</div>
+        <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">${s.sentToday} / ${s.limits.perDay}</div>
+      </div>
+    </div>
+
+    <div style="padding:10px 16px;background:var(--s2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;color:var(--mu)">
+        Order Execution: <b>${s.mode==='live'?'Real Money Orders':'Paper Simulation (Dry Run)'}</b>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="sbtn ${s.mode==='dry'?'on':''}" data-trdmode="dry" style="font-size:11px;padding:4px 8px">🟡 Dry Run</button>
+        <button class="sbtn ${s.mode==='live'?'on':''}" data-trdmode="live" style="font-size:11px;padding:4px 8px">🔴 Live Orders</button>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px">
+      ${trdBanner()}
+      ${c.err?`<div class="err">${esc(c.err)}</div>`:''}
+
+      <h3 style="margin:12px 0 6px">Your Broker Option Positions</h3>
+      ${c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`
+        <div class="row" style="align-items:flex-start">
+          <div style="min-width:0">
+            <div class="n">${esc(p.trading_symbol||p.instrument_token)} <span class="tag">${p.product==='I'?'Intraday':'Overnight'}</span></div>
+            <div class="s num">${p.quantity} qty · avg ₹${f2(p.average_price)} · now ₹${f2(p.last_price)} · <span class="${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</span></div>
+            ${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}
+          </div>
+        </div>`).join('')}</div>`
+        :`<div class="empty" style="padding:14px">No open option positions on ${trdName()}.</div>`}
+
+      ${c.orders.length?`
+        <h3 style="margin:14px 0 6px">Recent Orders</h3>
+        <div class="list out">${c.orders.slice(0,5).map(o=>`
+          <div class="row">
+            <div>
+              <div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div>
+              <div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div>
+            </div>
+            <span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span>
+          </div>`).join('')}</div>`:''}
+
+      <details style="margin-top:14px;font-size:12px;color:var(--mu)">
+        <summary style="cursor:pointer;padding:4px 0;font-weight:600">🛠️ Latency benchmark &amp; manual test order</summary>
+        <div style="padding:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn2" id="btnManualTestOrder" style="font-size:12px">⚡ Test Order &amp; Benchmark</button>
+          <button class="btn2" data-trd="refresh" style="font-size:12px">↻ Refresh Connection</button>
+        </div>
+      </details>
+    </div>`;
   }
-  return h+'</div>'}
+
+  h+=`</div>`;
+  return h;
+}
 const ordBtn=(kind,ix,leg,v)=>trdOn()&&S.trd.status.connected&&leg&&leg.key&&v&&v.ok?`<button class="sbtn" data-ord="${kind}|${ix.id}">${trdName()} order</button>`:'';
 function ordSheet(o){S.ord=o;const s=S.trd.status,lim=s.limits;
   openSheet(`<h2>${esc(o.title)}</h2><div class="sub" style="margin:4px 0 0">${esc(o.sub||'')}</div>${trdBanner()}
@@ -2018,7 +2121,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.trd==='newtoken'){S.trd.paste=true;render();return}
   if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}
   if(t.id==='btnIndAutoGenerate'){t.disabled=true;t.textContent='⚡ Generating…';trdApi('ind_generate',null,{}).then(j=>{toast(j.message||'Token generated successfully');trdLoad()}).catch(e=>{toast(e.message);t.disabled=false;t.textContent='⚡ Auto-Generate Token'});return}
-  if(t.dataset.trd==='login'){trdApi('login').then(j=>{window.open(j.url,'_blank','noopener')}).catch(e=>toast(e.message));return}
+  if(t.dataset.trd==='login'){trdApi('login').then(j=>{location.href=j.url}).catch(e=>toast(e.message));return}
   if(t.dataset.trd==='disconnect'){
     if(!confirm('Disconnect your '+trdName()+' trading account?'))return;
     trdApi('disconnect').then(()=>{toast(trdName()+' disconnected');trdLoad()}).catch(e=>toast(e.message));return;
