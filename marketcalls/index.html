@@ -807,7 +807,7 @@ function openSettings(){const c=cfg();
   <p><b>PCR and OI:</b> put/call OI ratio, plus the strikes with the highest put OI (support) and call OI (resistance) in that expiry.</p>
   <p><b>Backtest line:</b> the same rule replayed on the recent 5-minute history loaded in the app, in multiples of the initial risk (R). The line under it is the longer test on real option prices.</p></div>`);
   $('#sTheme').onclick=e=>{const b=e.target.closest('button');if(!b)return;setTheme(b.dataset.m);[...$('#sTheme').children].forEach(x=>x.classList.toggle('on',x===b))};
-  if($('#sGoBroker'))$('#sGoBroker').onclick=()=>{closeSheet();S.tab='paper';LS.set('tab','paper');render();scrollTo(0,0)};
+  if($('#sGoBroker'))$('#sGoBroker').onclick=()=>{closeSheet();S.tab='paper';S.psub='broker';LS.set('tab','paper');LS.set('psub','broker');render();scrollTo(0,0)};
   $('#sLay').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sLay').children].forEach(x=>x.classList.toggle('on',x===b))};
   $('#sMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;[...$('#sMode').children].forEach(x=>x.classList.toggle('on',x===b))};
   $('#sSave').onclick=()=>{if($('#sPin'))LS.set('pin',$('#sPin').value.trim());const m=$('#sMode .on');if(m)LS.set('mode',m.dataset.m);
@@ -2092,15 +2092,51 @@ function applyTheme(){const d=theme()==='dark';document.documentElement.setAttri
   const b=$('#btnTheme');if(b){b.innerHTML=d?ICO_SUN:ICO_MOON;b.title=d?'Switch to light mode':'Switch to dark mode';b.setAttribute('aria-label',b.title)}}
 function setTheme(t){LS.set('theme',t==='dark'?'dark':'light');applyTheme()}
 applyTheme();
+function paperTabHTML(){
+  const sub=S.psub||LS.get('psub','paper');
+  const conn=S.trd&&S.trd.status&&S.trd.status.connected;
+  const bName=S.trd&&S.trd.status&&S.trd.status.broker==='indstocks'?'INDstocks':'Upstox';
+  const isLive=S.trd&&S.trd.status&&S.trd.status.mode==='live';
+
+  let nav=`
+  <div style="margin:4px 0 14px">
+    <div class="seg" style="display:flex;width:100%;background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:3px;gap:4px">
+      <button class="btn2 ${sub==='paper'?'on':''}" data-psub="paper" style="flex:1;text-align:center;padding:9px 6px;font-size:13px;font-weight:600;border-radius:9px">
+        📝 Virtual Paper Trading
+      </button>
+      <button class="btn2 ${sub==='broker'?'on':''}" data-psub="broker" style="flex:1;text-align:center;padding:9px 6px;font-size:13px;font-weight:600;border-radius:9px">
+        ⚡ Broker Auto-Trade ${conn?(isLive?'<span style="color:var(--dn);margin-left:3px">● Live</span>':'<span style="color:var(--amb);margin-left:3px">● Dry</span>'):''}
+      </button>
+    </div>
+  </div>`;
+
+  if(sub==='broker'){
+    return nav+viewerNote()+trdCard()+botCard();
+  }
+
+  let bridge=`
+  <div style="background:var(--s2);border:1px solid var(--line2);border-radius:12px;padding:11px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-weight:700;font-size:13.5px;color:var(--tx)">🎯 Virtual Simulation Mode</div>
+      <div style="font-size:12px;color:var(--mu);margin-top:2px">Practice trading index calls with virtual ₹50,000 capital &amp; trailing stop-loss. Zero real money at risk.</div>
+    </div>
+    <button class="btn2" data-psub="broker" style="font-size:12px;padding:6px 12px;white-space:nowrap">
+      ${conn?'⚡ Manage Broker Auto-Trade ('+bName+') ↗':'⚡ Connect Real Broker ↗'}
+    </button>
+  </div>`;
+
+  return nav+bridge+viewerNote()+paperView();
+}
 function render(){const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'')+(S.viewer?' · read-only window':'');$('#mDot').classList.toggle('on',mk.open);
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
   const tc=P&&P.on?P.pos.length:0;$('#tCnt').hidden=!tc;$('#tCnt').textContent=tc;
   $('#tiles').innerHTML=tilesHTML();
-  if(S.tab==='stk'){if(!$('#stkQ'))$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}else if(S.tab==='chk'){if(!$('#chkQ'))$('#view').innerHTML='<div class="pw">'+chkView()+'</div>'}else $('#view').innerHTML=S.tab==='res'?'<div class="pw">'+resView()+'</div>':S.tab==='paper'?'<div class="pw">'+viewerNote()+trdCard()+botCard()+paperView()+'</div>':scanBar(S.tab)+'<div class="grid">'+IDX.map(ix=>indexCard(ix,S.tab)).join('')+'</div>'}
+  if(S.tab==='stk'){if(!$('#stkQ'))$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}else if(S.tab==='chk'){if(!$('#chkQ'))$('#view').innerHTML='<div class="pw">'+chkView()+'</div>'}else $('#view').innerHTML=S.tab==='res'?'<div class="pw">'+resView()+'</div>':S.tab==='paper'?'<div class="pw">'+paperTabHTML()+'</div>':scanBar(S.tab)+'<div class="grid">'+IDX.map(ix=>indexCard(ix,S.tab)).join('')+'</div>'}
 document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.psub){S.psub=t.dataset.psub;LS.set('psub',S.psub);render();return}
   if(t.dataset.takeover){svcApi('lease',{id:CID,runner:false,force:true}).then(async j=>{if(j.granted){S.viewer=false;await paperLoad();render();toast('This window now manages the paper account.')}else toast('The 24/7 server is running the account, so it cannot be taken over.')}).catch(e=>toast(e.message));return}
   if(S.viewer&&(t.dataset.pbuy||t.dataset.pexit||t.id==='pOn'||t.id==='pReset'||t.id==='pAuto'||t.dataset.spb||t.dataset.sauto)){toast(S.viewerBy==='server'?'The 24/7 server account manages paper trades, so this view is read-only.':'Another window manages the paper account, so this one is read-only.');return}
-  if(t.dataset.tab){S.tab=t.dataset.tab;LS.set('tab',S.tab);render();if(S.tab==='stk')stkScan().then(()=>stkCalls());if(!['paper','chk','stk','res'].includes(S.tab)&&!S.at[S.tab])scan(S.tab,true);if((S.tab==='chk'||S.tab==='stk'||S.tab==='res')&&!S.at.intra)scan('intra',true);if(S.tab==='res')recLoad();if(S.tab==='paper'){trdLoad();paperUpdate().then(render)};return}
+  if(t.dataset.tab){S.tab=t.dataset.tab;LS.set('tab',S.tab);if(S.tab==='paper'&&!S.psub)S.psub='paper';render();if(S.tab==='stk')stkScan().then(()=>stkCalls());if(!['paper','chk','stk','res'].includes(S.tab)&&!S.at[S.tab])scan(S.tab,true);if((S.tab==='chk'||S.tab==='stk'||S.tab==='res')&&!S.at.intra)scan('intra',true);if(S.tab==='res')recLoad();if(S.tab==='paper'){trdLoad();paperUpdate().then(render)};return}
   if(t.id==='btnScan')return scan(S.tab);
   if(t.dataset.ord){const [k,i]=t.dataset.ord.split('|');ordFromCall(k,i);return}
   if(t.dataset.stkord){ordFromStkCall(t.dataset.stkord);return}
