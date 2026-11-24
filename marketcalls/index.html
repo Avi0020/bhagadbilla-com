@@ -1178,14 +1178,17 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
       <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
         <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Available Funds</div>
         <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">${isFinite(+f)?'₹'+f0(+f):'—'}</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:2px">F&amp;O Margin</div>
       </div>
       <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
         <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Max Cap / Trade</div>
         <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">₹${f0(maxCap)}</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:2px">Per Trade Limit</div>
       </div>
       <div style="text-align:center;padding:10px 8px;background:var(--s1);border-radius:10px;border:1px solid var(--line)">
         <div style="font-size:10.5px;color:var(--mu);text-transform:uppercase;font-weight:600">Orders Today</div>
         <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px">${s.sentToday} / ${s.limits.perDay}</div>
+        <div style="font-size:10px;color:var(--mu);margin-top:2px">Used / Daily Limit</div>
       </div>
     </div>
 
@@ -1200,10 +1203,10 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
     </div>
 
     <div style="padding:14px 16px">
-      ${trdBanner()}
+      ${(s.auto&&s.broker==='indstocks')?'':trdBanner()}
       ${c.err?`<div class="err">${esc(c.err)}</div>`:''}
 
-      <h3 style="margin:12px 0 6px">Your Broker Option Positions</h3>
+      <h3 style="margin:6px 0 6px">Your Broker Option Positions</h3>
       ${c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`
         <div class="row" style="align-items:flex-start">
           <div style="min-width:0">
@@ -1212,7 +1215,7 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
             ${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}
           </div>
         </div>`).join('')}</div>`
-        :`<div class="empty" style="padding:14px">No open option positions on ${trdName()}.</div>`}
+        :`<div class="empty" style="padding:10px 14px;font-size:12.5px">No open option positions on ${trdName()}.</div>`}
 
       ${c.orders.length?`
         <h3 style="margin:14px 0 6px">Recent Orders</h3>
@@ -1224,14 +1227,6 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
             </div>
             <span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span>
           </div>`).join('')}</div>`:''}
-
-      <details style="margin-top:14px;font-size:12px;color:var(--mu)">
-        <summary style="cursor:pointer;padding:4px 0;font-weight:600">🛠️ Latency benchmark &amp; manual test order</summary>
-        <div style="padding:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn2" id="btnManualTestOrder" style="font-size:12px">⚡ Test Order &amp; Benchmark</button>
-          <button class="btn2" data-trd="refresh" style="font-size:12px">↻ Refresh Connection</button>
-        </div>
-      </details>
     </div>`;
   }
 
@@ -2092,6 +2087,11 @@ function applyTheme(){const d=theme()==='dark';document.documentElement.setAttri
   const b=$('#btnTheme');if(b){b.innerHTML=d?ICO_SUN:ICO_MOON;b.title=d?'Switch to light mode':'Switch to dark mode';b.setAttribute('aria-label',b.title)}}
 function setTheme(t){LS.set('theme',t==='dark'?'dark':'light');applyTheme()}
 applyTheme();
+function trdBenchDetails(){
+  const s=S.trd&&S.trd.status;
+  if(!s||!s.connected)return'';
+  return `<div style="margin-top:14px"><details style="font-size:12px;color:var(--mu);background:var(--s1);border:1px solid var(--line);border-radius:12px;padding:10px 14px"><summary style="cursor:pointer;font-weight:600">🛠️ Latency benchmark &amp; manual test order</summary><div style="padding:10px 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn2" id="btnManualTestOrder" style="font-size:12px">⚡ Test Order &amp; Benchmark</button><button class="btn2" data-trd="refresh" style="font-size:12px">↻ Refresh Connection</button></div></details></div>`;
+}
 function paperTabHTML(){
   const sub=S.psub||LS.get('psub','paper');
   const conn=S.trd&&S.trd.status&&S.trd.status.connected;
@@ -2111,7 +2111,7 @@ function paperTabHTML(){
   </div>`;
 
   if(sub==='broker'){
-    return nav+viewerNote()+trdCard()+botCard();
+    return nav+viewerNote()+trdCard()+botCard()+trdBenchDetails();
   }
 
   let bridge=`
