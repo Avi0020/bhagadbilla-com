@@ -1574,52 +1574,52 @@ function showAuth(note,tab){
   let h=`<div class="auth-box"><div class="brand" style="justify-content:center;margin-bottom:16px">${mark}<div class="bname">Index Signals</div></div><div class="card">`;
   if(AUTH.pinDefault)h+=`<div class="verdict dn" style="margin:0 0 12px"><b>Server not secured</b><span>This server still uses the default PIN. The owner must set a PIN or switch on accounts in auth-local.php (SETUP-hostinger.txt).</span></div>`;
   if(must)h+=`<div class="iname" style="font-size:18px">Choose a new password</div><div class="sub" style="margin:6px 0 0">The owner gave you a temporary password. Pick your own now.</div>
-    <form id="aForm" autocomplete="on"><div class="fld"><label>Temporary password</label><input id="aOld" type="password" autocomplete="current-password"></div><div class="fld"><label>New password (8 or more characters)</label><input id="aNew" type="password" autocomplete="new-password"></div>
+    <form id="aForm" method="post" action="#" autocomplete="on"><div class="fld"><label>Temporary password</label><input id="aOld" name="current-password" type="password" autocomplete="current-password"></div><div class="fld"><label>New password (8 or more characters)</label><input id="aNew" name="new-password" type="password" autocomplete="new-password"></div>
     <div class="err" id="aErr">${esc(note||'')}</div><div class="bar"><button class="btn" id="aGo" type="submit">Save and continue</button></div></form>`;
   else{
     h+=`<div class="seg" style="margin-bottom:4px"><button data-at="login" class="${t==='login'?'on':''}">Log in</button><button data-at="signup" class="${t==='signup'?'on':''}">Create account</button></div>`;
     if(t==='signup'&&AUTH.first&&!AUTH.setupReady)h+=`<div class="verdict amb" style="margin:12px 0 0"><b>This server is not set up yet</b><span>The owner must set ADMIN_SETUP_CODE in auth-local.php on the server (SETUP-contabo.md). Until then nobody can sign up.</span></div>`;
     if(t==='recover')h+=`<div class="iname" style="font-size:18px;margin-top:12px">Owner password recovery</div><div class="sub" style="margin:6px 0 0">Only for the owner. It needs the setup code, which must be set again in auth-local.php on the server while you do this.</div>`;
     if(t==='forgot')h+=`<div class="iname" style="font-size:18px;margin-top:12px">Reset password</div><div class="sub" style="margin:6px 0 0">Enter your registered email ID to receive a verification OTP.</div>`;
-    h+=`<form id="aForm" autocomplete="on">`;
+    h+=`<form id="aForm" method="post" action="#" autocomplete="on">`;
     if(t==='signup'){
       h+=`<div class="fld"><label>Email ID</label>
         <div style="display:flex;gap:8px">
-          <input id="aEmail" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
+          <input id="aEmail" name="email" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
           <button type="button" class="btn2" id="aSendOtp" style="white-space:nowrap;padding:0 12px;font-size:13px">Send OTP</button>
         </div>
       </div>
       <div class="fld" id="otpRow" style="display:none">
         <label>6-Digit Verification OTP (sent to your email)</label>
-        <input id="aOtp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX" autocomplete="one-time-code">
+        <input id="aOtp" name="otp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX" autocomplete="one-time-code">
       </div>
-      <div class="fld"><label>Username</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24"></div>
-      <div class="fld"><label>Password (8 or more characters)</label><input id="aPass" type="password" autocomplete="new-password" maxlength="72"></div>`;
+      <div class="fld"><label>Username</label><input id="aUser" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24"></div>
+      <div class="fld"><label>Password (8 or more characters)</label><input id="aPass" name="password" type="password" autocomplete="new-password" maxlength="72"></div>`;
       if(AUTH.first)h+=`<div class="fld"><label>Setup code (from auth-local.php: creating OWNER account)</label><input id="aInv" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>`;
       else if(AUTH.requireInvite)h+=`<div class="fld"><label>Invite code from owner</label><input id="aInv" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></div>`;
       h+=`<label class="chk"><input type="checkbox" id="aAcc"><span>I understand this is a research and paper-trading tool. It places no real orders for me and is not investment advice. Options can lose their full premium.</span></label>`;
     } else if(t==='forgot'){
       h+=`<div class="fld"><label>Registered Email ID</label>
         <div style="display:flex;gap:8px">
-          <input id="aEmail" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
+          <input id="aEmail" name="email" type="email" placeholder="name@example.com" autocomplete="email" style="flex:1">
           <button type="button" class="btn2" id="aSendResetOtp" style="white-space:nowrap;padding:0 12px;font-size:13px">Send OTP</button>
         </div>
       </div>
       <div class="fld" id="resetOtpRow" style="display:none">
         <label>6-Digit Verification OTP</label>
-        <input id="aOtp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX">
+        <input id="aOtp" name="otp" type="text" inputmode="numeric" maxlength="6" placeholder="XXXXXX">
       </div>
       <div class="fld" id="resetPassRow" style="display:none">
         <label>New password (8 or more characters)</label>
-        <input id="aPass" type="password" autocomplete="new-password" maxlength="72">
+        <input id="aPass" name="password" type="password" autocomplete="new-password" maxlength="72">
       </div>`;
     } else if(t==='recover'){
-      h+=`<div class="fld"><label>Owner username</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
-        <div class="fld"><label>New password (8 or more characters)</label><input id="aPass" type="password" autocomplete="new-password" maxlength="72"></div>
+      h+=`<div class="fld"><label>Owner username</label><input id="aUser" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+        <div class="fld"><label>New password (8 or more characters)</label><input id="aPass" name="password" type="password" autocomplete="new-password" maxlength="72"></div>
         <div class="fld"><label>Setup code (from auth-local.php)</label><input id="aInv" autocomplete="off" spellcheck="false"></div>`;
     } else {
-      h+=`<div class="fld"><label>Username or Email</label><input id="aUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Username or email address"></div>
-        <div class="fld"><label>Password</label><input id="aPass" type="password" autocomplete="current-password" maxlength="72"></div>`;
+      h+=`<div class="fld"><label>Username or Email</label><input id="aUser" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Username or email address"></div>
+        <div class="fld"><label>Password</label><input id="aPass" name="password" type="password" autocomplete="current-password" maxlength="72"></div>`;
     }
     h+=`<div class="err" id="aErr">${esc(note||'')}</div><div class="bar"><button class="btn" id="aGo" type="submit">${t==='signup'?'Create account':t==='recover'?'Set new password':t==='forgot'?'Reset password':'Log in'}</button></div></form>
     ${t==='login'?`<div class="c-act" style="justify-content:center;margin-top:0"><button type="button" class="lnk" data-at="forgot" style="margin:0">Forgot password?</button>${AUTH.first||AUTH.setupReady?'<span style="color:var(--mu);margin:0 8px">·</span><button type="button" class="lnk" data-at="recover" style="margin:0">Owner recovery</button>':''}</div>`:t==='recover'||t==='forgot'?`<div class="c-act" style="justify-content:center;margin-top:0"><button type="button" class="lnk" data-at="login" style="margin:0">Back to log in</button></div>`:''}`}
@@ -1645,18 +1645,37 @@ function showAuth(note,tab){
   };
   el.onsubmit=async e=>{e.preventDefault();const go=$('#aGo'),er=$('#aErr');er.className='err';er.textContent='';go.disabled=true;
     try{
+      const userVal=($('#aUser')?.value||'').trim(),passVal=$('#aPass')?.value||'';
       if(must)await authPost('password',{old:$('#aOld').value,new:$('#aNew').value});
-      else if(S.authTab==='recover'){await authPost('recover',{username:$('#aUser').value,password:$('#aPass').value,code:$('#aInv').value});S.authTab='login';showAuth('Password changed. Now log in.','login');return}
-      else if(S.authTab==='forgot'){await authPost('reset_password_otp',{email:$('#aEmail').value,otp:$('#aOtp').value,password:$('#aPass').value});S.authTab='login';showAuth('Password reset successfully! Now log in.','login');return}
+      else if(S.authTab==='recover'){await authPost('recover',{username:userVal,password:passVal,code:$('#aInv').value});S.authTab='login';showAuth('Password changed. Now log in.','login');return}
+      else if(S.authTab==='forgot'){await authPost('reset_password_otp',{email:$('#aEmail').value,otp:$('#aOtp').value,password:passVal});S.authTab='login';showAuth('Password reset successfully! Now log in.','login');return}
       else if(S.authTab==='signup'){
         const em=$('#aEmail')?$('#aEmail').value.trim():'',otp=$('#aOtp')?$('#aOtp').value.trim():'';
         if(em&&!otp){er.textContent='Please request and enter the 6-digit OTP sent to your email.';go.disabled=false;return}
-        await authPost('signup',{email:em,otp:otp,username:$('#aUser').value,password:$('#aPass').value,invite:$('#aInv')?$('#aInv').value:'',accept:$('#aAcc')?$('#aAcc').checked:false});
+        await authPost('signup',{email:em,otp:otp,username:userVal,password:passVal,invite:$('#aInv')?$('#aInv').value:'',accept:$('#aAcc')?$('#aAcc').checked:false});
       }
-      else await authPost('login',{username:$('#aUser').value,password:$('#aPass').value});
+      else await authPost('login',{username:userVal,password:passVal});
+      if(window.PasswordCredential && navigator.credentials && navigator.credentials.store && userVal && passVal){
+        try{
+          const cred=new PasswordCredential({id:userVal,password:passVal,name:userVal});
+          await navigator.credentials.store(cred).catch(()=>{});
+        }catch(e){}
+      }
       location.reload()}
     catch(x){er.textContent=x.message;go.disabled=false}};
-  const f=$('#aEmail')||$('#aUser')||$('#aOld');if(f)setTimeout(()=>f.focus(),50)}
+  const f=$('#aEmail')||$('#aUser')||$('#aOld');if(f)setTimeout(()=>f.focus(),50);
+  if(window.PasswordCredential && navigator.credentials && navigator.credentials.get && t==='login'){
+    try{
+      navigator.credentials.get({password:true,mediation:'silent'}).then(c=>{
+        if(c && c.id && c.password){
+          const u=$('#aUser'),p=$('#aPass');
+          if(u&&!u.value)u.value=c.id;
+          if(p&&!p.value)p.value=c.password;
+        }
+      }).catch(()=>{});
+    }catch(e){}
+  }
+}
 async function authLogout(){try{await authPost('logout',{})}catch(e){}LS.del('paper');location.reload()}
 function accountSheet(){const u=AUTH.user;if(!u)return;
   let tPill='';
