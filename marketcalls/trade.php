@@ -481,10 +481,18 @@ function trade_handle($action) {
     $configured = $ind ? true : ($c['cid'] !== '' && $c['secret'] !== '' && $c['redirect'] !== '');
     if ($action === 'status') {
         $lg = t_read($dir . '/order-log.php'); $today = t_ist()->format('Y-m-d');
+        $uToken = t_read($dir . '/order-token.php');
+        $uConnected = !empty($uToken['token']) && ($uToken['exp'] ?? 0) > time();
+        $iToken = t_read($dir . '/order-token-ind.php');
+        $iConnected = !empty($iToken['token']) && ($iToken['exp'] ?? 0) > time();
         out(200, ['status' => 'success', 'mode' => $mode, 'broker' => $c['broker'], 'tokenMode' => $ind ? 'paste' : 'login', 'configured' => $configured, 'connected' => (bool)$tk, 'user' => $tk['user'] ?? '', 'expires' => $tk['exp'] ?? 0,
                   'auto' => t_auto_status($c, $dir, $ind, $mode), 'limits' => $lim, 'sentToday' => ($lg['day'] ?? '') === $today ? (int)($lg['count'] ?? 0) : 0, 'marketOpen' => t_market_open($c),
                   'indAuto' => ['configured' => (bool)t_ind_get_creds($dir), 'cronKey' => t_cron_key($dir)],
-                  'isMaster' => !empty($c['cid']) && $c['cid'] !== UPSTOX_CLIENT_ID]);
+                  'isMaster' => !empty($c['cid']) && $c['cid'] !== UPSTOX_CLIENT_ID,
+                  'brokers' => [
+                      'upstox' => ['name' => 'Upstox', 'connected' => $uConnected, 'user' => $uToken['user'] ?? '', 'expires' => $uToken['exp'] ?? 0],
+                      'indstocks' => ['name' => 'INDstocks', 'connected' => $iConnected, 'user' => $iToken['user'] ?? '', 'expires' => $iToken['exp'] ?? 0, 'autoConfigured' => (bool)t_ind_get_creds($dir)]
+                  ]]);
     }
 
     if ($action === 'setmode') {
@@ -509,9 +517,17 @@ function trade_handle($action) {
     }
     if ($action === 'disconnect') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['status' => 'error', 'message' => 'POST required']);
-        @unlink($dir . '/order-token.php');
-        @unlink($dir . '/order-token-ind.php');
-        t_log($c, ['ev' => 'broker-disconnected']);
+        $in = json_decode((string)file_get_contents('php://input'), true);
+        $targetBroker = strtolower(trim((string)($in['broker'] ?? '')));
+        if ($targetBroker === 'upstox') {
+            @unlink($dir . '/order-token.php');
+        } elseif ($targetBroker === 'indstocks') {
+            @unlink($dir . '/order-token-ind.php');
+        } else {
+            @unlink($dir . '/order-token.php');
+            @unlink($dir . '/order-token-ind.php');
+        }
+        t_log($c, ['ev' => 'broker-disconnected', 'target' => $targetBroker]);
         out(200, ['status' => 'success', 'message' => 'Broker disconnected successfully.']);
     }
     if ($action === 'upstox_master') {

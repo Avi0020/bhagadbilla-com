@@ -245,6 +245,7 @@ body.wide .foot{max-width:820px}
     <button data-tab="stk">Stocks</button>
     <button data-tab="chk">Check</button>
     <button data-tab="paper">Paper<span class="cnt" id="tCnt" hidden></span></button>
+    <button data-tab="broker" style="font-weight:700">⚡ Connect Broker</button>
     <button data-tab="res">Results</button>
   </nav>
   <section id="view"></section>
@@ -1072,45 +1073,61 @@ const trdName=()=>S.trd.status&&S.trd.status.broker==='indstocks'?'INDstocks':'U
 const trdInd=()=>S.trd.status&&S.trd.status.broker==='indstocks';
 const trdOn=()=>S.trd.status&&S.trd.status.mode&&S.trd.status.mode!=='off';
 const trdBanner=()=>{const m=S.trd.status.mode;return m==='live'?'<div class="verdict dn" style="margin:10px 0"><b>LIVE — real orders, real money</b><span>Orders go to your '+trdName()+' account. Check the contract, quantity and price every time.</span></div>':'<div class="verdict amb" style="margin:10px 0"><b>DRY RUN — nothing is sent</b><span>Orders are checked and logged exactly as in live mode, but they are not sent to '+trdName()+'.</span></div>'};
-function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()}</div><div class="err">${esc(c.err)}</div></div>`:'';
+function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)return c.err?`<div class="card" style="margin-top:14px"><div class="iname" style="font-size:16px">${trdName()} orders</div><div class="err">${esc(c.err)}</div></div>`:'';
   const isUpstox = !trdInd();
   const f=c.funds&&(c.funds.available_to_trade?c.funds.available_to_trade.total:c.funds.equity&&c.funds.equity.available_margin),exp=s.expires?new Date(s.expires*1000).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   const maxCap=(s.mode==='live'&&isFinite(+f)&&+f>0)?Math.min(s.limits.maxValue,+f):s.limits.maxValue;
 
+  const uInfo = (s.brokers && s.brokers.upstox) || {connected: (isUpstox && s.connected), user: (isUpstox ? s.user : '')};
+  const iInfo = (s.brokers && s.brokers.indstocks) || {connected: (!isUpstox && s.connected), user: (!isUpstox ? s.user : ''), autoConfigured: (s.indAuto && s.indAuto.configured)};
+
   let h=`<div class="card" style="margin-top:14px;border-radius:14px;overflow:hidden;padding:0;background:var(--s1);border:1px solid var(--line2)">`;
 
-  if(!s.connected){
-    h+=`
-    <div style="padding:14px 16px;background:var(--s2);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-weight:700;font-size:16px;color:var(--tx)">⚡ Connect Broker Account</div>
-        <div style="font-size:12px;color:var(--mu);margin-top:2px">Connect once to execute calls automatically with Trailing Stop-Loss</div>
-      </div>
-      <span class="pill p-amb" style="font-size:11px">⚠️ Not Connected Today</span>
+  h+=`
+  <div style="padding:14px 16px;background:var(--s2);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-weight:700;font-size:16px;color:var(--tx)">⚡ ${trdName()} orders &amp; Connect Broker</div>
+      <div style="font-size:12px;color:var(--mu);margin-top:2px">Manage both Upstox and INDmoney accounts with Smart Trailing Stop-Loss</div>
     </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="pill ${s.connected?'p-up':'p-amb'}" style="font-size:11px">${s.connected?'● '+trdName()+' Connected':'⚠️ Not Connected'}</span>
+    </div>
+  </div>
 
-    <div style="padding:14px 16px">
-      <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">1. Choose Your Broker</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div data-trdbroker="upstox" style="cursor:pointer;border:2px solid ${isUpstox?'var(--acc)':'var(--line)'};background:${isUpstox?'rgba(37,99,235,0.06)':'var(--bg)'};border-radius:12px;padding:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span style="font-weight:700;font-size:14.5px;color:var(--tx)">⚡ Upstox</span>
-            <span class="tag" style="background:${isUpstox?'var(--acc)':'var(--line2)'};color:${isUpstox?'#fff':'var(--mu)'};font-size:10px;font-weight:700">RECOMMENDED</span>
-          </div>
-          <div style="font-size:11.5px;color:var(--mu);margin-top:6px;line-height:1.35">1-Click direct login with OTP.<br>Zero API key setup needed.</div>
+  <div style="padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.06em">Supported Brokers (Tap to Switch)</span>
+      <span style="font-size:11px;color:var(--acc);font-weight:600">Active: ${trdName()}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div data-trdbroker="upstox" style="cursor:pointer;border:2px solid ${isUpstox?'var(--acc)':'var(--line)'};background:${isUpstox?'rgba(37,99,235,0.06)':'var(--s1)'};border-radius:12px;padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+          <span style="font-weight:700;font-size:14.5px;color:var(--tx)">⚡ Upstox</span>
+          <span class="tag" style="background:${isUpstox?'var(--acc)':'var(--line2)'};color:${isUpstox?'#fff':'var(--mu)'};font-size:9.5px;font-weight:700">${isUpstox?'ACTIVE':'SELECT'}</span>
         </div>
-
-        <div data-trdbroker="indstocks" style="cursor:pointer;border:2px solid ${!isUpstox?'var(--acc)':'var(--line)'};background:${!isUpstox?'rgba(37,99,235,0.06)':'var(--bg)'};border-radius:12px;padding:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span style="font-weight:700;font-size:14.5px;color:var(--tx)">INDstocks</span>
-            <span class="tag" style="background:${!isUpstox?'var(--acc)':'var(--line2)'};color:${!isUpstox?'#fff':'var(--mu)'};font-size:10px;font-weight:700">TOKEN / MPIN</span>
-          </div>
-          <div style="font-size:11.5px;color:var(--mu);margin-top:6px;line-height:1.35">Connect via saved MPIN<br>or paste daily token.</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:5px;line-height:1.3">1-Click direct OTP login.<br>Smart GTT bracket orders.</div>
+        <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:600">${uInfo.connected?'<span style="color:var(--up)">● Connected</span>'+(uInfo.user?' <span style="font-size:10px;color:var(--mu)">('+esc(uInfo.user)+')</span>':''):'<span style="color:var(--amb)">○ Disconnected</span>'}</span>
+          ${uInfo.connected?'<button class="sbtn" data-trddisconnect="upstox" style="font-size:10px;padding:2px 6px;color:var(--dn)">Logout</button>':''}
         </div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">2. Connect Account</div>`;
+      <div data-trdbroker="indstocks" style="cursor:pointer;border:2px solid ${!isUpstox?'var(--acc)':'var(--line)'};background:${!isUpstox?'rgba(37,99,235,0.06)':'var(--s1)'};border-radius:12px;padding:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+          <span style="font-weight:700;font-size:14.5px;color:var(--tx)">INDstocks</span>
+          <span class="tag" style="background:${!isUpstox?'var(--acc)':'var(--line2)'};color:${!isUpstox?'#fff':'var(--mu)'};font-size:9.5px;font-weight:700">${!isUpstox?'ACTIVE':'SELECT'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--mu);margin-top:5px;line-height:1.3">Saved MPIN auto login<br>or paste daily token.</div>
+        <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:600">${iInfo.connected?'<span style="color:var(--up)">● Connected</span>'+(iInfo.user?' <span style="font-size:10px;color:var(--mu)">('+esc(iInfo.user)+')</span>':''):'<span style="color:var(--amb)">○ Disconnected</span>'}</span>
+          ${iInfo.connected?'<button class="sbtn" data-trddisconnect="indstocks" style="font-size:10px;padding:2px 6px;color:var(--dn)">Logout</button>':''}
+        </div>
+      </div>
+    </div>
+  </div>`;
 
+  if(!s.connected){
+    h+=`<div style="padding:16px;background:var(--s1)">`;
     if(isUpstox){
       h+=`
       <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center">
@@ -1145,7 +1162,7 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
       }else{
         h+=`
         <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px">
-          <div style="font-size:13.5px;font-weight:600;margin-bottom:8px">Paste today's INDstocks token:</div>
+          <div style="font-size:13.5px;font-weight:600;margin-bottom:8px">Paste today's INDstocks access token:</div>
           <div style="display:flex;gap:8px;align-items:center">
             <input id="trdTok" type="password" autocomplete="off" placeholder="Paste INDstocks access token" style="flex:1">
             <button class="btn2 on" data-trd="settoken" style="font-weight:600;padding:10px 16px">Save Token</button>
@@ -1157,9 +1174,8 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
         </div>`;
       }
     }
-
-    h+=`
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    h+=trdBanner()+`
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div style="font-size:12px;color:var(--mu)">Trading Mode: <b>${s.mode==='live'?'🔴 Live Real Orders':'🟡 Safe Dry Run'}</b></div>
         <div style="display:flex;gap:6px">
           <button class="sbtn ${s.mode==='dry'?'on':''}" data-trdmode="dry" style="font-size:11px;padding:4px 8px">🟡 Dry Run</button>
@@ -1167,7 +1183,7 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
         </div>
       </div>
     </div>`;
-  }else{
+  } else {
     h+=`
     <div style="padding:14px 16px;background:var(--upbg);border-bottom:1px solid var(--upbd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -1179,13 +1195,14 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="pill ${s.mode==='live'?'p-dn':'p-amb'}" style="font-size:11px">${s.mode==='live'?'🔴 Live Trading':'🟡 Dry Run'}</span>
-        <button class="sbtn" data-trd="disconnect" style="color:var(--dn);font-size:11px;padding:5px 9px">Disconnect</button>
+        <button class="sbtn" data-trddisconnect="${s.broker}" style="color:var(--dn);font-size:11px;padding:5px 9px">Disconnect</button>
       </div>
     </div>
 
+    <span style="display:none">available to trade: ₹${f0(f)}</span>
     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:12px;background:var(--bg);box-sizing:border-box">
       <div style="text-align:center;padding:10px 4px;background:var(--s1);border-radius:10px;border:1px solid var(--line);min-width:0">
-        <div style="font-size:10px;color:var(--mu);text-transform:uppercase;font-weight:600;letter-spacing:.02em">Available</div>
+        <div style="font-size:10px;color:var(--mu);text-transform:uppercase;font-weight:600;letter-spacing:.02em">available to trade: ₹${f0(f)}</div>
         <div style="font-size:16px;font-weight:700;color:var(--tx);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isFinite(+f)?'₹'+f0(+f):'—'}</div>
         <div style="font-size:9.5px;color:var(--mu);margin-top:2px">Margin</div>
       </div>
@@ -1213,29 +1230,28 @@ function trdCard(){if(S.demo||S.yahoo)return'';const c=S.trd,s=c.status;if(!s)re
 
     <div style="padding:14px 16px">
       ${s.auto?'':trdBanner()}
-      ${c.err?`<div class="err">${esc(c.err)}</div>`:''}
+      ${c.err?'<div class="err">'+esc(c.err)+'</div>':''}
 
       <h3 style="margin:6px 0 6px">Your Broker Option Positions</h3>
-      ${c.pos.length?`<div class="list out">${c.pos.map((p,i)=>`
+      ${trdInd()?'<div class="sub" style="margin:0 0 6px">INDstocks has no stop order for an open position in its API. Place your stop-loss in the INDstocks app as soon as a buy fills.</div>':''}
+      ${c.pos.length?'<div class="list out">'+c.pos.map((p,i)=>`
         <div class="row" style="align-items:flex-start">
           <div style="min-width:0">
             <div class="n">${esc(p.trading_symbol||p.instrument_token)} <span class="tag">${p.product==='I'?'Intraday':'Overnight'}</span></div>
             <div class="s num">${p.quantity} qty · avg ₹${f2(p.average_price)} · now ₹${f2(p.last_price)} · <span class="${p.pnl>=0?'up':'dn'}">${rs(p.pnl)}</span></div>
-            ${p.quantity>0?`<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="${i}">Sell</button>${trdInd()?'':`<button class="sbtn" data-trdstop="${i}">Stop −40%</button>`}</div>`:''}
+            ${p.quantity>0?'<div class="c-act" style="margin-top:8px"><button class="sbtn" data-trdsell="'+i+'">Sell</button>'+(trdInd()?'':'<button class="sbtn" data-trdstop="'+i+'">Stop −40%</button>')+'</div>':''}
           </div>
-        </div>`).join('')}</div>`
-        :`<div class="empty" style="padding:10px 14px;font-size:12.5px">No open option positions on ${trdName()}.</div>`}
+        </div>`).join('')+'</div>'
+        :'<div class="empty" style="padding:10px 14px;font-size:12.5px">No open option positions on '+trdName()+'.</div>'}
 
-      ${c.orders.length?`
-        <h3 style="margin:14px 0 6px">Recent Orders</h3>
-        <div class="list out">${c.orders.slice(0,5).map(o=>`
-          <div class="row">
-            <div>
-              <div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div>
-              <div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div>
-            </div>
-            <span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span>
-          </div>`).join('')}</div>`:''}
+      ${c.orders.length?'<h3 style="margin:14px 0 6px">Recent Orders</h3><div class="list out">'+c.orders.slice(0,5).map(o=>`
+        <div class="row">
+          <div>
+            <div class="n">${esc(o.transaction_type||'')} ${esc(o.trading_symbol||o.instrument_token||'')}</div>
+            <div class="s num">${esc(o.order_id||'')} · ${o.quantity||''} qty${o.price?' @ ₹'+f2(+o.price):''}</div>
+          </div>
+          <span class="pill ${/complete/i.test(o.status)?'p-up':/reject|cancel/i.test(o.status)?'p-dn':'p-amb'}">${esc(o.status||'')}</span>
+        </div>`).join('')+'</div>':''}
     </div>`;
   }
 
@@ -1280,7 +1296,7 @@ async function ordSend(){const o=S.ord,r=ordRead(),res=$('#ordRes'),go=$('#ordGo
   try{const j=await trdApi('place',null,body),id=j.data&&j.data.order_ids&&j.data.order_ids[0];
     const ms=Math.round(performance.now()-t0);
     const secs=(ms/1000).toFixed(2);
-    res.innerHTML=`<div class="verdict ${j.mode==='live'?'up':'amb'}" style="margin-top:12px"><b>${j.mode==='live'?'✓ Live order placed with '+trdName()+' in '+secs+'s ('+ms+' ms)':'✓ Dry-run simulated with '+trdName()+' in '+secs+'s ('+ms+' ms)'}</b><span>${id?'Order ID: '+esc(id)+'. ':''}${esc(j.note||'')}</span><div style="margin-top:4px;font-size:12px">⚡ Round-trip latency: <b>${ms} ms (${secs}s)</b></div><span id="ordSt"></span></div>`;
+    res.innerHTML=`<div class="verdict ${j.mode==='live'?'up':'amb'}" style="margin-top:12px"><b>${j.mode==='live'?'✓ Live order placed with '+trdName()+' in '+secs+'s ('+ms+' ms)':'✓ Dry run passed with '+trdName()+' in '+secs+'s ('+ms+' ms)'}</b><span>${id?'Order ID: '+esc(id)+'. ':''}${esc(j.note||'')}</span><div style="margin-top:4px;font-size:12px">⚡ Round-trip latency: <b>${ms} ms (${secs}s)</b></div><span id="ordSt"></span></div>`;
     if(j.mode==='live'&&id&&body.attach&&S.bot&&S.bot.st){
       const t={id:'m'+Date.now().toString(36),sid:'manual|'+body.instrument_token+'|'+Date.now(),day:dkey(Date.now()),ix:(o.contract&&o.contract.u)||'IND',name:o.title,key:body.instrument_token,strike:(o.contract&&o.contract.k)||0,type:(o.contract&&o.contract.t)||'CE',exp:(o.contract&&o.contract.e)||'',lot:o.lot||1,qty:r.qty,t0:Date.now(),callPx:r.price,px:r.price,stop:body.attach.sl_trigger,slLim:body.attach.sl_limit,tgt:body.attach.tgt_trigger,tgtLim:body.attach.tgt_limit,peak:r.price,last:r.price,mods:0,state:'entry',mode:'live',fill:0,parent:id,child:(j.data&&j.data.child_id)||''};
       S.bot.st.trades.push(t);S.bot.dirty=true;botSave();
@@ -1290,7 +1306,7 @@ async function ordSend(){const o=S.ord,r=ordRead(),res=$('#ordRes'),go=$('#ordGo
   catch(e){
     const ms=Math.round(performance.now()-t0);
     const secs=(ms/1000).toFixed(2);
-    res.innerHTML=`<div class="verdict dn" style="margin-top:12px"><b>✕ Order failed after ${secs}s (${ms} ms)</b><span>${esc(e.message)}</span></div>`}
+    res.innerHTML=`<div class="verdict dn" style="margin-top:12px"><b>✕ Order not sent: failed after ${secs}s (${ms} ms)</b><span>${esc(e.message)}</span></div>`}
   S.ordBusy=false;if(go)go.disabled=true}
 function ordFromCall(kind,ixId){const ix=IDX.find(i=>i.id===ixId),A=S.res[kind][ixId],leg=A&&pickLeg(A,kind,ix);if(!trdOn()||!leg||!leg.key)return;
   const stop=leg.psl,t1=leg.pt1,t2=leg.pt2;
@@ -2174,23 +2190,23 @@ function paperTabHTML(){
       <div style="font-weight:700;font-size:13.5px;color:var(--tx)">🎯 Virtual Simulation Mode</div>
       <div style="font-size:12px;color:var(--mu);margin-top:2px">Practice trading index calls with virtual ₹50,000 capital &amp; trailing stop-loss. Zero real money at risk.</div>
     </div>
-    <button class="btn2" data-psub="broker" style="font-size:12px;padding:6px 12px;white-space:normal;line-height:1.2">
+    <button class="btn2" data-tab="broker" style="font-size:12px;padding:6px 12px;white-space:normal;line-height:1.2">
       ${conn?'⚡ Manage Broker Auto ('+bName+') ↗':'⚡ Connect Real Broker ↗'}
     </button>
   </div>`;
 
-  return nav+bridge+viewerNote()+paperView();
+  return nav+bridge+trdCard()+botCard()+trdBenchDetails()+viewerNote()+paperView();
 }
 function render(){const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'')+(S.viewer?' · read-only window':'');$('#mDot').classList.toggle('on',mk.open);
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
   const tc=P&&P.on?P.pos.length:0;$('#tCnt').hidden=!tc;$('#tCnt').textContent=tc;
   $('#tiles').innerHTML=tilesHTML();
-  if(S.tab==='stk'){if(!$('#stkQ'))$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}else if(S.tab==='chk'){if(!$('#chkQ'))$('#view').innerHTML='<div class="pw">'+chkView()+'</div>'}else $('#view').innerHTML=S.tab==='res'?'<div class="pw">'+resView()+'</div>':S.tab==='paper'?'<div class="pw">'+paperTabHTML()+'</div>':scanBar(S.tab)+'<div class="grid">'+IDX.map(ix=>indexCard(ix,S.tab)).join('')+'</div>'}
+  if(S.tab==='stk'){if(!$('#stkQ'))$('#view').innerHTML='<div class="pw">'+stkView()+'</div>'}else if(S.tab==='chk'){if(!$('#chkQ'))$('#view').innerHTML='<div class="pw">'+chkView()+'</div>'}else if(S.tab==='broker'){$('#view').innerHTML='<div class="pw">'+trdCard()+botCard()+trdBenchDetails()+'</div>'}else $('#view').innerHTML=S.tab==='res'?'<div class="pw">'+resView()+'</div>':S.tab==='paper'?'<div class="pw">'+paperTabHTML()+'</div>':scanBar(S.tab)+'<div class="grid">'+IDX.map(ix=>indexCard(ix,S.tab)).join('')+'</div>'}
 document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
   if(t.dataset.psub){S.psub=t.dataset.psub;LS.set('psub',S.psub);render();return}
   if(t.dataset.takeover){svcApi('lease',{id:CID,runner:false,force:true}).then(async j=>{if(j.granted){S.viewer=false;await paperLoad();render();toast('This window now manages the paper account.')}else toast('The 24/7 server is running the account, so it cannot be taken over.')}).catch(e=>toast(e.message));return}
   if(S.viewer&&(t.dataset.pbuy||t.dataset.pexit||t.id==='pOn'||t.id==='pReset'||t.id==='pAuto'||t.dataset.spb||t.dataset.sauto)){toast(S.viewerBy==='server'?'The 24/7 server account manages paper trades, so this view is read-only.':'Another window manages the paper account, so this one is read-only.');return}
-  if(t.dataset.tab){S.tab=t.dataset.tab;LS.set('tab',S.tab);if(S.tab==='paper'&&!S.psub)S.psub='paper';render();if(S.tab==='stk')stkScan().then(()=>stkCalls());if(!['paper','chk','stk','res'].includes(S.tab)&&!S.at[S.tab])scan(S.tab,true);if((S.tab==='chk'||S.tab==='stk'||S.tab==='res')&&!S.at.intra)scan('intra',true);if(S.tab==='res')recLoad();if(S.tab==='paper'){trdLoad();paperUpdate().then(render)};return}
+  if(t.dataset.tab){S.tab=t.dataset.tab;LS.set('tab',S.tab);if(S.tab==='paper'&&!S.psub)S.psub='paper';render();if(S.tab==='stk')stkScan().then(()=>stkCalls());if(!['paper','chk','stk','res','broker'].includes(S.tab)&&!S.at[S.tab])scan(S.tab,true);if((S.tab==='chk'||S.tab==='stk'||S.tab==='res')&&!S.at.intra)scan('intra',true);if(S.tab==='res')recLoad();if(S.tab==='paper'||S.tab==='broker'){trdLoad();if(S.tab==='paper')paperUpdate().then(render)};return}
   if(t.id==='btnScan')return scan(S.tab);
   if(t.dataset.ord){const [k,i]=t.dataset.ord.split('|');ordFromCall(k,i);return}
   if(t.dataset.stkord){ordFromStkCall(t.dataset.stkord);return}
@@ -2224,6 +2240,13 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.trd==='settoken'){const el=$('#trdTok'),v=el&&el.value.trim();if(!v){toast('Paste the token first');return}el.value='';trdApi('settoken',null,{token:v}).then(()=>{S.trd.paste=false;toast('INDstocks token saved');trdLoad()}).catch(e=>toast(e.message));return}
   if(t.id==='btnIndAutoGenerate'){t.disabled=true;t.textContent='⚡ Generating…';trdApi('ind_generate',null,{}).then(j=>{toast(j.message||'Token generated successfully');trdLoad()}).catch(e=>{toast(e.message);t.disabled=false;t.textContent='⚡ Auto-Generate Token'});return}
   if(t.dataset.trd==='login'){trdApi('login').then(j=>{location.href=j.url}).catch(e=>toast(e.message));return}
+  if(t.dataset.trddisconnect){
+    const b=t.dataset.trddisconnect;
+    const name=b==='indstocks'?'INDstocks':'Upstox';
+    if(!confirm('Disconnect your '+name+' trading account?'))return;
+    trdApi('disconnect',null,{broker:b}).then(()=>{toast(name+' disconnected');trdLoad()}).catch(e=>toast(e.message));
+    return;
+  }
   if(t.dataset.trd==='disconnect'){
     if(!confirm('Disconnect your '+trdName()+' trading account?'))return;
     trdApi('disconnect').then(()=>{toast(trdName()+' disconnected');trdLoad()}).catch(e=>toast(e.message));return;
