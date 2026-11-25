@@ -43,9 +43,9 @@ defined('AUTO_ENTRY_UNTIL') || define('AUTO_ENTRY_UNTIL', '14:00'); // no automa
 defined('AUTO_ENTRY_BUFFER') || define('AUTO_ENTRY_BUFFER', 0.01); // entry limit price this far above the live price, so it fills at once
 defined('AUTO_ENTRY_WAIT') || define('AUTO_ENTRY_WAIT', 60);   // seconds before an unfilled entry is cancelled
 defined('AUTO_SQUAREOFF') || define('AUTO_SQUAREOFF', '15:10'); // intraday positions are closed from this time (IST)
-defined('UPSTOX_CLIENT_ID') || define('UPSTOX_CLIENT_ID', '');   // API key of your Upstox Developer App
-defined('UPSTOX_CLIENT_SECRET') || define('UPSTOX_CLIENT_SECRET', '');  // API secret (keep private)
-defined('UPSTOX_REDIRECT_URI') || define('UPSTOX_REDIRECT_URI', '');   // e.g. https://yourdomain.com/signals/api.php?callback=1  (must match the app exactly)
+defined('UPSTOX_CLIENT_ID') || define('UPSTOX_CLIENT_ID', 'e4fe504a-b4a4-4289-a9a1-d94b2d1b5b8c');   // API key of your Upstox Developer App
+defined('UPSTOX_CLIENT_SECRET') || define('UPSTOX_CLIENT_SECRET', '51jsmr83h8');  // API secret (keep private)
+defined('UPSTOX_REDIRECT_URI') || define('UPSTOX_REDIRECT_URI', 'https://bhagadbilla.com/api.php?callback=1');   // e.g. https://yourdomain.com/signals/api.php?callback=1  (must match the app exactly)
 defined('ORDER_MAX_VALUE') || define('ORDER_MAX_VALUE', 50000); // rupees, price x quantity, per order
 defined('ORDER_MAX_QTY') || define('ORDER_MAX_QTY', 5000);  // units per order
 defined('ORDER_MAX_PER_DAY') || define('ORDER_MAX_PER_DAY', 10);    // orders sent per day
