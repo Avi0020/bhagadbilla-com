@@ -1,0 +1,29 @@
+# Local credentials & configs (NEVER commit secrets)
+auth-local.php
+trade-local.php
+*.local.php
+service/config.json
+*.token
+.env
+.env.*
+
+# Runtime & dynamic state
+cache/
+data/
+dist/
+*.log
+
+# Dependencies
+node_modules/
+service/node_modules/
+
+# Test artifacts & research data
+tests/*.png
+research/data/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/

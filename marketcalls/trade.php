@@ -371,7 +371,7 @@ function t_auto_status($c, $dir, $ind, $mode) {
     $trailStart = isset($cfg['trailStart']) ? (float)$cfg['trailStart'] : AUTO_TRAIL_START;
     $trailGive = isset($cfg['trailGive']) ? (float)$cfg['trailGive'] : AUTO_TRAIL_GIVE;
     $killed = !empty(t_read($dir . '/auto-off.php')['off']);
-    return ['configured' => $configured, 'killed' => $killed, 'enabled' => $configured && $ind && $mode !== 'off' && !$killed,
+    return ['configured' => $configured, 'killed' => $killed, 'enabled' => $configured && $mode !== 'off' && !$killed,
             'lots' => $lots, 'maxOpen' => $maxOpen, 'maxPerDay' => $maxPerDay,
             'sl' => $sl, 'target' => $target, 'trailStart' => $trailStart, 'trailGive' => $trailGive,
             'entryUntil' => AUTO_ENTRY_UNTIL, 'entryBuffer' => AUTO_ENTRY_BUFFER, 'entryWait' => AUTO_ENTRY_WAIT, 'squareOff' => AUTO_SQUAREOFF];
@@ -628,8 +628,7 @@ function trade_handle($action) {
         }
         $a = t_read($f); out(200, ['status' => 'success', 'state' => $a['state'] ?? null]);
     }
-    if ($action === 'smartmodify' || $action === 'smartcancel') {   // INDstocks smart orders: trail the stop (modify) or cancel the entry / its stop and target
-        if (!$ind) out(400, ['status' => 'error', 'message' => 'Smart orders exist for INDstocks only.']);
+    if ($action === 'smartmodify' || $action === 'smartcancel') {   // smart orders: trail the stop (modify) or cancel the entry / its stop and target
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['status' => 'error', 'message' => 'POST required']);
         $in = json_decode((string)file_get_contents('php://input'), true); if (!is_array($in)) out(400, ['status' => 'error', 'message' => 'Bad request']);
         $oid = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($in['order_id'] ?? '')); if ($oid === '') out(400, ['status' => 'error', 'message' => 'order_id missing']);
@@ -641,16 +640,45 @@ function trade_handle($action) {
             $m = $mods[$oid] ?? ['n' => 0, 't' => 0]; if ($m['n'] >= 20) out(422, ['status' => 'error', 'message' => 'Modification limit for this order reached.']); if (!TEST_NOGAP && time() - (int)$m['t'] < 20) out(422, ['status' => 'error', 'message' => 'Wait before changing this order again.']);
             $mods[$oid] = ['n' => $m['n'] + 1, 't' => time()]; $lg['mods'] = $mods; t_write($lf, $lg);
             t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-modify' : 'smart-modify', 'mode' => $mode, 'order_id' => $oid] + $v);
-            if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to INDstocks.']);
-            if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
-            [$code, $j] = t_icall($c, 'POST', '/smart/order/modify', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE', 'algo_id' => '99999', 'sl_trigger_price' => $v['sl_trigger'], 'sl_limit_price' => $v['sl_limit'], 'tgt_trigger_price' => $v['tgt_trigger'], 'tgt_limit_price' => $v['tgt_limit']]);
+            if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+            if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in from the Paper tab.')]);
+            if ($ind) {
+                [$code, $j] = t_icall($c, 'POST', '/smart/order/modify', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE', 'algo_id' => '99999', 'sl_trigger_price' => $v['sl_trigger'], 'sl_limit_price' => $v['sl_limit'], 'tgt_trigger_price' => $v['tgt_trigger'], 'tgt_limit_price' => $v['tgt_limit']]);
+            } else {
+                if (strpos($oid, 'GTT-') === 0) {
+                    [$code, $j] = t_call('PUT', $c['api'] . '/v3/order/gtt/modify', $tk['token'], [
+                        'type' => 'MULTIPLE',
+                        'quantity' => (int)($in['quantity'] ?? 65),
+                        'gtt_order_id' => $oid,
+                        'rules' => [
+                            ['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['tgt_trigger']],
+                            ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['sl_trigger'], 'trailing_gap' => round(max(0.05, $v['tgt_trigger'] - $v['sl_trigger']), 2)]
+                        ]
+                    ]);
+                } else {
+                    [$code, $j] = t_call('PUT', $c['hft'] . '/v3/order/modify', $tk['token'], [
+                        'order_id' => $oid,
+                        'price' => $v['sl_limit'],
+                        'trigger_price' => $v['sl_trigger'],
+                        'order_type' => 'SL'
+                    ]);
+                }
+            }
             t_log($c, ['ev' => 'smart-modify-reply', 'http' => $code, 'reply' => $j]);
-            out($code === 200 && ($j['status'] ?? '') !== 'error' ? 200 : 502, $code === 200 && ($j['status'] ?? '') !== 'error' ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'INDstocks refused the change (HTTP ' . $code . ').')]);
+            out($code === 200 && ($j['status'] ?? '') !== 'error' ? 200 : 502, $code === 200 && ($j['status'] ?? '') !== 'error' ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, $bn . ' refused the change (HTTP ' . $code . ').')]);
         }
         t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-cancel' : 'smart-cancel', 'mode' => $mode, 'order_id' => $oid]);
-        if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to INDstocks.']);
-        if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to INDstocks. Paste today\'s token.']);
-        [$code, $j] = t_icall($c, 'POST', '/smart/order/cancel', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE']);
+        if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+        if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in from the Paper tab.')]);
+        if ($ind) {
+            [$code, $j] = t_icall($c, 'POST', '/smart/order/cancel', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE']);
+        } else {
+            if (strpos($oid, 'GTT-') === 0) {
+                [$code, $j] = t_call('DELETE', $c['api'] . '/v3/order/gtt/cancel?gtt_order_id=' . urlencode($oid), $tk['token']);
+            } else {
+                [$code, $j] = t_call('DELETE', $c['hft'] . '/v3/order/cancel?order_id=' . urlencode($oid), $tk['token']);
+            }
+        }
         out($code === 200 ? 200 : 502, $code === 200 ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]);
     }
     if ($action === 'login') {
@@ -685,7 +713,14 @@ function trade_handle($action) {
             foreach ($ol as $o) if ($o['order_id'] === $id) out(200, ['status' => 'success', 'data' => $o]);
             out(502, ['status' => 'error', 'message' => 'Order not found']);
         }
-        if ($action === 'funds') { [$code, $j] = t_call('GET', $c['api'] . '/v3/user/get-funds-and-margin', $tk['token'], null, ['Api-Version: 3.0']); if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'Funds unavailable')]); out(200, ['status' => 'success', 'data' => $j['data'] ?? null]); }
+        if ($action === 'funds') {
+            [$code, $j] = t_call('GET', $c['api'] . '/v3/user/get-funds-and-margin', $tk['token'], null, ['Api-Version: 3.0']);
+            if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'Funds unavailable')]);
+            if (isset($j['data']['equity']['available_margin'])) {
+                $j['data']['available_to_trade'] = ['total' => (float)$j['data']['equity']['available_margin']];
+            }
+            out(200, ['status' => 'success', 'data' => $j['data'] ?? null]);
+        }
         if ($action === 'positions') { $p = t_positions($c, $tk); if ($p === null) out(502, ['status' => 'error', 'message' => 'Positions unavailable']); out(200, ['status' => 'success', 'data' => $p]); }
         if ($action === 'orders') { [$code, $j] = t_call('GET', $c['api'] . '/v2/order/retrieve-all', $tk['token']); if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'Orders unavailable')]); out(200, ['status' => 'success', 'data' => array_slice(array_reverse((array)($j['data'] ?? [])), 0, 20)]); }
         $id = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_GET['order_id'] ?? '')); if ($id === '') out(400, ['status' => 'error', 'message' => 'order_id missing']);
@@ -718,11 +753,10 @@ function trade_handle($action) {
     if ($ind && $type === 'SL') $reject('INDstocks has no stop order for an open position in its API (stops exist only attached to a new order). Place the stop in the INDstocks app.');
     if ($qty < 1 || $qty > ORDER_MAX_QTY) $reject('Quantity must be between 1 and ' . ORDER_MAX_QTY . '.');
     if (!t_tick_ok($price)) $reject('Price must be above 0 and a multiple of 0.05.');
-    if ($att !== null) {   // buy with the stop-loss and target attached (INDstocks smart order); intraday, NSE index options only
-        if (!$ind) $reject('A buy with an attached stop and target is available for INDstocks only.');
+    if ($att !== null) {   // buy with the stop-loss and target attached; intraday, NSE index options only
         if ($side !== 'BUY') $reject('Only a buy can carry an attached stop and target.');
-        if ($prod !== 'I') $reject('The attached stop and target are intraday only: INDstocks smart orders are valid for one day, so an overnight position would lose them.');
-        if (strpos($inst, 'NSE_FO|') !== 0) $reject('Attached stops work for NSE options (Nifty, Bank Nifty, and NSE stocks). Sensex smart orders are not documented by INDstocks, so place those without a stop and set it in the INDstocks app.');
+        if ($prod !== 'I') $reject('The attached stop and target are intraday only.');
+        if (strpos($inst, 'NSE_FO|') !== 0) $reject('Attached stops work for NSE options (Nifty, Bank Nifty, and NSE stocks). Sensex smart orders are not supported.');
         foreach (['sl_trigger', 'sl_limit', 'tgt_trigger', 'tgt_limit'] as $k) { $att[$k] = round((float)($att[$k] ?? 0), 2); if (!t_tick_ok($att[$k])) $reject($k . ' must be above 0 and a multiple of 0.05.'); }
         if (!($att['sl_limit'] <= $att['sl_trigger'] && $att['sl_trigger'] < $price && $price < $att['tgt_trigger'] && $att['tgt_limit'] <= $att['tgt_trigger'] && $att['tgt_limit'] > $price)) $reject('The stop must sit below the entry price and the target above it (stop limit not above its trigger, target limit above the entry).');
         $dn = ($price - $att['sl_trigger']) / $price; $up = ($att['tgt_trigger'] - $price) / $price;
@@ -732,9 +766,14 @@ function trade_handle($action) {
     if ($type === 'SL') { if (!t_tick_ok($trig)) $reject('The trigger price must be above 0 and a multiple of 0.05.'); if ($side === 'SELL' && $price > $trig) $reject('For a sell stop the limit price cannot be above the trigger.'); if ($side === 'BUY' && $price < $trig) $reject('For a buy stop the limit price cannot be below the trigger.'); }
     else $trig = 0;
     if ($qty * $price > ORDER_MAX_VALUE) $reject('This order is worth Rs ' . number_format($qty * $price) . ', above the limit of Rs ' . number_format(ORDER_MAX_VALUE) . ' set in trade.php.');
-    if ($mode === 'live' && $ind && $tk && $side === 'BUY') {
-        $funds = t_ind_funds($c, $tk);
-        $avl = (float)($funds['available_to_trade']['total'] ?? 0);
+    if ($mode === 'live' && $tk && $side === 'BUY') {
+        if ($ind) {
+            $funds = t_ind_funds($c, $tk);
+            $avl = (float)($funds['available_to_trade']['total'] ?? 0);
+        } else {
+            [$fcode, $fj] = t_call('GET', $c['api'] . '/v3/user/get-funds-and-margin', $tk['token'], null, ['Api-Version: 3.0']);
+            $avl = (float)($fj['data']['equity']['available_margin'] ?? 0);
+        }
         if ($avl > 0 && ($qty * $price) > $avl) {
             $reject('Order outlay of Rs ' . number_format($qty * $price) . ' exceeds your available funds of Rs ' . number_format($avl) . '.');
         }
@@ -754,7 +793,7 @@ function trade_handle($action) {
         $n2 = t_ist(); $hm = (int)$n2->format('G') * 60 + (int)$n2->format('i'); if (!$c['anytime'] && ($hm < 585 || $hm > t_hm(AUTO_ENTRY_UNTIL))) $reject('Automatic entries are allowed only between 9:45 AM and ' . AUTO_ENTRY_UNTIL . '.');
         if ((int)($lg['autoCount'] ?? 0) >= $AU['maxPerDay']) $reject('Automatic trading daily limit reached (' . $AU['maxPerDay'] . ').');
         if ($lot > 0 && $qty > $lot * $AU['lots']) $reject('Automatic orders are limited to ' . $AU['lots'] . ' lot(s).');
-        if ($tk) { $pp = t_ind_positions($c, $tk); if ($pp === null) $reject('Could not read your positions to check the open-position limit.'); $open = 0; foreach ($pp as $p) if ($p['quantity'] > 0 && $p['product'] === 'I') $open++; if ($open >= $AU['maxOpen']) $reject('Automatic trading already has ' . $open . ' open position(s) (limit ' . $AU['maxOpen'] . ').'); }
+        if ($tk) { $pp = $ind ? t_ind_positions($c, $tk) : t_positions($c, $tk); if ($pp === null) $reject('Could not read your positions to check the open-position limit.'); $open = 0; foreach ($pp as $p) if ($p['quantity'] > 0 && $p['product'] === 'I') $open++; if ($open >= $AU['maxOpen']) $reject('Automatic trading already has ' . $open . ' open position(s) (limit ' . $AU['maxOpen'] . ').'); }
         elseif ($mode === 'live') $reject('Position check unavailable.');
     }
     if ($side === 'SELL') {   // only to close what you hold
@@ -779,9 +818,35 @@ function trade_handle($action) {
             'security_id' => substr($inst, strpos($inst, '|') + 1), 'qty' => $qty, 'limit_price' => $price, 'is_amo' => false, 'algo_id' => $ex === 'BSE' ? '9999999999999999' : '99999', 'remarks' => 'IDXSIG']);
         if ($code === 200 && (($j['status'] ?? '') === 'error' || empty($j['data']['order_id']))) $code = 502;
         if ($code === 200) $j['data'] = ['order_ids' => [(string)$j['data']['order_id']], 'order_status' => (string)($j['data']['order_status'] ?? '')];
-    } else
-    [$code, $j] = t_call('POST', $c['hft'] . '/v3/order/place', $tk['token'], ['quantity' => $qty, 'product' => $prod, 'validity' => 'DAY', 'price' => $price, 'tag' => 'IDXSIG', 'instrument_token' => $inst,
-        'order_type' => $type, 'transaction_type' => $side, 'disclosed_quantity' => 0, 'trigger_price' => $trig, 'is_amo' => false, 'slice' => false]);
+    } elseif ($att) {
+        // Upstox GTT Multi-leg Bracket Order (Entry, Target, and Stoploss with trailing_gap)
+        $trailing_gap = round(max(0.05, $price - $att['sl_trigger']), 2);
+        $rules = [
+            ['strategy' => 'ENTRY', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $price],
+            ['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['tgt_trigger']],
+            ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['sl_trigger'], 'trailing_gap' => $trailing_gap]
+        ];
+        [$code, $j] = t_call('POST', $c['api'] . '/v3/order/gtt/place', $tk['token'], [
+            'type' => 'MULTIPLE',
+            'quantity' => $qty,
+            'product' => $prod,
+            'instrument_token' => $inst,
+            'transaction_type' => $side,
+            'rules' => $rules
+        ]);
+        if ($code === 200 && !empty($j['data']['gtt_order_ids'])) {
+            $gttId = (string)$j['data']['gtt_order_ids'][0];
+            $j['data'] = ['order_ids' => [$gttId], 'child_id' => $gttId, 'order_status' => 'TRIGGER_PENDING'];
+        } elseif ($code === 200 && (($j['status'] ?? '') === 'error' || empty($j['data']['gtt_order_ids']))) {
+            $code = 502;
+        }
+    } else {
+        [$code, $j] = t_call('POST', $c['hft'] . '/v3/order/place', $tk['token'], ['quantity' => $qty, 'product' => $prod, 'validity' => 'DAY', 'price' => $price, 'tag' => 'IDXSIG', 'instrument_token' => $inst,
+            'order_type' => $type, 'transaction_type' => $side, 'disclosed_quantity' => 0, 'trigger_price' => $trig, 'is_amo' => false, 'slice' => false]);
+        if ($code === 200 && !empty($j['data']['order_id'])) {
+            $j['data'] = ['order_ids' => [(string)$j['data']['order_id']], 'order_status' => ''];
+        }
+    }
     t_log($c, ['ev' => $code === 200 ? 'order-sent' : 'order-failed', 'http' => $code, 'reply' => $j] + $sum);
     if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, $bn . ' rejected the order (HTTP ' . $code . ').')]);
     out(200, ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null]);
