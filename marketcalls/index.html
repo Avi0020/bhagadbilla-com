@@ -1612,7 +1612,7 @@ function applyAuthUI(){
       if(u.role==='admin'){tb.className='pill p-up';tb.textContent='Owner';tb.title='Owner account (Unlimited)'}
       else if(u.plan==='unlimited'){tb.className='pill p-up';tb.textContent='⭐ Unlimited';tb.title='Unlimited access'}
       else if(u.expired){tb.className='pill p-dn';tb.textContent='⚠️ Expired ('+(u.inactiveDays||0)+'d)';tb.title='Trial expired '+u.inactiveDays+' day(s) ago (15-day grace period)'}
-      else{tb.className='pill p-amb';tb.textContent='⏱ Trial: '+u.daysLeft+'d left';tb.title='1-day trial: '+u.daysLeft+' day(s) left'}
+      else{tb.className='pill p-amb';tb.textContent='⏱ Trial: '+u.daysLeft+'d left';tb.title='3-day trading trial (excl. weekends): '+u.daysLeft+' trading day(s) left'}
       tb.onclick=accountSheet;
     }else tb.style.display='none';
   }
@@ -1732,7 +1732,7 @@ function accountSheet(){const u=AUTH.user;if(!u)return;
   if(u.role==='admin')tPill='<span class="pill p-up">Owner · Unlimited</span>';
   else if(u.plan==='unlimited')tPill='<span class="pill p-up">⭐ Unlimited Access</span>';
   else if(u.expired)tPill='<span class="pill p-dn">⚠️ Trial Expired ('+(u.inactiveDays||0)+'d inactive)</span>';
-  else tPill='<span class="pill p-amb">⏱ 1-Day Trial ('+(u.daysLeft||0)+'d left)</span>';
+  else tPill='<span class="pill p-amb">⏱ 3-Day Trial ('+(u.daysLeft||0)+' trading days left)</span>';
   openSheet(`<h2>${esc(u.username)}</h2><div style="margin:4px 0 8px">${tPill}</div><div class="sub" style="margin:4px 0 0">${u.role==='admin'?'Owner account':'Member account'} · research and paper trading${u.role==='admin'?', plus the owner tools below':' only'}</div>
   <div class="c-act" style="margin-top:12px"><button class="btn2" id="outGo">Log out</button></div>
   ${u.role==='admin'?'<div id="adm"><div class="sub">Loading…</div></div>':''}
@@ -1920,7 +1920,7 @@ function admDraw(){const el=$('#adm');if(!el||!S.adm)return;const A=S.adm,me=AUT
     </div>
     <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
       <div style="font-size:22px;font-weight:700;color:var(--up)">${st.activeTrials}</div>
-      <div style="font-size:11px;color:var(--mu);margin-top:2px">Active (1d Trial)</div>
+      <div style="font-size:11px;color:var(--mu);margin-top:2px">Active (3d Trial)</div>
     </div>
     <div style="background:var(--card-bg,rgba(255,255,255,0.04));border:1px solid var(--brd);border-radius:8px;padding:10px;text-align:center">
       <div style="font-size:22px;font-weight:700;color:var(--amb)">${st.expiredTrials}</div>
@@ -2341,7 +2341,7 @@ setInterval(()=>{if(!RUN&&canAutoRun())botTick()},10000);
     if(j.now>0){const off=j.now-Date.now();if(Math.abs(off)>1500){const n0=Date.now;Date.now=()=>n0.call(Date)+off;S.clockOff=off}}   /* run on exchange time, not the PC clock */
     S.conn=j;
     AUTH.mode=(j.auth&&j.auth.mode)||'pin';AUTH.user=(j.auth&&j.auth.user)||null;AUTH.first=!!(j.auth&&j.auth.firstRun);AUTH.setupReady=!!(j.auth&&j.auth.setupReady);AUTH.pinDefault=!!(j.auth&&j.auth.pinDefault);
-    if(AUTH.mode==='users'){if(!AUTH.user||AUTH.user.mustChange){showAuth();return}LS.ns=AUTH.user.id+'_';applyAuthUI();if(AUTH.user.expired)ban('Your 1-day trial has ended. Account is inactive (day '+(AUTH.user.inactiveDays||0)+' of 15-day grace period). Contact admin to activate full access.')}
+    if(AUTH.mode==='users'){if(!AUTH.user||AUTH.user.mustChange){showAuth();return}LS.ns=AUTH.user.id+'_';applyAuthUI();if(AUTH.user.expired)ban('Your 3-day trial has ended. Account is inactive (day '+(AUTH.user.inactiveDays||0)+' of 15-day grace period). Contact admin to activate full access.')}
     else if(AUTH.pinDefault)ban('This server still uses the default PIN, so it refuses all requests. Set APP_PIN in auth-local.php (or switch on accounts).');
     if(!j.configured){S.yahoo=true;ban('Free mode: index prices from Yahoo (can lag a few minutes); option premiums are estimates from India VIX. Add the Upstox token in api.php for real premiums and OI.')}}
   catch(e){S.demo=true;ban('Demo mode: simulated prices and option chain. Upload to your Hostinger site for live data.')}

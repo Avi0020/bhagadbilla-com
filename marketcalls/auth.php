@@ -145,6 +145,70 @@ function a_log($ev, $name = '', $extra = '') {
     @file_put_contents($f, json_encode(['t' => date('c'), 'ev' => $ev, 'user' => substr((string)$name, 0, 40), 'ip' => a_ip(), 'note' => substr((string)$extra, 0, 80)]) . "\n", FILE_APPEND | LOCK_EX); @chmod($f, 0600);
 }
 
+/* ---------------- Market Trading Days & Trial Calculation (Excludes Sat & Sun) ---------------- */
+function a_calc_trial_exp($fromTs, $tradingDays = 3) {
+    $dt = new DateTime('@' . (int)$fromTs);
+    $dt->setTimezone(new DateTimeZone('Asia/Kolkata'));
+
+    $hm = (int)$dt->format('G') * 60 + (int)$dt->format('i');
+    $w = (int)$dt->format('w'); // 0=Sun, 6=Sat
+
+    // If signed up on weekend, start Day 1 on Monday
+    if ($w === 6) { // Saturday
+        $dt->modify('+2 days');
+    } elseif ($w === 0) { // Sunday
+        $dt->modify('+1 day');
+    } elseif ($hm >= (15 * 60 + 30)) { // After 3:30 PM (market closed for the day)
+        $dt->modify('+1 day');
+        $w2 = (int)$dt->format('w');
+        if ($w2 === 6) $dt->modify('+2 days'); // Friday evening -> Monday
+        elseif ($w2 === 0) $dt->modify('+1 day');
+    }
+
+    // Now $dt is on Day 1 of trading. Add ($tradingDays - 1) additional trading days (skipping Sat & Sun)
+    $added = 0;
+    while ($added < ($tradingDays - 1)) {
+        $dt->modify('+1 day');
+        $dw = (int)$dt->format('w');
+        if ($dw !== 0 && $dw !== 6) {
+            $added++;
+        }
+    }
+
+    // End of final trading day at 23:59:59 IST
+    $dt->setTime(23, 59, 59);
+    return $dt->getTimestamp();
+}
+
+function a_trading_days_left($nowTs, $expTs) {
+    if ($expTs <= $nowTs) return 0;
+    $cur = new DateTime('@' . (int)$nowTs);
+    $cur->setTimezone(new DateTimeZone('Asia/Kolkata'));
+    $end = new DateTime('@' . (int)$expTs);
+    $end->setTimezone(new DateTimeZone('Asia/Kolkata'));
+
+    $hm = (int)$cur->format('G') * 60 + (int)$cur->format('i');
+    $w = (int)$cur->format('w');
+
+    $check = clone $cur;
+    $check->setTime(0, 0, 0);
+    // If today is a weekday but market is already closed (after 15:30 IST), start counting from tomorrow
+    if ($w !== 0 && $w !== 6 && $hm >= (15 * 60 + 30)) {
+        $check->modify('+1 day');
+    }
+
+    $endDateStr = $end->format('Y-m-d');
+    $count = 0;
+    while ($check->format('Y-m-d') <= $endDateStr) {
+        $cw = (int)$check->format('w');
+        if ($cw !== 0 && $cw !== 6) {
+            $count++;
+        }
+        $check->modify('+1 day');
+    }
+    return $count;
+}
+
 /* ---------------- who is calling ---------------- */
 function a_pub($u) {
     $now = time();
@@ -152,8 +216,8 @@ function a_pub($u) {
     $isAdmin = $role === 'admin' || $role === 'runner';
     $plan = $u['plan'] ?? ($isAdmin ? 'unlimited' : 'trial');
     $created = (int)($u['created'] ?? $now);
-    $trialExp = (int)($u['trial_exp'] ?? ($created + 1 * 86400));
-    $daysLeft = $isAdmin || $plan === 'unlimited' ? null : max(0, (int)ceil(($trialExp - $now) / 86400));
+    $trialExp = (int)($u['trial_exp'] ?? a_calc_trial_exp($created, 3));
+    $daysLeft = $isAdmin || $plan === 'unlimited' ? null : a_trading_days_left($now, $trialExp);
     $expired = !$isAdmin && $plan === 'trial' && ($trialExp < $now);
     $inactiveDays = $expired ? (int)floor(($now - $trialExp) / 86400) : 0;
 
@@ -205,7 +269,7 @@ function auth_gate($roles = null) {
             out(403, [
                 'status' => 'error',
                 'auth' => 'trial_expired',
-                'message' => 'Your 1-day trial has ended. Contact admin to extend your access.',
+                'message' => 'Your 3-day trial has ended. Contact admin to extend your access.',
                 'inactiveDays' => $u['inactiveDays'] ?? 0
             ]);
         }
@@ -394,7 +458,7 @@ function auth_handle($action) {
             }
             $id = bin2hex(random_bytes(8));
             $plan = $first ? 'unlimited' : 'trial';
-            $trialExp = $first ? null : (time() + 1 * 86400);
+            $trialExp = $first ? null : a_calc_trial_exp(time(), 3);
             $rec = ['id' => $id, 'username' => $name, 'email' => $email, 'hash' => a_hash($pw), 'role' => $role, 'plan' => $plan, 'trial_exp' => $trialExp, 'created' => time(), 'last' => time(), 'pwv' => 1, 'accepted' => time()];
             $d['users'][$id] = $rec; a_save_users($d);
             if (!$first && $hit !== null) { $inv['list'][$hit]['used'] = true; $inv['list'][$hit]['usedBy'] = $name; $inv['list'][$hit]['usedAt'] = time(); a_save_invites($inv); }
@@ -569,7 +633,7 @@ function auth_handle($action) {
                 }
                 $rec['plan'] = $p;
                 if ($p === 'trial') {
-                    $rec['trial_exp'] = time() + (1 * 86400);
+                    $rec['trial_exp'] = a_calc_trial_exp(time(), 3);
                 } else {
                     $rec['trial_exp'] = null;
                 }
@@ -578,9 +642,9 @@ function auth_handle($action) {
             elseif ($action === 'admin_extend_trial') {
                 $days = max(1, min(365, (int)($in['days'] ?? 1)));
                 $now = time();
-                $currExp = isset($rec['trial_exp']) && $rec['trial_exp'] !== null ? (int)$rec['trial_exp'] : ((int)($rec['created'] ?? $now) + 1 * 86400);
+                $currExp = isset($rec['trial_exp']) && $rec['trial_exp'] !== null ? (int)$rec['trial_exp'] : a_calc_trial_exp($rec['created'] ?? $now, 3);
                 $base = max($now, $currExp);
-                $rec['trial_exp'] = $base + ($days * 86400);
+                $rec['trial_exp'] = a_calc_trial_exp($base, $days);
                 $rec['plan'] = 'trial';
                 $extra['trialExp'] = $rec['trial_exp'];
                 $extra['daysAdded'] = $days;

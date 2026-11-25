@@ -160,10 +160,10 @@ class Client {
   });
   t('login with new password works', r.s === 200, r.j);
 
-  // 12. 10-day Trial and Onboarding Stats
+  // 12. 3-day Trial and Onboarding Stats
   console.log('\nTrial Period & Onboarding Stats');
   // Check member trial details
-  t('member account has 10-day trial', r.j.user && r.j.user.plan === 'trial' && r.j.user.daysLeft === 10 && !r.j.user.expired, r.j);
+  t('member account has 3-day trial', r.j.user && r.j.user.plan === 'trial' && r.j.user.daysLeft === 3 && !r.j.user.expired, r.j);
 
   // Check admin session and overview stats
   const adminClient = new Client(PORT);
@@ -178,11 +178,11 @@ class Client {
   t('admin gets onboarding stats (total, active trials, unlimited)', r.s === 200 && r.j.stats && r.j.stats.totalOnboarded === 2 && r.j.stats.activeTrials === 1 && r.j.stats.unlimitedCount === 1, r.j.stats);
 
   const traderRow = r.j.users.find(u => u.username === 'trader');
-  t('trader row in admin table shows trial info', traderRow && traderRow.plan === 'trial' && traderRow.daysLeft === 10, traderRow);
+  t('trader row in admin table shows trial info', traderRow && traderRow.plan === 'trial' && traderRow.daysLeft === 3, traderRow);
 
-  // Admin extends trial by 10 days
-  r = await adminClient.post('auth=admin_extend_trial', { id: traderRow.id, days: 10 });
-  t('admin extends user trial by 10 days', r.s === 200 && r.j.daysAdded === 10, r.j);
+  // Admin extends trial by 1 day
+  r = await adminClient.post('auth=admin_extend_trial', { id: traderRow.id, days: 1 });
+  t('admin extends user trial by 1 day', r.s === 200 && r.j.daysAdded === 1, r.j);
 
   // Admin sets plan to unlimited
   r = await adminClient.post('auth=admin_plan', { id: traderRow.id, plan: 'unlimited' });
@@ -210,9 +210,9 @@ class Client {
   r = await anon.req('store=1');
   t('expired trial member is blocked by auth_gate (403 trial_expired)', r.s === 403 && r.j.auth === 'trial_expired' && r.j.inactiveDays >= 15, r.j);
 
-  // Admin extends trial for expired member by 10 days
-  r = await adminClient.post('auth=admin_extend_trial', { id: traderRow.id, days: 10 });
-  t('admin re-activates expired member with trial extension', r.s === 200 && r.j.daysAdded === 10, r.j);
+  // Admin extends trial for expired member by 1 day
+  r = await adminClient.post('auth=admin_extend_trial', { id: traderRow.id, days: 1 });
+  t('admin re-activates expired member with trial extension', r.s === 200 && r.j.daysAdded === 1, r.j);
 
   // Member is unblocked
   r = await anon.req('store=1');
