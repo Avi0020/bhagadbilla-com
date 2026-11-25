@@ -658,11 +658,17 @@ function closePos(p,px,why,t){if(/Stop/.test(why))p.lo=Math.max(p.lo,Math.min(px
 function calcPaperTrail(p){
   if(!p||!(p.entry>0)||!(p.hi>0))return p.slNow||p.sl;
   const gain=(p.hi-p.entry)/p.entry;
-  if(gain<0.12)return p.slNow||p.sl;
-  let trail=p.entry; // at least cost / breakeven once gain reaches >= 12%
-  if(gain>=0.15){
+  const qty=p.qty||p.open||1;
+  const peakProfit=(p.hi-p.entry)*qty;
+  if(gain<0.12&&peakProfit<1000)return p.slNow||p.sl;
+  let trail=p.entry+Math.max(1.5,p.entry*0.025); // at least cost + charges covered
+  if(gain>=0.15||peakProfit>=1000){
     const giveRatio=gain>=0.40?0.12:0.15;
     trail=Math.max(trail,p.hi*(1-giveRatio));
+    if(peakProfit>=1000)trail=Math.max(trail,p.entry+700/qty);
+    if(peakProfit>=1500)trail=Math.max(trail,p.entry+1000/qty);
+    if(peakProfit>=2000)trail=Math.max(trail,p.entry+1400/qty);
+    if(peakProfit>=2500)trail=Math.max(trail,p.entry+(peakProfit*0.70)/qty);
     if(gain>=0.20)trail=Math.max(trail,p.entry*1.08); // lock at least +8% profit
     if(gain>=0.30)trail=Math.max(trail,p.entry*1.15); // lock at least +15% profit
     if(gain>=0.50)trail=Math.max(trail,p.entry*1.30); // lock at least +30% profit
@@ -682,12 +688,14 @@ function stepPos(p,b,live){if(!live&&b.t<p.lastT)return false;
       plog(`Risk-free: Stop moved to cost (₹${f2(newSl)}) on ${ixName(p.ix)} ${f0(p.strike)} ${p.type} — cannot lose`,'up');
     } else if(newSl>p.entry&&(!p.tMod||Date.now()-p.tMod>45000)){
       p.tMod=Date.now();const lk=Math.round((newSl/p.entry-1)*100);
-      plog(`Trailing profit: Stop moved up to ₹${f2(newSl)} (+${lk}% locked, peak ₹${f2(p.hi)}) on ${ixName(p.ix)} ${f0(p.strike)} ${p.type}`,'up');
+      const lkRs=Math.round((newSl-p.entry)*(p.open||p.qty||1));
+      plog(`Trailing profit: Stop moved up to ₹${f2(newSl)} (+₹${lkRs} / +${lk}% locked, peak ₹${f2(p.hi)}) on ${ixName(p.ix)} ${f0(p.strike)} ${p.type}`,'up');
     }
   }
   if(b.l<=p.slNow){
     const exitPx=live?b.c:p.slNow;
-    const why=p.slNow>p.entry?`Trailing stop hit (+${Math.round((p.slNow/p.entry-1)*100)}% profit locked)`:p.slNow===p.entry?'Cost protection hit (breakeven)':'Stop-loss hit (premium −40%)';
+    const lkRs=Math.round((p.slNow-p.entry)*(p.open||p.qty||1));
+    const why=p.slNow>p.entry?`Trailing stop hit (+₹${lkRs} profit locked)`:p.slNow===p.entry?'Cost protection hit (breakeven)':'Stop-loss hit (premium −40%)';
     closePos(p,exitPx,why,b.t);
     return true;
   }
@@ -1438,17 +1446,41 @@ async function botPrices(keys){const by={};if(!keys.length)return by;const j=awa
 async function botSnap(){try{const [p,o]=await Promise.all([trdApi('positions'),trdApi('orders')]);return{pos:p.data||[],orders:o.data||[]}}catch(e){return null}}
 function botFinish(t,exit,why){t.state='closed';t.exit=exit;t.why=why;t.tC=Date.now();t.pnl=botPnl(t,exit);t.ret=exit/t.fill-1;S.bot.dirty=true;
   botSay(t.mode==='dry'?'Shadow trade closed':'Auto trade closed',`${botNm(t)}: ${why}. In ₹${f2(t.fill)}, out ₹${f2(exit)}, ${rs(t.pnl)} (estimate after costs).`,t.pnl>=0?'up':'dn')}
-/* the tested trailing rule: once the highest price is trailStart above your entry, the stop follows trailGive below that highest price, never below your entry, and only moves in steps worth sending */
-function botTrail(t,au,px){if(!(px>0)||t.peak<t.fill*(1+au.trailStart))return 0;
-  const want=Math.min(tick(t.tgt-.05),Math.max(tick(t.peak*(1-au.trailGive)),tick(t.fill)));
-  return want>=t.stop+Math.max(.5,t.fill*.03)&&want<px?want:0}
+/* the tested trailing rule: in smart mode (trailStart<=0.15), starts at +15% or ₹1,000 profit, locking ₹700 net at ₹1,000 profit, ₹1,000 at ₹1,500 profit, ₹1,400+ at ₹2,000+ profit; in classic mode, follows trailGive below highest price */
+function botTrail(t,au,px){
+  if(!(px>0)||!t.fill)return 0;
+  const isTight=au.trailStart<=0.15;
+  const qty=t.qty||65;
+  const peakProfit=(t.peak-t.fill)*qty;
+  if(isTight){
+    if(t.peak<t.fill*(1+au.trailStart)&&peakProfit<1000)return 0;
+  }else{
+    if(t.peak<t.fill*(1+au.trailStart))return 0;
+  }
+  let want;
+  if(isTight){
+    let minLock=t.fill+Math.max(1.5,t.fill*0.025); // covers cost + brokerage/taxes
+    if(peakProfit>=1000)minLock=Math.max(minLock,t.fill+700/qty);
+    if(peakProfit>=1500)minLock=Math.max(minLock,t.fill+1000/qty);
+    if(peakProfit>=2000)minLock=Math.max(minLock,t.fill+1400/qty);
+    if(peakProfit>=2500)minLock=Math.max(minLock,t.fill+(peakProfit*0.70)/qty);
+    const trailFloor=Math.max(tick(t.peak*(1-au.trailGive)),tick(minLock));
+    want=Math.min(tick(t.tgt-.05),trailFloor);
+  }else{
+    want=Math.min(tick(t.tgt-.05),Math.max(tick(t.peak*(1-au.trailGive)),tick(t.fill)));
+  }
+  const minStep=isTight?Math.max(0.5,t.fill*0.01):Math.max(0.5,t.fill*0.03);
+  return want>=t.stop+minStep&&want<px?want:0;
+}
 async function botModify(t,ns,au){if(Date.now()-(t.tMod||0)<21000)return false;t.tMod=Date.now();
   const slT=Math.min(ns,tick(t.tgt-.05)),slL=Math.max(.05,tick(slT*.95)),ids=t.mode==='dry'?['DRY-'+t.id]:[t.modId,t.child,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);
   let err='';
   for(const id of ids){try{await trdApi('smartmodify',null,{order_id:id,sl_trigger:slT,sl_limit:slL,tgt_trigger:t.tgt,tgt_limit:t.tgtLim});t.modId=id;err='';break}catch(e){err=e.message;if(/Wait before|limit for this order/i.test(err))break}}
   if(err){if(/Wait before/i.test(err))return false;t.modFail=(t.modFail||0)+1;S.bot.dirty=true;if(t.modFail===1||t.modFail===5)botSay('Trailing stop NOT moved',`${botNm(t)}: ${err}. The stop and target already at INDstocks stay in place.`,'dn');return false}
   t.modFail=0;t.mods=(t.mods||0)+1;const was=t.stop;t.stop=slT;t.slLim=slL;S.bot.dirty=true;
-  botLog(`Stop moved up ₹${f2(was)} → ₹${f2(slT)} (highest ₹${f2(t.peak)})${t.mode==='dry'?' [shadow]':''}`,'up');if(t.mods===1)notify(t.mode==='dry'?'Shadow trade: stop trailing':'Stop trailing',`${botNm(t)}: stop moved to ₹${f2(slT)}${slT>=t.fill?' (at or above your entry, so the trade can no longer lose)':''}.`);return true}
+  const lkPnl=Math.round((slT-t.fill)*(t.qty||1));
+  const lkTxt=slT>=t.fill?(lkPnl>0?` (+₹${lkPnl} locked)`:' (cost protected)'):'';
+  botLog(`Stop moved up ₹${f2(was)} → ₹${f2(slT)} (highest ₹${f2(t.peak)}${lkTxt})${t.mode==='dry'?' [shadow]':''}`,'up');if(t.mods===1)notify(t.mode==='dry'?'Shadow trade: stop trailing':'Stop trailing',`${botNm(t)}: stop moved to ₹${f2(slT)}${slT>=t.fill?' ('+(lkPnl>0?'₹'+lkPnl+' profit locked':'risk-free')+')':''}.`);return true}
 function botShadow(t,px,au,mk){if(!(px>0))return;
   if(px<=t.stop){botFinish(t,px,t.stop>t.fill?'Trailing stop hit':'Stop-loss hit');return}
   if(px>=t.tgt){botFinish(t,t.tgt,'Target hit');return}
@@ -1537,13 +1569,14 @@ function botCard(){if(S.demo||S.yahoo)return'';const s=S.trd.status;if(!s||s.bro
   let h=`<div class="card" style="margin-top:14px"><div class="c-top"><div><div class="iname" style="font-size:16px">Automatic trading & Profit trailing</div><div class="meta"><span>INDstocks · intraday Nifty and Bank Nifty options</span></div></div><span class="pill ${pill[1]}">${pill[0]}</span></div>`;
   if(!au.configured)return h+`<div class="sub" style="margin:8px 0 0">Switched off. When turned on, valid intraday calls are bought with stop-loss and target attached, and profit trailing moves the stop-loss up as the trade rises to lock in gains.</div><div class="c-act" style="margin-top:10px"><button class="btn2 on" data-bot="enable">⚡ Turn ON Automatic Trading & Profit Trailing</button></div></div>`;
   h+=s.mode==='live'?'':`<div class="verdict amb" style="margin:10px 0"><b>SHADOW — nothing is sent to INDstocks</b><span>Every step (entry, stop, target, trailing, square-off) runs on real prices and is recorded below, so you can judge it before any real order.</span></div>`;
-  h+=`<div class="sub" style="margin:0 0 8px">Rules: buys a Valid call with stop −${pc(au.sl)} and target +${pc(au.target)} attached; once the price is +${pc(au.trailStart)} the stop follows ${pc(au.trailGive)} below the highest price, never below your entry; ${au.lots} lot, ${au.maxOpen} open at a time, ${au.maxPerDay} a day, entries until ${esc(au.entryUntil)}, closed by ${esc(au.squareOff)}. Nifty and Bank Nifty only.</div>`;
+  const trailDesc=au.trailStart<=0.15?`Smart trailing: starts at ₹1,000 profit (locks ₹700 net), locks ₹1,000 at ₹1,500 profit, locks ₹1,400+ at ₹2,000+ profit (brokerage covered)`:`once the price is +${pc(au.trailStart)} the stop follows ${pc(au.trailGive)} below the highest price, never below your entry`;
+  h+=`<div class="sub" style="margin:0 0 8px">Rules: buys a Valid call with stop −${pc(au.sl)} and target +${pc(au.target)} attached; ${trailDesc}; ${au.lots} lot, ${au.maxOpen} open at a time, ${au.maxPerDay} a day, entries until ${esc(au.entryUntil)}, closed by ${esc(au.squareOff)}. Nifty and Bank Nifty only.</div>`;
   if(sh.length)h+=`<div class="info num" style="border-top:0;padding-top:0">Shadow results: <b>${sh.length}</b> trade${sh.length>1?'s':''} · <b>${sh.filter(t=>t.pnl>0).length}</b> won · <b class="${sum(sh)>=0?'up':'dn'}">${rs(sum(sh))}</b> after estimated costs</div>`;
   if(lv.length)h+=`<div class="info num" style="border-top:0;padding-top:0">Live results: <b>${lv.length}</b> trade${lv.length>1?'s':''} · <b>${lv.filter(t=>t.pnl>0).length}</b> won · <b class="${sum(lv)>=0?'up':'dn'}">${rs(sum(lv))}</b> (estimate)</div>`;
   const row=t=>`<div class="row"><div style="min-width:0"><div class="n">${esc(botNm(t))} <span class="tag">${t.mode==='dry'?'Shadow':'Live'}</span></div><div class="s num">${t.qty} qty · in ₹${f2(t.fill||t.px)} · stop ₹${f2(t.stop)} · target ₹${f2(t.tgt)}${t.state==='closed'?' · out ₹'+f2(t.exit)+' · '+esc(t.why):t.state==='open'?' · now ₹'+f2(t.last):t.state==='entry'?' · waiting for the fill':' · '+esc(t.why||'')}</div></div><span class="pill ${t.state==='closed'?(t.pnl>=0?'p-up':'p-dn'):t.state==='dead'?'p-mu':'p-amb'}">${t.state==='closed'?rs(t.pnl):t.state==='open'?'Open':t.state==='entry'?'Entry':'Not filled'}</span></div>`;
   h+=`<h3 style="margin-top:12px">Today</h3>`+(tod.length?`<div class="list out">${tod.slice().reverse().map(row).join('')}</div>`:'<div class="empty" style="padding:14px">No automatic trade yet today.</div>');
   const lg=st&&st.log&&st.log.slice(0,6);if(lg&&lg.length)h+=`<div class="sub" style="margin:10px 0 0">${lg.map(l=>`<div>${hhmm(l.t)} · ${esc(l.txt)}</div>`).join('')}</div>`;
-  h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 ${au.killed?'on':''}" data-bot="${au.killed?'resume':'pause'}">${au.killed?'Resume automatic trading':'Pause automatic trading'}</button><button class="btn2 ${au.trailStart<=0.15?'on':''}" data-bot="${au.trailStart<=0.15?'classic':'tight'}" style="margin-left:6px">${au.trailStart<=0.15?'✓ Trailing from +15% profit':'Trail from +15% profit'}</button><button class="btn2" data-bot="disable" style="margin-left:6px">Turn off</button></div><div class="sub" style="margin:8px 0 0">Pausing stops new entries at once. A trade that is already open keeps its stop and target at INDstocks and is still managed until it closes.</div>`;
+  h+=`<div class="c-act" style="margin-top:12px"><button class="btn2 ${au.killed?'on':''}" data-bot="${au.killed?'resume':'pause'}">${au.killed?'Resume automatic trading':'Pause automatic trading'}</button><button class="btn2 ${au.trailStart<=0.15?'on':''}" data-bot="${au.trailStart<=0.15?'classic':'tight'}" style="margin-left:6px">${au.trailStart<=0.15?'✓ Smart Trailing (₹1k → ₹700 locked)':'Smart Trailing (₹1k → ₹700 locked)'}</button><button class="btn2" data-bot="disable" style="margin-left:6px">Turn off</button></div><div class="sub" style="margin:8px 0 0">Pausing stops new entries at once. A trade that is already open keeps its stop and target at INDstocks and is still managed until it closes.</div>`;
   return h+'</div>'}
 /* ============================== ACCOUNTS: sign up, log in, account menu, owner admin ==============================
    With accounts on (AUTH.mode 'users') everyone logs in first. The account id is decided by the login session on the server; this page never sends or chooses one.
@@ -2167,7 +2200,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
   if(t.dataset.bot){
     const b=t.dataset.bot;
     if(b==='enable'){
-      trdApi('autoconfig',null,{enabled:true,trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Automatic trading & profit trailing enabled (+15% trail)');render()}).catch(e=>toast(e.message));
+      trdApi('autoconfig',null,{enabled:true,trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Automatic trading & Smart Trailing enabled (₹1k → ₹700 locked)');render()}).catch(e=>toast(e.message));
       return;
     }
     if(b==='disable'){
@@ -2175,7 +2208,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)r
       return;
     }
     if(b==='tight'){
-      trdApi('autoconfig',null,{trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Trailing stop set: starts trailing at +15% profit');render()}).catch(e=>toast(e.message));
+      trdApi('autoconfig',null,{trailStart:0.15,trailGive:0.15}).then(j=>{if(S.trd.status)S.trd.status.auto=j.auto;toast('Smart Trailing ON: starts at ₹1,000 profit (locks ₹700 net in pocket)');render()}).catch(e=>toast(e.message));
       return;
     }
     if(b==='classic'){
