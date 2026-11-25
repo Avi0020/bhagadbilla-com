@@ -25,3 +25,9 @@ DirectoryIndex index.html
 <IfModule mod_alias.c>
   RedirectMatch 404 (^|/)(data|cache|service|research|tests|node_modules|tools|dist)(/|$)
 </IfModule>
+
+# Clean URL routes (Upstox OAuth callback without query parameters)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^callback/?$ api.php?callback=1 [QSA,L]
+</IfModule>

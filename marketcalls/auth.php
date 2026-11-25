@@ -476,7 +476,15 @@ function auth_handle($action) {
             'unlimitedCount' => 0
         ];
         foreach (a_users()['users'] as $x) {
-            $book = a_read(a_udir($x['id']) . '/paper.php')['book'] ?? [];
+            $uDir = a_udir($x['id']);
+            $book = a_read($uDir . '/paper.php')['book'] ?? [];
+            $uToken = a_read($uDir . '/order-token.php');
+            $iToken = a_read($uDir . '/order-token-ind.php');
+            $uConnected = !empty($uToken['token']) && ($uToken['exp'] ?? 0) > time();
+            $iConnected = !empty($iToken['token']) && ($iToken['exp'] ?? 0) > time();
+            $bConn = $uConnected || $iConnected;
+            $bName = $uConnected ? 'Upstox' : ($iConnected ? 'INDstocks' : '');
+            $bUser = $uConnected ? ($uToken['user'] ?? '') : ($iConnected ? ($iToken['user'] ?? '') : '');
             $pub = a_pub($x);
             $row = [
                 'id' => $x['id'],
@@ -492,7 +500,14 @@ function auth_handle($action) {
                 'last' => $x['last'] ?? 0,
                 'disabled' => !empty($x['disabled']),
                 'trades' => count((array)($book['hist'] ?? [])),
-                'open' => count((array)($book['pos'] ?? []))
+                'open' => count((array)($book['pos'] ?? [])),
+                'autoCopy' => !empty($x['autoCopy']),
+                'copyLots' => max(1, min(10, (int)($x['copyLots'] ?? 1))),
+                'brokerConnected' => $bConn,
+                'brokerName' => $bName,
+                'brokerUser' => $bUser,
+                'upstoxConnected' => $uConnected,
+                'indConnected' => $iConnected
             ];
             $rows[] = $row;
             $stats['totalOnboarded']++;
@@ -527,7 +542,7 @@ function auth_handle($action) {
         a_log('admin-invite', $me['username'], count($codes) . ' code(s)');
         out(200, ['status' => 'success', 'codes' => $codes, 'days' => $days]);
     }
-    if (in_array($action, ['admin_disable', 'admin_enable', 'admin_reset', 'admin_delete', 'admin_role', 'admin_extend_trial', 'admin_plan'], true)) {
+    if (in_array($action, ['admin_disable', 'admin_enable', 'admin_reset', 'admin_delete', 'admin_role', 'admin_extend_trial', 'admin_plan', 'admin_autocopy'], true)) {
         $id = (string)($in['id'] ?? ''); if (!preg_match('/^[a-f0-9]{16}$/', $id)) out(400, ['status' => 'error', 'message' => 'Bad user id']);
         if ($id === $me['id'] && !in_array($action, ['admin_reset'], true)) out(422, ['status' => 'error', 'message' => 'Use the account menu for your own account.']);
         $res = a_with_lock(function () use ($id, $action, $in) {
@@ -535,6 +550,18 @@ function auth_handle($action) {
             if ($action === 'admin_disable') { $rec['disabled'] = true; $rec['pwv'] = (int)($rec['pwv'] ?? 0) + 1; }
             elseif ($action === 'admin_enable') { unset($rec['disabled']); }
             elseif ($action === 'admin_role') { $r = (string)($in['role'] ?? ''); if (!in_array($r, ['member', 'admin'], true)) return ['err' => 'Bad role.']; $rec['role'] = $r; }
+            elseif ($action === 'admin_autocopy') {
+                $enabled = !empty($in['enabled']);
+                $lots = max(1, min(10, (int)($in['lots'] ?? 1)));
+                if ($enabled) {
+                    $rec['autoCopy'] = true;
+                    $rec['copyLots'] = $lots;
+                } else {
+                    unset($rec['autoCopy']);
+                }
+                $extra['autoCopy'] = !empty($rec['autoCopy']);
+                $extra['copyLots'] = (int)($rec['copyLots'] ?? 1);
+            }
             elseif ($action === 'admin_plan') {
                 $p = (string)($in['plan'] ?? '');
                 if (!in_array($p, ['trial', 'unlimited'], true)) {
