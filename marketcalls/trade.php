@@ -72,7 +72,7 @@ function t_conf() {
 
     // Per-user trade mode, fallback to global trade-mode.php, fallback to constant
     $uid = $GLOBALS['IX_ME']['id'] ?? null;
-    $userDir = (!getenv('SIGNALS_TEST_UPSTOX') && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) ? a_udir($uid) : $gdir;
+    $userDir = ((!getenv('SIGNALS_TEST_UPSTOX') || getenv('SIGNALS_TEST_USER_DIR')) && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) ? a_udir($uid) : $gdir;
     $mf = is_file($userDir . '/trade-mode.php') ? ($userDir . '/trade-mode.php') : ($gdir . '/trade-mode.php');
 
     $dynMode = null;
@@ -109,7 +109,7 @@ function t_dir($c, $uid = null) {
     if ($uid === null && !empty($GLOBALS['IX_ME']['id'])) {
         $uid = $GLOBALS['IX_ME']['id'];
     }
-    if (!getenv('SIGNALS_TEST_UPSTOX') && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) {
+    if ((!getenv('SIGNALS_TEST_UPSTOX') || getenv('SIGNALS_TEST_USER_DIR')) && (defined('AUTH_MODE') && AUTH_MODE === 'users') && $uid !== null && preg_match('/^[a-f0-9]{16}$/', (string)$uid) && function_exists('a_udir')) {
         return a_udir($uid);
     }
     if (!is_dir($c['data'])) @mkdir($c['data'], 0755, true);
@@ -268,7 +268,7 @@ function t_call($method, $url, $token, $body = null, $extra = []) {
     $ch = curl_init($url);
     $h = ['Accept: application/json', 'Authorization: Bearer ' . $token];
     if ($body !== null) $h[] = 'Content-Type: application/json';
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => array_merge($h, $extra)]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 15, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => array_merge($h, $extra)]);
     if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $raw = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
     if ($raw === false) return [0, ['status' => 'error', 'message' => 'Upstox unreachable: ' . $err]];
@@ -283,7 +283,7 @@ function t_icall($c, $method, $path, $token, $body = null) {
     $ch = curl_init($c['ind'] . $path);
     $h = ['Accept: application/json', 'Authorization: ' . $token, 'API-Version: v1'];
     if ($body !== null) $h[] = 'Content-Type: application/json';
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => $h]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 15, CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => $h]);
     if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $raw = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
     if ($raw === false) return [0, ['status' => 'error', 'message' => 'INDstocks unreachable: ' . $err]];
@@ -656,8 +656,14 @@ function trade_handle($action) {
             if ($v['sl_limit'] > $v['sl_trigger'] || $v['tgt_limit'] > $v['tgt_trigger'] || $v['sl_trigger'] >= $v['tgt_trigger']) out(422, ['status' => 'error', 'message' => 'The stop and target prices are not consistent.']);
             $m = $mods[$oid] ?? ['n' => 0, 't' => 0]; if ($m['n'] >= 20) out(422, ['status' => 'error', 'message' => 'Modification limit for this order reached.']); if (!TEST_NOGAP && time() - (int)$m['t'] < 20) out(422, ['status' => 'error', 'message' => 'Wait before changing this order again.']);
             $mods[$oid] = ['n' => $m['n'] + 1, 't' => time()]; $lg['mods'] = $mods; t_write($lf, $lg);
-            t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-modify' : 'smart-modify', 'mode' => $mode, 'order_id' => $oid] + $v);
-            if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+            $reqGap = isset($in['trailing_gap']) ? round((float)$in['trailing_gap'], 2) : 0;
+            $trailGap = $reqGap >= 0.05 ? $reqGap : round(max(0.05, $v['sl_trigger'] * 0.25), 2);
+            $modQty = max(1, (int)($in['quantity'] ?? 65));
+            t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-modify' : 'smart-modify', 'mode' => $mode, 'order_id' => $oid, 'trailing_gap' => $trailGap] + $v);
+            if ($mode === 'dry') {
+                $bcast = t_broadcast_smart_modify($targetUid, $oid, $v, $trailGap, $c, $in);
+                out(200, ['status' => 'success', 'mode' => 'dry', 'broadcast' => $bcast, 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+            }
             if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in from the Paper tab.')]);
             if ($ind) {
                 [$code, $j] = t_icall($c, 'POST', '/smart/order/modify', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE', 'algo_id' => '99999', 'sl_trigger_price' => $v['sl_trigger'], 'sl_limit_price' => $v['sl_limit'], 'tgt_trigger_price' => $v['tgt_trigger'], 'tgt_limit_price' => $v['tgt_limit']]);
@@ -665,11 +671,11 @@ function trade_handle($action) {
                 if (strpos($oid, 'GTT-') === 0) {
                     [$code, $j] = t_call('PUT', $c['api'] . '/v3/order/gtt/modify', $tk['token'], [
                         'type' => 'MULTIPLE',
-                        'quantity' => (int)($in['quantity'] ?? 65),
+                        'quantity' => $modQty,
                         'gtt_order_id' => $oid,
                         'rules' => [
                             ['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['tgt_trigger']],
-                            ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['sl_trigger'], 'trailing_gap' => round(max(0.05, $v['tgt_trigger'] - $v['sl_trigger']), 2)]
+                            ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['sl_trigger'], 'trailing_gap' => $trailGap]
                         ]
                     ]);
                 } else {
@@ -682,10 +688,16 @@ function trade_handle($action) {
                 }
             }
             t_log($c, ['ev' => 'smart-modify-reply', 'http' => $code, 'reply' => $j]);
-            out($code === 200 && ($j['status'] ?? '') !== 'error' ? 200 : 502, $code === 200 && ($j['status'] ?? '') !== 'error' ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, $bn . ' refused the change (HTTP ' . $code . ').')]);
+            $okMod = ($code === 200 && ($j['status'] ?? '') !== 'error');
+            $bcast = $okMod ? t_broadcast_smart_modify($targetUid, $oid, $v, $trailGap, $c, $in) : null;
+            out($okMod ? 200 : 502, $okMod ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null, 'broadcast' => $bcast] : ['status' => 'error', 'message' => t_err($j, $bn . ' refused the change (HTTP ' . $code . ').')]);
         }
         t_log($c, ['ev' => $mode === 'dry' ? 'dry-smart-cancel' : 'smart-cancel', 'mode' => $mode, 'order_id' => $oid]);
-        if ($mode === 'dry') out(200, ['status' => 'success', 'mode' => 'dry', 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+        $forSq = !empty($in['squareOff']);
+        if ($mode === 'dry') {
+            $bcast = t_broadcast_smart_cancel($targetUid, $oid, $c, $forSq);
+            out(200, ['status' => 'success', 'mode' => 'dry', 'broadcast' => $bcast, 'note' => 'Dry run: nothing was sent to ' . $bn . '.']);
+        }
         if (!$tk) out(422, ['status' => 'error', 'message' => 'Not connected to ' . $bn . '. ' . ($ind ? 'Paste today\'s token.' : 'Log in from the Paper tab.')]);
         if ($ind) {
             [$code, $j] = t_icall($c, 'POST', '/smart/order/cancel', $tk['token'], ['order_id' => $oid, 'segment' => 'DERIVATIVE']);
@@ -696,7 +708,9 @@ function trade_handle($action) {
                 [$code, $j] = t_call('DELETE', $c['hft'] . '/v3/order/cancel?order_id=' . urlencode($oid), $tk['token']);
             }
         }
-        out($code === 200 ? 200 : 502, $code === 200 ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]);
+        $okCan = ($code === 200 && ($j['status'] ?? '') !== 'error');
+        $bcast = $okCan ? t_broadcast_smart_cancel($targetUid, $oid, $c, $forSq) : null;
+        out($okCan ? 200 : 502, $okCan ? ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null, 'broadcast' => $bcast] : ['status' => 'error', 'message' => t_err($j, 'Cancel failed')]);
     }
     if ($action === 'login') {
         if ($ind) out(400, ['status' => 'error', 'message' => 'INDstocks uses a daily token: paste it in the Paper tab.']);
@@ -719,7 +733,7 @@ function trade_handle($action) {
         out(200, ['status' => 'success', 'url' => $c['api'] . '/v2/login/authorization/dialog?' . http_build_query(['response_type' => 'code', 'client_id' => $c['cid'], 'redirect_uri' => $c['redirect'], 'state' => $state])]);
     }
     /* reads */
-    if (in_array($action, ['funds', 'positions', 'orders', 'order'], true)) {
+    if (in_array($action, ['funds', 'positions', 'orders', 'order', 'gtt'], true)) {
         if (!$tk) out(200, ['status' => 'success', 'connected' => false, 'data' => in_array($action, ['positions', 'orders'], true) ? [] : null]);
         if ($ind) {
             if ($action === 'funds') { $f = t_ind_funds($c, $tk); if ($f === null) out(502, ['status' => 'error', 'message' => 'Funds unavailable']); out(200, ['status' => 'success', 'data' => $f]); }
@@ -741,6 +755,7 @@ function trade_handle($action) {
         if ($action === 'positions') { $p = t_positions($c, $tk); if ($p === null) out(502, ['status' => 'error', 'message' => 'Positions unavailable']); out(200, ['status' => 'success', 'data' => $p]); }
         if ($action === 'orders') { [$code, $j] = t_call('GET', $c['api'] . '/v2/order/retrieve-all', $tk['token']); if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'Orders unavailable')]); out(200, ['status' => 'success', 'data' => array_slice(array_reverse((array)($j['data'] ?? [])), 0, 20)]); }
         $id = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_GET['order_id'] ?? '')); if ($id === '') out(400, ['status' => 'error', 'message' => 'order_id missing']);
+        if ($action === 'gtt') { [$code, $j] = t_call('GET', $c['api'] . '/v3/order/gtt?gtt_order_id=' . urlencode($id), $tk['token']); if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'GTT order not found')]); out(200, ['status' => 'success', 'data' => $j['data'] ?? null]); }
         [$code, $j] = t_call('GET', $c['api'] . '/v2/order/details?order_id=' . $id, $tk['token']); if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, 'Order not found')]); out(200, ['status' => 'success', 'data' => $j['data'] ?? null]);
     }
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $action !== 'cancel') out(405, ['status' => 'error', 'message' => 'POST required']);
@@ -822,10 +837,17 @@ function trade_handle($action) {
     }
     $lg['refs'][$ref] = time(); $lg['last'] = time(); $lg['count'] = (int)$lg['count'] + 1; if ($isAuto) $lg['autoCount'] = (int)($lg['autoCount'] ?? 0) + 1; t_write($lf, $lg);
     $sum = ['mode' => $mode, 'inst' => $inst, 'qty' => $qty, 'side' => $side, 'type' => $type, 'product' => $prod, 'price' => $price, 'trigger' => $trig, 'label' => $label, 'ref' => $ref, 'attach' => $att, 'auto' => $isAuto];
+    $isCopyExit = ($side === 'SELL' && !empty($in['copyExit']));
     if ($mode === 'dry') {
         t_log($c, ['ev' => 'dry-order'] + $sum);
-        $bcast = $isAuto ? t_broadcast_auto_order($targetUid, $inst, $qty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in) : null;
-        out(200, ['status' => 'success', 'mode' => 'dry', 'data' => ['order_ids' => ['DRY' . time()]], 'broadcast' => $bcast, 'note' => 'Dry run: the order passed every check but was NOT sent to ' . $bn . '.']);
+        $dryId = 'DRY' . time();
+        $bcast = null;
+        if ($isAuto) {
+            $bcast = t_broadcast_auto_order($targetUid, $inst, $qty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in, ['parent' => $dryId, 'child' => $dryId]);
+        } elseif ($isCopyExit) {
+            $bcast = t_broadcast_copy_exit($targetUid, $inst, $price, (string)($in['originOrderId'] ?? ''), $c, $in);
+        }
+        out(200, ['status' => 'success', 'mode' => 'dry', 'data' => ['order_ids' => [$dryId]], 'broadcast' => $bcast, 'note' => 'Dry run: the order passed every check but was NOT sent to ' . $bn . '.']);
     }
     if ($ind && $att) {   // smart order: the entry plus its stop-loss and target, placed in ONE request. If INDstocks rejects it, nothing is bought.
         [$code, $j] = t_icall($c, 'POST', '/smart/order', $tk['token'], ['txn_type' => 'BUY', 'exchange' => 'NSE', 'segment' => 'DERIVATIVE', 'product' => 'INTRADAY', 'order_type' => 'LIMIT', 'validity' => 'DAY',
@@ -870,116 +892,415 @@ function trade_handle($action) {
     }
     t_log($c, ['ev' => $code === 200 ? 'order-sent' : 'order-failed', 'http' => $code, 'reply' => $j] + $sum);
     if ($code !== 200) out(502, ['status' => 'error', 'message' => t_err($j, $bn . ' rejected the order (HTTP ' . $code . ').')]);
-    $bcast = $isAuto ? t_broadcast_auto_order($targetUid, $inst, $qty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in) : null;
+    $originIds = ['parent' => (string)($j['data']['order_ids'][0] ?? ''), 'child' => (string)($j['data']['child_id'] ?? ($j['data']['order_ids'][0] ?? ''))];
+    $bcast = null;
+    if ($isAuto) {
+        $bcast = t_broadcast_auto_order($targetUid, $inst, $qty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in, $originIds);
+    } elseif ($isCopyExit) {
+        $bcast = t_broadcast_copy_exit($targetUid, $inst, $price, (string)($in['originOrderId'] ?? ''), $c, $in);
+    }
     out(200, ['status' => 'success', 'mode' => 'live', 'data' => $j['data'] ?? null, 'broadcast' => $bcast]);
 }
-function t_broadcast_auto_order($originUid, $inst, $origQty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in) {
+function t_copy_links_read($c) {
+    return t_read(ix_data_dir() . '/copy-links.php', ['links' => []]);
+}
+function t_copy_links_write($c, $links) {
+    $cut = time() - 3 * 86400;
+    $kept = array_values(array_filter((array)$links, function ($l) use ($cut) {
+        return ($l['createdAt'] ?? 0) >= $cut;
+    }));
+    t_write(ix_data_dir() . '/copy-links.php', ['links' => $kept]);
+}
+function t_follower_setup($c, $uid, $uDir) {
+    $mf = $uDir . '/trade-mode.php';
+    $dm = is_file($mf) ? t_read($mf, []) : [];
+    $rawMode = isset($dm['mode']) && in_array($dm['mode'], ['off', 'dry', 'live'], true) ? $dm['mode'] : $c['mode'];
+    $effMode = ($c['mode'] === 'dry' || $rawMode === 'dry') ? 'dry' : $rawMode;
+    $uToken = a_read($uDir . '/order-token.php');
+    $iToken = a_read($uDir . '/order-token-ind.php');
+    $uOk = !empty($uToken['token']) && ($uToken['exp'] ?? 0) > time();
+    $iOk = !empty($iToken['token']) && ($iToken['exp'] ?? 0) > time();
+    $pref = isset($dm['broker']) && in_array($dm['broker'], ['upstox', 'indstocks'], true) ? $dm['broker'] : null;
+    $broker = null; $tok = null;
+    if ($pref === 'upstox' && $uOk) { $broker = 'upstox'; $tok = $uToken; }
+    elseif ($pref === 'indstocks' && $iOk) { $broker = 'indstocks'; $tok = $iToken; }
+    elseif ($pref === null && $uOk) { $broker = 'upstox'; $tok = $uToken; }
+    elseif ($pref === null && $iOk) { $broker = 'indstocks'; $tok = $iToken; }
+    return ['mode' => $effMode, 'broker' => $broker, 'token' => $tok, 'preferred' => $pref];
+}
+function t_follower_log($c, $uDir, $uid, $ev, $payload) {
+    t_log($c, ['ev' => $ev, 'uid' => $uid] + $payload);
+    $uLogFile = $uDir . '/orders.log.php';
+    if (!is_file($uLogFile)) @file_put_contents($uLogFile, T_HEAD, LOCK_EX);
+    @file_put_contents($uLogFile, json_encode(['t' => t_ist()->format('c'), 'ev' => $ev] + $payload) . "\n", FILE_APPEND | LOCK_EX);
+    @chmod($uLogFile, 0600);
+}
+function t_follower_req($c, $broker, $method, $pathOrUrl, $token, $body = null, $extra = []) {
+    if ($broker === 'indstocks') {
+        $h = ['Accept: application/json', 'Authorization: ' . $token, 'API-Version: v1'];
+        if ($body !== null) $h[] = 'Content-Type: application/json';
+        return ['broker' => 'indstocks', 'method' => $method, 'url' => $c['ind'] . $pathOrUrl, 'headers' => array_merge($h, $extra), 'body' => $body];
+    }
+    $h = ['Accept: application/json', 'Authorization: Bearer ' . $token];
+    if ($body !== null) $h[] = 'Content-Type: application/json';
+    return ['broker' => 'upstox', 'method' => $method, 'url' => $pathOrUrl, 'headers' => array_merge($h, $extra), 'body' => $body];
+}
+function t_call_multi($reqs) {
+    if (empty($reqs)) return [];
+    $mh = curl_multi_init();
+    $chs = [];
+    foreach ($reqs as $k => $rq) {
+        $ch = curl_init($rq['url']);
+        $opts = [CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 12, CURLOPT_CUSTOMREQUEST => $rq['method'], CURLOPT_HTTPHEADER => $rq['headers']];
+        if ($rq['body'] !== null) $opts[CURLOPT_POSTFIELDS] = json_encode($rq['body']);
+        curl_setopt_array($ch, $opts);
+        curl_multi_add_handle($mh, $ch);
+        $chs[$k] = $ch;
+    }
+    do {
+        $status = curl_multi_exec($mh, $active);
+        if ($active && $status === CURLM_OK) {
+            if (curl_multi_select($mh, 0.2) === -1) usleep(10000);
+        }
+    } while ($active && $status === CURLM_OK);
+    $out = [];
+    foreach ($chs as $k => $ch) {
+        $raw = curl_multi_getcontent($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        $bName = ($reqs[$k]['broker'] ?? '') === 'indstocks' ? 'INDstocks' : 'Upstox';
+        if ($raw === false || $raw === '' && $code === 0) {
+            $out[$k] = [0, ['status' => 'error', 'message' => $bName . ' unreachable: ' . $err]];
+        } else {
+            $j = json_decode((string)$raw, true);
+            $out[$k] = [$code, is_array($j) ? $j : ['status' => 'error', 'message' => 'Bad response from ' . $bName]];
+        }
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($mh);
+    return $out;
+}
+function t_extract_positions($broker, $code, $j) {
+    if ($code !== 200 || !is_array($j) || ($j['status'] ?? '') === 'error') return null;
+    $out = [];
+    if ($broker === 'indstocks') {
+        foreach ((array)($j['data'] ?? []) as $p) {
+            $q = (int)($p['net_qty'] ?? 0);
+            $ot = strtoupper((string)($p['drv_option_type'] ?? ''));
+            if ($q === 0 || !in_array($ot, ['CE', 'PE'], true)) continue;
+            $bse = strtoupper((string)($p['exchange'] ?? 'NSE')) === 'BSE';
+            $out[] = ['instrument_token' => t_ind_key($bse ? 'BSE' : 'NSE', (string)($p['security_id'] ?? '')), 'quantity' => $q, 'product' => strtoupper((string)($p['product'] ?? '')) === 'INTRADAY' ? 'I' : 'D'];
+        }
+    } else {
+        foreach ((array)($j['data'] ?? []) as $p) {
+            $q = (int)($p['quantity'] ?? 0); $it = (string)($p['instrument_token'] ?? '');
+            if ($q !== 0 && preg_match('/^(NSE_FO|BSE_FO)\|/', $it)) $out[] = ['instrument_token' => $it, 'quantity' => $q, 'product' => (string)($p['product'] ?? '')];
+        }
+    }
+    return $out;
+}
+function t_broadcast_auto_order($originUid, $inst, $origQty, $side, $type, $prod, $price, $trig, $label, $att, $c, $in, $originIds = []) {
     if (!function_exists('a_users')) return ['eligible' => 0, 'sent' => 0, 'results' => []];
-    $usersData = a_users();
-    $users = $usersData['users'] ?? [];
-    $results = [];
-    $sent = 0;
-    $eligible = 0;
-
+    @set_time_limit(60);
+    $users = a_users()['users'] ?? [];
+    $results = []; $sent = 0; $eligible = 0; $today = t_ist()->format('Y-m-d');
     $baseLots = max(1, (int)($in['lots'] ?? 1));
-    $lotSize = (int)($origQty / $baseLots);
-    if ($lotSize < 1) $lotSize = $origQty;
+    $lotSize = max(1, (int)($origQty / $baseLots));
+    $links = (array)(t_copy_links_read($c)['links'] ?? []);
+    $candidates = []; $preReqs = [];
 
     foreach ($users as $uid => $u) {
-        if ($uid === $originUid) continue;
-        if (!empty($u['disabled']) || empty($u['autoCopy'])) continue;
+        if ($uid === $originUid || !empty($u['disabled']) || empty($u['autoCopy'])) continue;
         $eligible++;
-
         $uDir = a_udir($uid);
-        $uToken = a_read($uDir . '/order-token.php');
-        $iToken = a_read($uDir . '/order-token-ind.php');
-        $uOk = !empty($uToken['token']) && ($uToken['exp'] ?? 0) > time();
-        $iOk = !empty($iToken['token']) && ($iToken['exp'] ?? 0) > time();
-
-        if (!$uOk && !$iOk) {
+        $fs = t_follower_setup($c, $uid, $uDir);
+        if ($fs['mode'] === 'off') {
+            $results[$uid] = ['user' => $u['username'], 'status' => 'skipped', 'reason' => 'Follower trading mode is OFF'];
+            t_log($c, ['ev' => 'copy-order-skipped-modeoff', 'uid' => $uid, 'user' => $u['username']]);
+            continue;
+        }
+        if (!$fs['broker'] || !$fs['token']) {
             $results[$uid] = ['user' => $u['username'], 'status' => 'skipped', 'reason' => 'No active broker token'];
             t_log($c, ['ev' => 'copy-order-skipped-notoken', 'uid' => $uid, 'user' => $u['username']]);
             continue;
         }
-
+        $userBroker = $fs['broker']; $tok = $fs['token']; $fMode = $fs['mode'];
         $userLots = max(1, min(10, (int)($u['copyLots'] ?? 1)));
         $userQty = $lotSize * $userLots;
         $userRef = 'copy-' . substr($uid, 0, 6) . '-' . time() . '-' . rand(100, 999);
-        $userBroker = $uOk ? 'upstox' : 'indstocks';
-        $activeToken = $uOk ? $uToken : $iToken;
-
-        $userSum = [
-            'mode' => $c['mode'], 'inst' => $inst, 'qty' => $userQty, 'side' => $side, 'type' => $type,
-            'product' => $prod, 'price' => $price, 'trigger' => $trig, 'label' => $label, 'ref' => $userRef,
-            'attach' => $att, 'auto' => true, 'copy' => true, 'origin' => $originUid, 'target_user' => $u['username']
-        ];
-
-        if ($c['mode'] === 'dry') {
-            t_log($c, ['ev' => 'dry-copy-order', 'uid' => $uid] + $userSum);
-            $uLogFile = $uDir . '/orders.log.php';
-            $uLogEntry = "<?php /* " . date('c') . " dry-copy-order " . json_encode($userSum) . " */ ?>\n";
-            @file_put_contents($uLogFile, $uLogEntry, FILE_APPEND);
+        if ($userBroker === 'indstocks' && $att && strpos($inst, 'BSE_FO') === 0) {
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => 'INDstocks smart orders support NSE options only'];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-exchange', ['inst' => $inst, 'user' => $u['username']]);
+            continue;
+        }
+        if ($userQty > ORDER_MAX_QTY || ($userQty * $price) > ORDER_MAX_VALUE) {
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => 'Order exceeds max order value/qty cap'];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-cap', ['qty' => $userQty, 'price' => $price, 'user' => $u['username']]);
+            continue;
+        }
+        $flf = $uDir . '/order-log.php'; $flg = t_read($flf);
+        if (($flg['day'] ?? '') !== $today) $flg = ['day' => $today, 'count' => 0, 'refs' => [], 'last' => 0];
+        if ((int)$flg['count'] >= ORDER_MAX_PER_DAY) {
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => 'Follower daily order limit reached'];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-daylimit', ['user' => $u['username']]);
+            continue;
+        }
+        $userSum = ['mode' => $fMode, 'inst' => $inst, 'qty' => $userQty, 'side' => $side, 'type' => $type, 'product' => $prod, 'price' => $price, 'trigger' => $trig, 'label' => $label, 'ref' => $userRef, 'attach' => $att, 'auto' => true, 'copy' => true, 'origin' => $originUid, 'target_user' => $u['username'], 'broker' => $userBroker];
+        if ($fMode === 'dry') {
+            $flg['count'] = (int)$flg['count'] + 1; $flg['last'] = time(); t_write($flf, $flg);
+            $dryChild = 'DRY-COPY-' . substr($uid, 0, 6) . '-' . time();
+            t_follower_log($c, $uDir, $uid, 'dry-copy-order', $userSum);
+            $links[] = ['originUid' => $originUid, 'originRef' => (string)($in['ref'] ?? ''), 'originParent' => (string)($originIds['parent'] ?? ''), 'originChild' => (string)($originIds['child'] ?? ''), 'followerUid' => $uid, 'followerUser' => $u['username'], 'broker' => $userBroker, 'inst' => $inst, 'qty' => $userQty, 'parent' => $dryChild, 'child' => $dryChild, 'mode' => 'dry', 'status' => 'open', 'stopCancelled' => false, 'createdAt' => time()];
             $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'dry_sent', 'qty' => $userQty, 'lots' => $userLots];
             $sent++;
             continue;
         }
+        $candidates[$uid] = ['u' => $u, 'uDir' => $uDir, 'broker' => $userBroker, 'tok' => $tok['token'], 'lots' => $userLots, 'qty' => $userQty, 'flf' => $flf, 'flg' => $flg, 'sum' => $userSum];
+        if ($userBroker === 'indstocks') {
+            $preReqs[$uid . '|f'] = t_follower_req($c, 'indstocks', 'GET', '/funds', $tok['token']);
+            $preReqs[$uid . '|p'] = t_follower_req($c, 'indstocks', 'GET', '/portfolio/positions?segment=derivative', $tok['token']);
+        } else {
+            $preReqs[$uid . '|f'] = t_follower_req($c, 'upstox', 'GET', $c['api'] . '/v3/user/get-funds-and-margin', $tok['token'], null, ['Api-Version: 3.0']);
+            $preReqs[$uid . '|p'] = t_follower_req($c, 'upstox', 'GET', $c['api'] . '/v2/portfolio/short-term-positions', $tok['token']);
+        }
+    }
 
-        $code = 0; $j = null;
+    // Parallel pre-flight check (funds & positions) across all live followers
+    $preRes = t_call_multi($preReqs);
+    $orderReqs = [];
+    foreach ($candidates as $uid => $cd) {
+        $userBroker = $cd['broker']; $u = $cd['u']; $uDir = $cd['uDir']; $userQty = $cd['qty'];
+        [$fc, $fj] = $preRes[$uid . '|f'] ?? [0, null];
+        $avl = $userBroker === 'indstocks'
+            ? ($fc === 200 ? ($fj['data']['detailed_avl_balance']['option_buy'] ?? ($fj['data']['withdrawal_balance'] ?? null)) : null)
+            : ($fc === 200 ? ($fj['data']['equity']['available_margin'] ?? ($fj['data']['available_to_trade']['total'] ?? null)) : null);
+        $needCash = $userQty * $price;
+        if ($avl !== null && $needCash > (float)$avl) {
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => 'Insufficient funds (needs Rs ' . number_format($needCash) . ', available Rs ' . number_format((float)$avl) . ')'];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-funds', ['need' => $needCash, 'avl' => $avl, 'user' => $u['username']]);
+            continue;
+        }
+        [$pc, $pj] = $preRes[$uid . '|p'] ?? [0, null];
+        $fPos = t_extract_positions($userBroker, $pc, $pj);
+        if ($fPos === null) {
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => 'Position check unavailable'];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-poserr', ['user' => $u['username']]);
+            continue;
+        }
+        $openCnt = 0; $alreadyHeld = false;
+        foreach ($fPos as $fp) {
+            if (($fp['quantity'] ?? 0) > 0 && ($fp['product'] ?? '') === 'I') {
+                $openCnt++;
+                if (($fp['instrument_token'] ?? '') === $inst) $alreadyHeld = true;
+            }
+        }
+        if ($openCnt >= AUTO_MAX_OPEN || $alreadyHeld) {
+            $whyPos = $alreadyHeld ? 'Already holding this contract' : 'Follower open-position limit reached (' . AUTO_MAX_OPEN . ')';
+            $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => 'skipped', 'reason' => $whyPos];
+            t_follower_log($c, $uDir, $uid, 'copy-order-skipped-openpos', ['open' => $openCnt, 'user' => $u['username']]);
+            continue;
+        }
         if ($userBroker === 'indstocks' && $att) {
-            [$code, $j] = t_icall($c, 'POST', '/smart/order', $activeToken['token'], [
+            $orderReqs[$uid] = t_follower_req($c, 'indstocks', 'POST', '/smart/order', $cd['tok'], [
                 'txn_type' => 'BUY', 'exchange' => 'NSE', 'segment' => 'DERIVATIVE', 'product' => 'INTRADAY',
-                'order_type' => 'LIMIT', 'validity' => 'DAY',
-                'security_id' => substr($inst, strpos($inst, '|') + 1),
-                'qty' => $userQty, 'limit_price' => $price,
-                'sl_trigger_price' => $att['sl_trigger'], 'sl_limit_price' => $att['sl_limit'],
-                'tgt_trigger_price' => $att['tgt_trigger'], 'tgt_limit_price' => $att['tgt_limit'],
-                'algo_id' => '99999', 'remarks' => 'COPY'
+                'order_type' => 'LIMIT', 'validity' => 'DAY', 'security_id' => substr($inst, strpos($inst, '|') + 1),
+                'qty' => $userQty, 'limit_price' => $price, 'sl_trigger_price' => $att['sl_trigger'], 'sl_limit_price' => $att['sl_limit'],
+                'tgt_trigger_price' => $att['tgt_trigger'], 'tgt_limit_price' => $att['tgt_limit'], 'algo_id' => '99999', 'remarks' => 'COPY'
             ]);
         } elseif ($userBroker === 'indstocks') {
             $ex = strpos($inst, 'BSE_FO') === 0 ? 'BSE' : 'NSE';
-            [$code, $j] = t_icall($c, 'POST', '/order', $activeToken['token'], [
-                'txn_type' => $side, 'exchange' => $ex, 'segment' => 'DERIVATIVE',
-                'product' => $prod === 'I' ? 'INTRADAY' : 'MARGIN',
-                'order_type' => 'LIMIT', 'validity' => 'DAY',
-                'security_id' => substr($inst, strpos($inst, '|') + 1),
-                'qty' => $userQty, 'limit_price' => $price,
-                'is_amo' => false, 'algo_id' => $ex === 'BSE' ? '9999999999999999' : '99999', 'remarks' => 'COPY'
+            $orderReqs[$uid] = t_follower_req($c, 'indstocks', 'POST', '/order', $cd['tok'], [
+                'txn_type' => $side, 'exchange' => $ex, 'segment' => 'DERIVATIVE', 'product' => $prod === 'I' ? 'INTRADAY' : 'MARGIN',
+                'order_type' => 'LIMIT', 'validity' => 'DAY', 'security_id' => substr($inst, strpos($inst, '|') + 1),
+                'qty' => $userQty, 'limit_price' => $price, 'is_amo' => false, 'algo_id' => $ex === 'BSE' ? '9999999999999999' : '99999', 'remarks' => 'COPY'
             ]);
         } elseif ($att) {
             $trailing_gap = round(max(0.05, $price - $att['sl_trigger']), 2);
-            $rules = [
-                ['strategy' => 'ENTRY', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $price],
-                ['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['tgt_trigger']],
-                ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['sl_trigger'], 'trailing_gap' => $trailing_gap]
-            ];
-            [$code, $j] = t_call('POST', $c['api'] . '/v3/order/gtt/place', $activeToken['token'], [
-                'type' => 'MULTIPLE',
-                'quantity' => $userQty,
-                'product' => $prod,
-                'instrument_token' => $inst,
-                'transaction_type' => $side,
-                'rules' => $rules
+            $orderReqs[$uid] = t_follower_req($c, 'upstox', 'POST', $c['api'] . '/v3/order/gtt/place', $cd['tok'], [
+                'type' => 'MULTIPLE', 'quantity' => $userQty, 'product' => $prod, 'instrument_token' => $inst, 'transaction_type' => $side,
+                'rules' => [
+                    ['strategy' => 'ENTRY', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $price],
+                    ['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['tgt_trigger']],
+                    ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $att['sl_trigger'], 'trailing_gap' => $trailing_gap]
+                ]
             ]);
         } else {
-            [$code, $j] = t_call('POST', $c['hft'] . '/v3/order/place', $activeToken['token'], [
-                'quantity' => $userQty, 'product' => $prod, 'validity' => 'DAY', 'price' => $price,
-                'tag' => 'COPY', 'instrument_token' => $inst, 'order_type' => $type,
-                'transaction_type' => $side, 'disclosed_quantity' => 0, 'trigger_price' => $trig,
-                'is_amo' => false, 'slice' => false
+            $orderReqs[$uid] = t_follower_req($c, 'upstox', 'POST', $c['hft'] . '/v3/order/place', $cd['tok'], [
+                'quantity' => $userQty, 'product' => $prod, 'validity' => 'DAY', 'price' => $price, 'tag' => 'COPY',
+                'instrument_token' => $inst, 'order_type' => $type, 'transaction_type' => $side, 'disclosed_quantity' => 0, 'trigger_price' => $trig, 'is_amo' => false, 'slice' => false
             ]);
         }
-
-        $ok = ($code === 200);
-        t_log($c, ['ev' => $ok ? 'copy-order-sent' : 'copy-order-failed', 'uid' => $uid, 'http' => $code, 'reply' => $j] + $userSum);
-        $uLogFile = $uDir . '/orders.log.php';
-        $uLogEntry = "<?php /* " . date('c') . " " . ($ok ? 'copy-order-sent' : 'copy-order-failed') . " " . json_encode($userSum + ['http' => $code, 'reply' => $j]) . " */ ?>\n";
-        @file_put_contents($uLogFile, $uLogEntry, FILE_APPEND);
-
-        if ($ok) $sent++;
-        $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => $ok ? 'sent' : 'failed', 'qty' => $userQty, 'lots' => $userLots, 'reply' => $j];
     }
 
+    // Parallel order execution across all qualified live followers
+    $ordRes = t_call_multi($orderReqs);
+    foreach ($orderReqs as $uid => $rq) {
+        $cd = $candidates[$uid]; $u = $cd['u']; $uDir = $cd['uDir']; $userBroker = $cd['broker']; $userQty = $cd['qty']; $userLots = $cd['lots'];
+        [$code, $j] = $ordRes[$uid] ?? [0, null];
+        $fParent = ''; $fChild = '';
+        if ($code === 200 && ($j['status'] ?? '') !== 'error') {
+            if ($userBroker === 'indstocks' && $att) {
+                $od = $j['data']['order_data'][0] ?? null;
+                if (!$od || empty($od['order_id'])) $code = 502;
+                else { $fParent = (string)$od['order_id']; $fChild = (string)($od['child_order_details']['order_id'] ?? $fParent); }
+            } elseif ($userBroker === 'indstocks') {
+                if (empty($j['data']['order_id'])) $code = 502;
+                else { $fParent = (string)$j['data']['order_id']; $fChild = $fParent; }
+            } elseif ($att) {
+                if (empty($j['data']['gtt_order_ids'])) $code = 502;
+                else { $fParent = (string)$j['data']['gtt_order_ids'][0]; $fChild = $fParent; }
+            } else {
+                if (empty($j['data']['order_id'])) $code = 502;
+                else { $fParent = (string)$j['data']['order_id']; $fChild = $fParent; }
+            }
+        } elseif ($code === 200) {
+            $code = 502;
+        }
+        $ok = ($code === 200);
+        if ($ok) {
+            $cd['flg']['count'] = (int)$cd['flg']['count'] + 1; $cd['flg']['last'] = time(); t_write($cd['flf'], $cd['flg']);
+            $links[] = ['originUid' => $originUid, 'originRef' => (string)($in['ref'] ?? ''), 'originParent' => (string)($originIds['parent'] ?? ''), 'originChild' => (string)($originIds['child'] ?? ''), 'followerUid' => $uid, 'followerUser' => $u['username'], 'broker' => $userBroker, 'inst' => $inst, 'qty' => $userQty, 'parent' => $fParent, 'child' => $fChild, 'mode' => 'live', 'status' => 'open', 'stopCancelled' => false, 'createdAt' => time()];
+            $sent++;
+        }
+        t_follower_log($c, $uDir, $uid, $ok ? 'copy-order-sent' : 'copy-order-failed', $cd['sum'] + ['http' => $code, 'reply' => $j, 'parent' => $fParent, 'child' => $fChild]);
+        $results[$uid] = ['user' => $u['username'], 'broker' => $userBroker, 'status' => $ok ? 'sent' : 'failed', 'qty' => $userQty, 'lots' => $userLots, 'parent' => $fParent, 'child' => $fChild, 'reply' => $j];
+    }
+
+    t_copy_links_write($c, $links);
     return ['eligible' => $eligible, 'sent' => $sent, 'results' => $results];
+}
+function t_broadcast_smart_modify($originUid, $oid, $v, $trailGap, $c, $in) {
+    $links = (array)(t_copy_links_read($c)['links'] ?? []);
+    $results = []; $sent = 0; $matched = 0; $reqs = []; $meta = [];
+    @set_time_limit(60);
+    foreach ($links as $idx => $lk) {
+        if (($lk['status'] ?? '') !== 'open' || ($lk['originUid'] ?? '') !== $originUid) continue;
+        if (($lk['originChild'] ?? '') !== $oid && ($lk['originParent'] ?? '') !== $oid) continue;
+        $matched++;
+        $uid = $lk['followerUid']; $uDir = a_udir($uid); $fs = t_follower_setup($c, $uid, $uDir);
+        if ($fs['mode'] === 'off' || !$fs['token']) { $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'skipped']; continue; }
+        if ($fs['mode'] === 'dry' || ($lk['mode'] ?? '') === 'dry') {
+            t_follower_log($c, $uDir, $uid, 'dry-copy-smart-modify', ['order_id' => $lk['child']] + $v);
+            $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'dry_sent']; $sent++; continue;
+        }
+        $fBroker = $lk['broker']; $tok = $fs['token']['token']; $fOid = $lk['child'] ?: $lk['parent'];
+        $meta[$idx] = ['uid' => $uid, 'uDir' => $uDir, 'lk' => $lk, 'fOid' => $fOid];
+        if ($fBroker === 'indstocks') {
+            $reqs[$idx] = t_follower_req($c, 'indstocks', 'POST', '/smart/order/modify', $tok, ['order_id' => $fOid, 'segment' => 'DERIVATIVE', 'algo_id' => '99999', 'sl_trigger_price' => $v['sl_trigger'], 'sl_limit_price' => $v['sl_limit'], 'tgt_trigger_price' => $v['tgt_trigger'], 'tgt_limit_price' => $v['tgt_limit']]);
+        } elseif (strpos($fOid, 'GTT-') === 0) {
+            $reqs[$idx] = t_follower_req($c, 'upstox', 'PUT', $c['api'] . '/v3/order/gtt/modify', $tok, ['type' => 'MULTIPLE', 'quantity' => (int)($lk['qty'] ?? 65), 'gtt_order_id' => $fOid, 'rules' => [['strategy' => 'TARGET', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['tgt_trigger']], ['strategy' => 'STOPLOSS', 'trigger_type' => 'IMMEDIATE', 'trigger_price' => $v['sl_trigger'], 'trailing_gap' => $trailGap]]]);
+        } else {
+            $reqs[$idx] = t_follower_req($c, 'upstox', 'PUT', $c['hft'] . '/v3/order/modify', $tok, ['order_id' => $fOid, 'price' => $v['sl_limit'], 'trigger_price' => $v['sl_trigger'], 'order_type' => 'SL']);
+        }
+    }
+    $res = t_call_multi($reqs);
+    foreach ($meta as $idx => $m) {
+        $uid = $m['uid']; $lk = $m['lk'];
+        [$code, $j] = $res[$idx] ?? [0, null];
+        $ok = ($code === 200 && ($j['status'] ?? '') !== 'error');
+        t_follower_log($c, $m['uDir'], $uid, $ok ? 'copy-smart-modify' : 'copy-smart-modify-failed', ['order_id' => $m['fOid'], 'http' => $code, 'reply' => $j] + $v);
+        if ($ok) $sent++;
+        $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => $ok ? 'sent' : 'failed', 'http' => $code];
+    }
+    return ['matched' => $matched, 'sent' => $sent, 'results' => $results];
+}
+function t_broadcast_smart_cancel($originUid, $oid, $c, $forSquareOff = false) {
+    $links = (array)(t_copy_links_read($c)['links'] ?? []);
+    $results = []; $sent = 0; $matched = 0; $changed = false; $reqs = []; $meta = [];
+    @set_time_limit(60);
+    foreach ($links as $idx => $lk) {
+        if (($lk['status'] ?? '') !== 'open' || ($lk['originUid'] ?? '') !== $originUid) continue;
+        if (($lk['originChild'] ?? '') !== $oid && ($lk['originParent'] ?? '') !== $oid) continue;
+        $matched++;
+        $uid = $lk['followerUid']; $uDir = a_udir($uid); $fs = t_follower_setup($c, $uid, $uDir);
+        if ($fs['mode'] === 'off' || !$fs['token']) { $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'skipped']; continue; }
+        if ($fs['mode'] === 'dry' || ($lk['mode'] ?? '') === 'dry') {
+            t_follower_log($c, $uDir, $uid, 'dry-copy-smart-cancel', ['order_id' => $lk['child'], 'squareOff' => $forSquareOff]);
+            if ($forSquareOff) $links[$idx]['stopCancelled'] = true; else $links[$idx]['status'] = 'closed';
+            $changed = true; $sent++; $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'dry_sent']; continue;
+        }
+        $fBroker = $lk['broker']; $tok = $fs['token']['token'];
+        $ids = $forSquareOff ? array_values(array_unique(array_filter([$lk['child'] ?? '', $lk['parent'] ?? '']))) : array_values(array_unique(array_filter([$lk['parent'] ?? '', $lk['child'] ?? ''])));
+        if ($forSquareOff && !empty($ids)) $ids = [$ids[0]];
+        $meta[$idx] = ['uid' => $uid, 'uDir' => $uDir, 'lk' => $lk, 'ids' => $ids];
+        foreach ($ids as $k => $fOid) {
+            $key = $idx . '|' . $k;
+            if ($fBroker === 'indstocks') $reqs[$key] = t_follower_req($c, 'indstocks', 'POST', '/smart/order/cancel', $tok, ['order_id' => $fOid, 'segment' => 'DERIVATIVE']);
+            elseif (strpos($fOid, 'GTT-') === 0) $reqs[$key] = t_follower_req($c, 'upstox', 'DELETE', $c['api'] . '/v3/order/gtt/cancel?gtt_order_id=' . urlencode($fOid), $tok);
+            else $reqs[$key] = t_follower_req($c, 'upstox', 'DELETE', $c['hft'] . '/v3/order/cancel?order_id=' . urlencode($fOid), $tok);
+        }
+    }
+    $res = t_call_multi($reqs);
+    foreach ($meta as $idx => $m) {
+        $ok = false; $lastCode = 0;
+        foreach ($m['ids'] as $k => $fOid) {
+            [$code, $j] = $res[$idx . '|' . $k] ?? [0, null];
+            $lastCode = $code;
+            if ($code === 200 && ($j['status'] ?? '') !== 'error') $ok = true;
+        }
+        if ($forSquareOff) $links[$idx]['stopCancelled'] = true; elseif ($ok) $links[$idx]['status'] = 'closed';
+        $changed = true;
+        if ($ok) $sent++;
+        t_follower_log($c, $m['uDir'], $m['uid'], $ok ? 'copy-smart-cancel' : 'copy-smart-cancel-failed', ['ids' => $m['ids'], 'http' => $lastCode, 'squareOff' => $forSquareOff]);
+        $results[$m['uid']] = ['user' => $m['lk']['followerUser'] ?? $m['uid'], 'status' => $ok ? 'sent' : 'failed', 'http' => $lastCode];
+    }
+    if ($changed) t_copy_links_write($c, $links);
+    return ['matched' => $matched, 'sent' => $sent, 'results' => $results];
+}
+function t_broadcast_copy_exit($originUid, $inst, $price, $originOrderId, $c, $in) {
+    $links = (array)(t_copy_links_read($c)['links'] ?? []);
+    $results = []; $sent = 0; $matched = 0; $changed = false; $posReqs = []; $meta = [];
+    @set_time_limit(60);
+    foreach ($links as $idx => $lk) {
+        if (($lk['status'] ?? '') !== 'open' || ($lk['originUid'] ?? '') !== $originUid || ($lk['inst'] ?? '') !== $inst) continue;
+        if ($originOrderId !== '' && ($lk['originParent'] ?? '') !== $originOrderId && ($lk['originChild'] ?? '') !== $originOrderId) continue;
+        $matched++;
+        $uid = $lk['followerUid']; $uDir = a_udir($uid); $fs = t_follower_setup($c, $uid, $uDir);
+        if ($fs['mode'] === 'off' || !$fs['token']) { $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'skipped']; continue; }
+        if ($fs['mode'] === 'dry' || ($lk['mode'] ?? '') === 'dry') {
+            t_follower_log($c, $uDir, $uid, 'dry-copy-exit', ['inst' => $inst, 'qty' => $lk['qty'], 'price' => $price]);
+            $links[$idx]['status'] = 'closed'; $changed = true; $sent++; $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'dry_sent', 'qty' => $lk['qty']]; continue;
+        }
+        $fBroker = $lk['broker']; $tok = $fs['token']['token'];
+        $meta[$idx] = ['uid' => $uid, 'uDir' => $uDir, 'lk' => $lk, 'broker' => $fBroker, 'tok' => $tok];
+        $posReqs[$idx] = $fBroker === 'indstocks'
+            ? t_follower_req($c, 'indstocks', 'GET', '/portfolio/positions?segment=derivative', $tok)
+            : t_follower_req($c, 'upstox', 'GET', $c['api'] . '/v2/portfolio/short-term-positions', $tok);
+    }
+    $posRes = t_call_multi($posReqs);
+    $sellReqs = []; $sellMeta = [];
+    foreach ($meta as $idx => $m) {
+        $uid = $m['uid']; $lk = $m['lk'];
+        [$pc, $pj] = $posRes[$idx] ?? [0, null];
+        $fPos = t_extract_positions($m['broker'], $pc, $pj);
+        if ($fPos === null) { $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'skipped', 'reason' => 'Position check unavailable']; continue; }
+        $held = 0;
+        foreach ($fPos as $fp) if (($fp['instrument_token'] ?? '') === $inst && ($fp['product'] ?? '') === 'I') $held = max($held, (int)($fp['quantity'] ?? 0));
+        $sellQty = min((int)($lk['qty'] ?? 0), $held);
+        if ($sellQty <= 0) {
+            $links[$idx]['status'] = 'closed'; $changed = true;
+            $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => 'skipped', 'reason' => 'Already closed (0 held)']; continue;
+        }
+        $sellMeta[$idx] = $m + ['sellQty' => $sellQty];
+        if ($m['broker'] === 'indstocks') {
+            $ex = strpos($inst, 'BSE_FO') === 0 ? 'BSE' : 'NSE';
+            $sellReqs[$idx] = t_follower_req($c, 'indstocks', 'POST', '/order', $m['tok'], ['txn_type' => 'SELL', 'exchange' => $ex, 'segment' => 'DERIVATIVE', 'product' => 'INTRADAY', 'order_type' => 'LIMIT', 'validity' => 'DAY', 'security_id' => substr($inst, strpos($inst, '|') + 1), 'qty' => $sellQty, 'limit_price' => $price, 'is_amo' => false, 'algo_id' => $ex === 'BSE' ? '9999999999999999' : '99999', 'remarks' => 'COPYEXIT']);
+        } else {
+            $sellReqs[$idx] = t_follower_req($c, 'upstox', 'POST', $c['hft'] . '/v3/order/place', $m['tok'], ['quantity' => $sellQty, 'product' => 'I', 'validity' => 'DAY', 'price' => $price, 'tag' => 'COPYEXIT', 'instrument_token' => $inst, 'order_type' => 'LIMIT', 'transaction_type' => 'SELL', 'disclosed_quantity' => 0, 'trigger_price' => 0, 'is_amo' => false, 'slice' => false]);
+        }
+    }
+    $sellRes = t_call_multi($sellReqs);
+    foreach ($sellMeta as $idx => $m) {
+        $uid = $m['uid']; $lk = $m['lk']; $sellQty = $m['sellQty'];
+        [$code, $j] = $sellRes[$idx] ?? [0, null];
+        $ok = ($code === 200 && ($j['status'] ?? '') !== 'error');
+        if ($ok) { $links[$idx]['status'] = 'closed'; $changed = true; $sent++; }
+        t_follower_log($c, $m['uDir'], $uid, $ok ? 'copy-exit-sent' : 'copy-exit-failed', ['inst' => $inst, 'qty' => $sellQty, 'price' => $price, 'http' => $code, 'reply' => $j]);
+        $results[$uid] = ['user' => $lk['followerUser'] ?? $uid, 'status' => $ok ? 'sent' : 'failed', 'qty' => $sellQty, 'http' => $code];
+    }
+    if ($changed) t_copy_links_write($c, $links);
+    return ['matched' => $matched, 'sent' => $sent, 'results' => $results];
 }
 function t_positions($c, $tk) {
     [$code, $j] = t_call('GET', $c['api'] . '/v2/portfolio/short-term-positions', $tk['token']);

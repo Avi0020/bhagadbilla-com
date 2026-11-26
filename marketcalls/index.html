@@ -1510,10 +1510,11 @@ function botTrail(t,au,px){
   const minStep=isTight?Math.max(0.5,t.fill*0.01):Math.max(0.5,t.fill*0.03);
   return want>=t.stop+minStep&&want<px?want:0;
 }
+const parseOrdTime=s=>{if(!s)return 0;const v=String(s).trim();const t=Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/.test(v)?v:v+'+05:30');return isFinite(t)?t:0};
 async function botModify(t,ns,au){if(Date.now()-(t.tMod||0)<21000)return false;t.tMod=Date.now();
-  const slT=Math.min(ns,tick(t.tgt-.05)),slL=Math.max(.05,tick(slT*.95)),ids=t.mode==='dry'?['DRY-'+t.id]:[t.modId,t.child,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  const slT=Math.min(ns,tick(t.tgt-.05)),slL=Math.max(.05,tick(slT*.95)),gap=Math.max(.05,tick((t.peak||t.last||slT)-slT)),ids=t.mode==='dry'?['DRY-'+t.id]:[t.modId,t.child,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);
   let err='';
-  for(const id of ids){try{await trdApi('smartmodify',null,{order_id:id,sl_trigger:slT,sl_limit:slL,tgt_trigger:t.tgt,tgt_limit:t.tgtLim});t.modId=id;err='';break}catch(e){err=e.message;if(/Wait before|limit for this order/i.test(err))break}}
+  for(const id of ids){try{await trdApi('smartmodify',null,{order_id:id,quantity:t.qty||65,trailing_gap:gap,sl_trigger:slT,sl_limit:slL,tgt_trigger:t.tgt,tgt_limit:t.tgtLim});t.modId=id;err='';break}catch(e){err=e.message;if(/Wait before|limit for this order/i.test(err))break}}
   if(err){if(/Wait before/i.test(err))return false;t.modFail=(t.modFail||0)+1;S.bot.dirty=true;if(t.modFail===1||t.modFail===5)botSay('Trailing stop NOT moved',`${botNm(t)}: ${err}. The stop and target already at ${trdName()} stay in place.`,'dn');return false}
   t.modFail=0;t.mods=(t.mods||0)+1;const was=t.stop;t.stop=slT;t.slLim=slL;S.bot.dirty=true;
   const lkPnl=Math.round((slT-t.fill)*(t.qty||1));
@@ -1525,22 +1526,32 @@ function botShadow(t,px,au,mk){if(!(px>0))return;
   if(mk.m>=botMin(au.squareOff)){botFinish(t,px,'Square-off '+au.squareOff);return}
   const ns=botTrail(t,au,px);if(ns)return botModify(t,ns,au)}
 async function botLiveEntry(t,px,snap,au){
-  const row=snap.orders.find(o=>o.order_id===t.parent),pos=snap.pos.find(p=>p.instrument_token===t.key&&p.product==='I'&&p.quantity>0);
-  if((row&&row.status==='complete')||(!row&&pos)){const q=(row&&row.filled_quantity)||(pos&&pos.quantity)||t.qty;t.fill=(row&&row.average_price)||(pos&&pos.average_price)||t.px;t.qty=q;t.state='open';t.peak=Math.max(t.peak,px||0,t.fill);t.gone=0;S.bot.dirty=true;
+  const isGtt=String(t.parent||'').startsWith('GTT-');
+  let row=snap.orders.find(o=>o.order_id===t.parent);
+  const pos=snap.pos.find(p=>p.instrument_token===t.key&&p.product==='I'&&p.quantity>0);
+  const grew=!!(pos&&pos.quantity>(t.preQty||0));
+  if(!row&&isGtt){
+    try{const g=(await trdApi('gtt',{order_id:t.parent})).data;const en=g&&Array.isArray(g.rules)?g.rules.find(r=>r.strategy==='ENTRY'):null;
+      if(en){const st=String(en.status||'').toUpperCase();
+        if(st==='COMPLETED'||st==='TRIGGERED'){row={status:grew?'complete':'pending',filled_quantity:pos?pos.quantity:t.qty,average_price:pos?pos.average_price:t.px}}
+        else if(st==='CANCELLED'||st==='FAILED'||st==='REJECTED'){row={status:'cancelled',filled_quantity:0,message:en.message||st}}}
+    }catch(e){}
+  }
+  if((row&&row.status==='complete')||(!row&&grew)){const q=(row&&row.filled_quantity)||(pos&&pos.quantity)||t.qty;t.fill=(row&&row.average_price)||(pos&&pos.average_price)||t.px;t.qty=q;t.state='open';t.peak=Math.max(t.peak,px||0,t.fill);t.gone=0;S.bot.dirty=true;
     botSay('Auto buy filled',`${botNm(t)} ${q} qty @ ₹${f2(t.fill)}. Stop ₹${f2(t.stop)} and target ₹${f2(t.tgt)} are attached at ${trdName()}.`,'up');return}
   if(row&&(row.status==='rejected'||row.status==='cancelled')){
     if(row.filled_quantity>0){t.qty=row.filled_quantity;t.fill=row.average_price||t.px;t.state='open';t.partial=true;t.peak=Math.max(t.peak,px||0,t.fill);t.gone=0;S.bot.dirty=true;
       botSay('Auto buy partly filled',`${botNm(t)}: only ${t.qty} of the quantity filled. The rest was cancelled. Stop and target are still attached.`,'dn');return}
     t.state='dead';t.why='Entry '+row.status+(row.message?': '+row.message:'');S.bot.dirty=true;botSay('Auto buy not filled',botNm(t)+': '+t.why,'mu');
-    if(t.child){try{await trdApi('smartcancel',null,{order_id:t.child})}catch(e){}}return}   // make sure its stop and target cannot wake up later
+    if(t.child&&t.child!==t.parent){try{await trdApi('smartcancel',null,{order_id:t.child})}catch(e){}}return}   // make sure its stop and target cannot wake up later
   if(Date.now()-t.t0>au.entryWait*1000&&(!t.cxl||Date.now()-t.cxl>30000)){t.cxl=Date.now();t.cxlN=(t.cxlN||0)+1;S.bot.dirty=true;
     if(t.cxlN>3){if(t.cxlN===4)botSay('Entry could not be cancelled',`${botNm(t)}: cancel it in the ${trdName()} app.`,'dn');return}
-    const errs=[];for(const id of [t.parent,t.child].filter(Boolean)){try{await trdApi('smartcancel',null,{order_id:id})}catch(e){errs.push(e.message)}}
+    const errs=[];for(const id of [t.parent,t.child].filter((v,i,a)=>v&&a.indexOf(v)===i)){try{await trdApi('smartcancel',null,{order_id:id})}catch(e){errs.push(e.message)}}
     botLog(errs.length?'Cancel problem: '+errs.join('; '):`Entry not filled in ${au.entryWait} s: cancel sent.`,errs.length?'dn':'mu')}}
 async function botSquare(t,px,pos,au){
   /* 1) take the stop and target away first, so nothing can sell the same shares twice */
   if(!t.sqCancel){const ids=[t.child,t.modId,t.parent].filter((v,i,a)=>v&&a.indexOf(v)===i);let done=false,err='';
-    for(const id of ids){try{await trdApi('smartcancel',null,{order_id:id});done=true;break}catch(e){err=e.message}}
+    for(const id of ids){try{await trdApi('smartcancel',null,{order_id:id,squareOff:true});done=true;break}catch(e){err=e.message}}
     if(!done){t.sqFail=(t.sqFail||0)+1;S.bot.dirty=true;if(t.sqFail===1)botSay('Square-off: could not cancel the stop',`${botNm(t)}: ${err}. Close the position in the ${trdName()} app. The broker also squares off intraday positions around 3:20 PM.`,'dn');return}
     t.sqCancel=Date.now();botLog('Square-off time: stop and target cancelled, selling next.','mu');return}
   if(Date.now()-t.sqCancel<8000)return;
@@ -1548,20 +1559,23 @@ async function botSquare(t,px,pos,au){
   if(!t.sqSell||Date.now()-t.sqSell>45000){const n=(t.sqTry||0)+1;S.bot.dirty=true;
     if(n>3){if(n===4){t.sqTry=n;botSay('Square-off not completed',`${botNm(t)} is still open after 3 sell attempts. Close it in the ${trdName()} app now.`,'dn')}return}
     const price=Math.max(.05,tick(px*(1-.03*n)));t.sqTry=n;t.sqSell=Date.now();
-    try{await trdApi('place',null,{instrument_token:t.key,quantity:pos.quantity,transaction_type:'SELL',order_type:'LIMIT',product:'I',price,trigger_price:0,ref:'sq-'+t.id+'-'+n,label:'AUTO SQUAREOFF '+botNm(t)});botLog(`Selling ${pos.quantity} at ₹${f2(price)} (attempt ${n}).`,'mu')}
+    try{await trdApi('place',null,{instrument_token:t.key,quantity:pos.quantity,transaction_type:'SELL',order_type:'LIMIT',product:'I',price,trigger_price:0,ref:'sq-'+t.id+'-'+n,label:'AUTO SQUAREOFF '+botNm(t),copyExit:true,originOrderId:t.parent||t.child||''});botLog(`Selling ${pos.quantity} at ₹${f2(price)} (attempt ${n}).`,'mu')}
     catch(e){botSay('Square-off sell failed',`${botNm(t)}: ${e.message}. Close it in the ${trdName()} app.`,'dn')}}}
 async function botLiveOpen(t,px,snap,au,mk){
   const pos=snap.pos.find(p=>p.instrument_token===t.key&&p.product==='I'&&p.quantity>0);
   if(!pos){t.gone=(t.gone||0)+1;S.bot.dirty=true;if(t.gone<2)return;   // two looks in a row, so one odd reply cannot close a trade
-    const sells=snap.orders.filter(o=>o.instrument_token===t.key&&o.transaction_type==='SELL'&&o.status==='complete'&&o.average_price>0),ex=sells.length?sells[0].average_price:(t.last||t.fill);
+    const pre=new Set(t.preSellIds||[]);
+    const sells=snap.orders.filter(o=>{if(o.instrument_token!==t.key||o.transaction_type!=='SELL'||o.status!=='complete'||!(o.average_price>0)||pre.has(o.order_id))return false;const ot=parseOrdTime(o.created_at||o.order_timestamp);return !ot||ot>=t.t0-5000||!!t.sqCancel}),ex=sells.length?sells[0].average_price:(t.last||t.fill);
     botFinish(t,ex,t.sqCancel?'Square-off '+au.squareOff:ex>=t.tgt*.97?'Target hit':ex>t.fill?'Trailing stop hit':ex<=t.stop*1.03?'Stop-loss hit':'Closed');return}
   t.gone=0;
   if(mk.m>=botMin(au.squareOff))return botSquare(t,px,pos,au);
   const ns=botTrail(t,au,px);if(ns)return botModify(t,ns,au)}
 async function botEnter(c,au,s){const {ix,A,leg,sid}=c,ltp=leg.ltp,qty=leg.lot*au.lots;S.bot.seen[sid]=1;
   const px=tick(ltp*(1+au.entryBuffer)),slT=tick(ltp*(1-au.sl)),slL=Math.max(.05,tick(slT*.95)),tgT=tick(ltp*(1+au.target)),tgL=tick(tgT*.98);
-  const t={id:'a'+Date.now().toString(36),sid,day:dkey(Date.now()),ix:ix.id,name:ix.name,key:leg.key,strike:leg.strike,type:leg.type,exp:A.opt.exp,lot:leg.lot,qty,t0:Date.now(),callPx:ltp,px,stop:slT,slLim:slL,tgt:tgT,tgtLim:tgL,peak:ltp,last:ltp,mods:0,state:'entry',mode:s.mode,fill:0,parent:'',child:''};
-  try{const j=await trdApi('place',null,{instrument_token:leg.key,quantity:qty,transaction_type:'BUY',order_type:'LIMIT',product:'I',price:px,trigger_price:0,ref:'auto-'+String(sid).replace(/[^A-Za-z0-9]/g,'_'),label:'AUTO BUY '+botNm(t),
+  const prePos=Array.isArray(S.trd.pos)?S.trd.pos.find(p=>p.instrument_token===leg.key&&p.product==='I'&&p.quantity>0):null;
+  const preSellIds=Array.isArray(S.trd.orders)?S.trd.orders.filter(o=>o.instrument_token===leg.key&&o.transaction_type==='SELL'&&o.status==='complete').map(o=>o.order_id):[];
+  const t={id:'a'+Date.now().toString(36),sid,day:dkey(Date.now()),ix:ix.id,name:ix.name,key:leg.key,strike:leg.strike,type:leg.type,exp:A.opt.exp,lot:leg.lot,qty,preQty:prePos?prePos.quantity:0,preSellIds,t0:Date.now(),callPx:ltp,px,stop:slT,slLim:slL,tgt:tgT,tgtLim:tgL,peak:ltp,last:ltp,mods:0,state:'entry',mode:s.mode,fill:0,parent:'',child:''};
+  try{const j=await trdApi('place',null,{instrument_token:leg.key,quantity:qty,lots:au.lots,transaction_type:'BUY',order_type:'LIMIT',product:'I',price:px,trigger_price:0,ref:'auto-'+String(sid).replace(/[^A-Za-z0-9]/g,'_'),label:'AUTO BUY '+botNm(t),
       contract:{u:ix.id,e:A.opt.exp,k:leg.strike,t:leg.type},auto:true,attach:{sl_trigger:slT,sl_limit:slL,tgt_trigger:tgT,tgt_limit:tgL}});
     t.mode=j.mode;
     if(j.mode==='dry'){t.fill=ltp;t.state='open';botSay('Shadow buy (dry run)',`${botNm(t)} ${qty} qty @ ₹${f2(ltp)} · stop ₹${f2(slT)} · target ₹${f2(tgT)}. Nothing was sent: this is a shadow trade on real prices.`,'up')}
@@ -1583,7 +1597,7 @@ async function botScan(s,au,mk){
     if(s.mode==='live'){let f=null;try{const d=(await trdApi('funds')).data;f=d&&d.available_to_trade&&d.available_to_trade.total}catch(e){}
       if(!(f>=leg.lotCost*au.lots*1.02+100)){if(!S.bot.warn['f'+sid]){S.bot.warn['f'+sid]=1;botSay('Auto buy skipped: funds',`${ix.name} ${f0(leg.strike)} ${leg.type} needs about ₹${f0(leg.lotCost*au.lots)}. Available to trade: ${isFinite(f)?'₹'+f0(f):'unknown'}.`,'dn')}continue}}
     await botEnter({ix,A,leg,sid},au,s)}}
-const canAutoRun=()=>(RUN&&RUN.autoTrade)||(canTrade()&&LS.get('browserBot',true));
+const canAutoRun=()=>(RUN&&RUN.autoTrade)||(!RUN&&canTrade()&&S.leaseAt>0&&!S.viewer&&LS.get('browserBot',true));
 async function botTick(){if(!canAutoRun()||S.bot.busy||S.demo||S.yahoo||!cfg().pin)return;const mk=market();if(!RUN&&!mk.open&&!S.at.intra)return;if(RUN&&!RUN.anytime&&!mk.open)return;
   S.bot.busy=true;
   try{
@@ -2319,7 +2333,7 @@ addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.dataset&&e.target.dataset.trdbroker){e.preventDefault();e.target.click()}
 });
 $('#sheetBg').onclick=closeSheet;
-const shouldAutoScan=()=>S.auto||(P&&P.on&&P.auto)||isStandalone()||(typeof window!=='undefined'&&'Notification' in window&&Notification.permission==='granted');
+const shouldAutoScan=()=>S.auto||(P&&P.on&&P.auto)||(canAutoRun()&&S.trd.status&&S.trd.status.auto&&S.trd.status.auto.enabled)||isStandalone()||(typeof window!=='undefined'&&'Notification' in window&&Notification.permission==='granted');
 setInterval(async()=>{if(!market().open||S.demo||S.yahoo||(S.sc&&S.sc.busy))return;if((P&&P.on&&P.autoStk!==false)||shouldAutoScan())await stkCalls(true)},120000);
 setInterval(async()=>{if(!market().open||S.scanning)return;if(shouldAutoScan()){await scan('intra',true);await scan('swing',true)}else if(P&&P.on&&P.pos.length){await paperUpdate();render()}},60000);
 setInterval(()=>{const mk=market();$('#mLabel').textContent=mk.label+(S.demo?' · demo':'');$('#mDot').classList.toggle('on',mk.open)},30000);
